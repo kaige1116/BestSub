@@ -53,27 +53,25 @@ func ValidateServerConfig(config *ServerConfig) error {
 	return nil
 }
 
-// ValidateDatabaseConfig 验证数据库配置
+// 验证数据库配置
 func ValidateDatabaseConfig(config *DatabaseConfig) error {
+	if config.Type == "" {
+		return fmt.Errorf("数据库类型不能为空")
+	}
 	if config.Path == "" {
 		return fmt.Errorf("数据库路径不能为空")
 	}
-
-	// 检查数据库目录是否可写
 	dir := filepath.Dir(config.Path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("无法创建数据库目录 %s: %v", dir, err)
 	}
-
-	// 检查目录权限
 	if !utils.IsWritableDir(dir) {
 		return fmt.Errorf("数据库目录 %s 不可写", dir)
 	}
-
 	return nil
 }
 
-// ValidateLogConfig 验证日志配置
+// 验证日志配置
 func ValidateLogConfig(config *LogConfig) error {
 	// 验证日志等级
 	validLevels := []string{"debug", "info", "warn", "error"}

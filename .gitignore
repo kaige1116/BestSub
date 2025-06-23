@@ -1,0 +1,11 @@
+# web
+web/static/*
+!web/static/README.md
+
+# api
+api/*
+!api/README.md
+
+# build
+dist/*
+build/*

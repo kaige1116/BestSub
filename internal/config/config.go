@@ -16,6 +16,7 @@ type ServerConfig struct {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
+	Type string `json:"type"`
 	Path string `json:"path"`
 }
 

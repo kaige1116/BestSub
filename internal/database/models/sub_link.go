@@ -5,7 +5,7 @@ import (
 )
 
 // 管理订阅链接的基本信息和配置
-type Link struct {
+type SubLink struct {
 	ID         int64     `db:"id" json:"id"`
 	Name       string    `db:"name" json:"name"`               // 链接名称
 	URL        string    `db:"url" json:"url"`                 // 订阅链接地址
@@ -21,9 +21,9 @@ type Link struct {
 }
 
 // 每个链接的每个功能模块都有独立的配置实例
-type ModuleConfig struct {
+type SubLinkModuleConfig struct {
 	ID         int64     `db:"id" json:"id"`
-	LinkID     int64     `db:"link_id" json:"link_id"`
+	SubLinkID  int64     `db:"sub_link_id" json:"sub_link_id"`
 	ModuleType string    `db:"module_type" json:"module_type"` // parser, detector, notifier, namer
 	ModuleName string    `db:"module_name" json:"module_name"` // 具体模块名称
 	IsEnabled  bool      `db:"is_enabled" json:"is_enabled"`   // 启用/禁用状态
@@ -31,4 +31,4 @@ type ModuleConfig struct {
 	Config     string    `db:"config" json:"config"`           // JSON格式的配置参数
 	CreatedAt  time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
-}
+}	

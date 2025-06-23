@@ -5,13 +5,54 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/sirupsen/logrus"
 )
+
+// 颜色常量定义
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m"
+	ColorYellow = "\033[33m"
+	ColorGreen  = "\033[32m"
+	ColorCyan   = "\033[36m"
+	ColorPurple = "\033[35m"
+	ColorBold   = "\033[1m"
+)
+
+// colorStripRegex 用于匹配ANSI颜色代码的正则表达式
+var colorStripRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// ColorStripWriter 包装Writer，自动过滤颜色代码
+type ColorStripWriter struct {
+	writer io.Writer
+}
+
+// NewColorStripWriter 创建一个新的颜色过滤Writer
+func NewColorStripWriter(w io.Writer) *ColorStripWriter {
+	return &ColorStripWriter{writer: w}
+}
+
+// Write 实现io.Writer接口，写入时自动过滤颜色代码
+func (csw *ColorStripWriter) Write(p []byte) (n int, err error) {
+	// 过滤掉ANSI颜色代码
+	stripped := colorStripRegex.ReplaceAll(p, []byte(""))
+
+	// 写入过滤后的数据
+	_, err = csw.writer.Write(stripped)
+	if err != nil {
+		return 0, err
+	}
+
+	// 返回原始数据的长度，表示我们"处理"了所有输入数据
+	return len(p), nil
+}
 
 // LogConfig 日志配置结构
 type LogConfig struct {
@@ -26,10 +67,39 @@ var Logger *logrus.Logger
 // StartupTime 程序启动时间
 var StartupTime time.Time
 
-// 自定义格式化器，支持debug模式显示文件位置
+// logFile 当前打开的日志文件
+var logFile *os.File
+
+// logFileMutex 保护日志文件操作的互斥锁
+var logFileMutex sync.RWMutex
+
+// 自定义格式化器，支持debug模式显示文件位置和颜色
 type CustomFormatter struct {
 	TimestampFormat string
 	ShowCaller      bool
+	EnableColor     bool // 是否启用颜色
+}
+
+// getColorByLevel 根据日志等级获取对应颜色
+func (f *CustomFormatter) getColorByLevel(level logrus.Level) string {
+	if !f.EnableColor {
+		return ""
+	}
+
+	switch level {
+	case logrus.DebugLevel:
+		return ColorCyan
+	case logrus.InfoLevel:
+		return ColorGreen
+	case logrus.WarnLevel:
+		return ColorYellow
+	case logrus.ErrorLevel:
+		return ColorRed
+	case logrus.FatalLevel, logrus.PanicLevel:
+		return ColorRed + ColorBold
+	default:
+		return ""
+	}
 }
 
 // Format 实现logrus.Formatter接口
@@ -44,69 +114,106 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		caller = fmt.Sprintf(" [%s:%d]", file, entry.Caller.Line)
 	}
 
-	// 格式: [时间] [等级] [文件:行号] 消息
-	msg := fmt.Sprintf("[%s] [%s]%s %s\n", timestamp, level, caller, entry.Message)
+	// 获取颜色代码
+	color := f.getColorByLevel(entry.Level)
+	reset := ""
+	if f.EnableColor {
+		reset = ColorReset
+	}
+
+	// 格式: [时间] [等级] [文件:行号] 消息（带颜色）
+	var msg string
+	if f.EnableColor {
+		msg = fmt.Sprintf("[%s] %s[%s]%s%s %s%s%s\n",
+			timestamp, color, level, reset, caller, color, entry.Message, reset)
+	} else {
+		msg = fmt.Sprintf("[%s] [%s]%s %s\n", timestamp, level, caller, entry.Message)
+	}
 
 	// 如果有字段，添加字段信息
 	if len(entry.Data) > 0 {
 		for key, value := range entry.Data {
-			msg += fmt.Sprintf("  %s=%v\n", key, value)
+			if f.EnableColor {
+				msg += fmt.Sprintf("  %s%s=%v%s\n", color, key, value, reset)
+			} else {
+				msg += fmt.Sprintf("  %s=%v\n", key, value)
+			}
 		}
 	}
 
 	return []byte(msg), nil
 }
 
-// Init 初始化日志系统
-func Init(config config.Config) error {
-	// 记录程序启动时间
+// isTerminal 检查输出是否为终端（简单实现）
+func isTerminal(w io.Writer) bool {
+	switch v := w.(type) {
+	case *os.File:
+		// 检查是否为标准输出/错误且是终端
+		return (v == os.Stdout || v == os.Stderr) && isatty(v)
+	default:
+		return false
+	}
+}
+
+// isatty 检查文件描述符是否为终端
+func isatty(f *os.File) bool {
+	// 简单的终端检测，检查是否有TERM环境变量
+	return os.Getenv("TERM") != ""
+}
+
+// 初始化日志系统
+func Initialize(config config.LogConfig) error {
 	StartupTime = time.Now()
 
 	Logger = logrus.New()
 
-	// 设置日志等级
-	level, err := logrus.ParseLevel(config.Log.Level)
+	level, err := logrus.ParseLevel(config.Level)
 	if err != nil {
-		level = logrus.InfoLevel // 默认为info级别
+		level = logrus.InfoLevel
 	}
 	Logger.SetLevel(level)
 
-	// 启用调用者信息（用于显示文件和行号）
 	Logger.SetReportCaller(true)
 
-	// 设置自定义格式化器
-	showCaller := level == logrus.DebugLevel // debug模式下显示文件位置
+	showCaller := level == logrus.DebugLevel
+
+	// 根据输出类型决定是否启用颜色
+	enableColor := false
+	switch strings.ToLower(config.Output) {
+	case "console":
+		closeLogFile() // 切换到控制台时关闭之前的文件
+		Logger.SetOutput(os.Stdout)
+		enableColor = isTerminal(os.Stdout)
+	case "file":
+		if err := setupFileOutput(config.Dir); err != nil {
+			return fmt.Errorf("设置文件输出失败: %v", err)
+		}
+		enableColor = false // 文件输出不使用颜色
+	case "both":
+		if err := setupBothOutput(config.Dir); err != nil {
+			return fmt.Errorf("设置双重输出失败: %v", err)
+		}
+		enableColor = isTerminal(os.Stdout) // 控制台启用颜色，文件自动过滤颜色
+	default:
+		closeLogFile() // 默认情况下也关闭之前的文件
+		Logger.SetOutput(os.Stdout)
+		enableColor = isTerminal(os.Stdout)
+	}
+
 	Logger.SetFormatter(&CustomFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		ShowCaller:      showCaller,
+		EnableColor:     enableColor,
 	})
-
-	// 设置输出
-	switch strings.ToLower(config.Log.Output) {
-	case "console":
-		Logger.SetOutput(os.Stdout)
-	case "file":
-		if err := setupFileOutput(config.Log.Dir); err != nil {
-			return fmt.Errorf("设置文件输出失败: %v", err)
-		}
-	case "both":
-		if err := setupBothOutput(config.Log.Dir); err != nil {
-			return fmt.Errorf("设置双重输出失败: %v", err)
-		}
-	default:
-		Logger.SetOutput(os.Stdout) // 默认输出到控制台
-	}
-
-	// 记录程序启动信息
-	if Logger != nil {
-		Logger.Info("程序启动")
-	}
 
 	return nil
 }
 
 // setupFileOutput 设置文件输出
 func setupFileOutput(logDir string) error {
+	// 关闭之前打开的文件
+	closeLogFile()
+
 	// 生成基于时间戳的日志文件名
 	logFileName := generateTimestampLogFileName()
 	logFilePath := filepath.Join(logDir, logFileName)
@@ -121,6 +228,11 @@ func setupFileOutput(logDir string) error {
 	if err != nil {
 		return fmt.Errorf("打开日志文件失败: %v", err)
 	}
+
+	// 保存文件引用
+	logFileMutex.Lock()
+	logFile = file
+	logFileMutex.Unlock()
 
 	Logger.SetOutput(file)
 	return nil
@@ -128,6 +240,9 @@ func setupFileOutput(logDir string) error {
 
 // setupBothOutput 设置同时输出到控制台和文件
 func setupBothOutput(logDir string) error {
+	// 关闭之前打开的文件
+	closeLogFile()
+
 	// 生成基于时间戳的日志文件名
 	logFileName := generateTimestampLogFileName()
 	logFilePath := filepath.Join(logDir, logFileName)
@@ -143,8 +258,16 @@ func setupBothOutput(logDir string) error {
 		return fmt.Errorf("打开日志文件失败: %v", err)
 	}
 
-	// 创建多重写入器，同时写入控制台和文件
-	multiWriter := io.MultiWriter(os.Stdout, file)
+	// 保存文件引用
+	logFileMutex.Lock()
+	logFile = file
+	logFileMutex.Unlock()
+
+	// 创建颜色过滤器包装文件输出，确保文件中不包含颜色代码
+	fileWriter := NewColorStripWriter(file)
+
+	// 创建多重写入器，控制台保留颜色，文件过滤颜色
+	multiWriter := io.MultiWriter(os.Stdout, fileWriter)
 	Logger.SetOutput(multiWriter)
 	return nil
 }
@@ -166,7 +289,33 @@ func GetStartupTime() time.Time {
 	return StartupTime
 }
 
-// 便捷的日志函数
+// closeLogFile 关闭当前打开的日志文件
+func closeLogFile() {
+	logFileMutex.Lock()
+	defer logFileMutex.Unlock()
+
+	if logFile != nil {
+		logFile.Close()
+		logFile = nil
+	}
+}
+
+// Close 关闭日志系统，释放资源
+func Close() {
+	closeLogFile()
+}
+
+// GetLogFile 获取当前日志文件路径（只读）
+func GetLogFile() *os.File {
+	logFileMutex.RLock()
+	defer logFileMutex.RUnlock()
+	return logFile
+}
+
+// StripColors 移除字符串中的ANSI颜色代码（工具函数）
+func StripColors(s string) string {
+	return colorStripRegex.ReplaceAllString(s, "")
+}
 
 // Debug 输出debug级别日志
 func Debug(args ...interface{}) {
@@ -269,9 +418,18 @@ func SetLevel(level string) error {
 
 	// 如果是debug级别，启用调用者信息显示
 	showCaller := logLevel == logrus.DebugLevel
+
+	// 检查当前格式化器的颜色设置
+	currentFormatter, ok := Logger.Formatter.(*CustomFormatter)
+	enableColor := false
+	if ok {
+		enableColor = currentFormatter.EnableColor
+	}
+
 	Logger.SetFormatter(&CustomFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		ShowCaller:      showCaller,
+		EnableColor:     enableColor,
 	})
 
 	return nil
@@ -289,6 +447,36 @@ func GetLevel() string {
 func IsDebugEnabled() bool {
 	if Logger != nil {
 		return Logger.IsLevelEnabled(logrus.DebugLevel)
+	}
+	return false
+}
+
+// SetColorEnabled 动态设置是否启用颜色
+func SetColorEnabled(enabled bool) error {
+	if Logger == nil {
+		return fmt.Errorf("日志系统未初始化")
+	}
+
+	currentFormatter, ok := Logger.Formatter.(*CustomFormatter)
+	if !ok {
+		return fmt.Errorf("当前使用的不是自定义格式化器")
+	}
+
+	Logger.SetFormatter(&CustomFormatter{
+		TimestampFormat: currentFormatter.TimestampFormat,
+		ShowCaller:      currentFormatter.ShowCaller,
+		EnableColor:     enabled,
+	})
+
+	return nil
+}
+
+// IsColorEnabled 检查是否启用了颜色
+func IsColorEnabled() bool {
+	if Logger != nil {
+		if formatter, ok := Logger.Formatter.(*CustomFormatter); ok {
+			return formatter.EnableColor
+		}
 	}
 	return false
 }

@@ -5,7 +5,7 @@ import (
 )
 
 // 订阅输出系统的分享链接功能
-type ShareLink struct {
+type SubShareLink struct {
 	ID               int64     `db:"id" json:"id"`
 	Name             string    `db:"name" json:"name"`                             // 分享链接名称
 	Description      string    `db:"description" json:"description"`               // 链接描述

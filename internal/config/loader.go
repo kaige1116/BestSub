@@ -7,11 +7,12 @@ import (
 	"strconv"
 )
 
-const DefaultConfigPath = "bestsub/configs/config.json"
+var config Config
 
-// LoadConfigFromPath 从指定路径加载配置文件
-func LoadConfigFromPath(configPath string) (Config, error) {
-	var config Config
+const DefaultConfigPath = "./data/config/config.json"
+
+// 从指定路径加载配置文件
+func Initialize(configPath string) error {
 
 	if configPath == "" {
 		configPath = DefaultConfigPath
@@ -22,14 +23,14 @@ func LoadConfigFromPath(configPath string) (Config, error) {
 		// 如果配置文件不存在，创建默认配置文件
 		if os.IsNotExist(err) {
 			if err := CreateDefaultConfig(configPath); err != nil {
-				return config, fmt.Errorf("创建默认配置文件失败: %v", err)
+				return fmt.Errorf("创建默认配置文件失败: %v", err)
 			}
 			// 重新加载配置文件
 			if err := loadFromFile(&config, configPath); err != nil {
-				return config, fmt.Errorf("加载默认配置文件失败: %v", err)
+				return fmt.Errorf("加载默认配置文件失败: %v", err)
 			}
 		} else {
-			return config, fmt.Errorf("加载配置文件失败: %v", err)
+			return fmt.Errorf("加载配置文件失败: %v", err)
 		}
 	}
 
@@ -38,13 +39,17 @@ func LoadConfigFromPath(configPath string) (Config, error) {
 
 	// 验证配置
 	if err := ValidateConfig(&config); err != nil {
-		return config, fmt.Errorf("配置验证失败: %v", err)
+		return fmt.Errorf("配置验证失败: %v", err)
 	}
 
-	return config, nil
+	return nil
 }
 
-// loadFromFile 从文件加载配置
+func GetConfig() Config {
+	return config
+}
+
+// 从文件加载配置
 func loadFromFile(config *Config, filePath string) error {
 	// 检查文件是否存在
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -65,7 +70,7 @@ func loadFromFile(config *Config, filePath string) error {
 	return nil
 }
 
-// loadFromEnv 从环境变量加载配置
+// 从环境变量加载配置
 func loadFromEnv(config *Config) {
 	// 服务器配置
 	if port := os.Getenv("BESTSUB_SERVER_PORT"); port != "" {
@@ -80,6 +85,9 @@ func loadFromEnv(config *Config) {
 	// 数据库配置
 	if dbPath := os.Getenv("BESTSUB_DATABASE_PATH"); dbPath != "" {
 		config.Database.Path = dbPath
+	}
+	if dbType := os.Getenv("BESTSUB_DATABASE_TYPE"); dbType != "" {
+		config.Database.Type = dbType
 	}
 
 	// 日志配置
@@ -104,7 +112,7 @@ func loadFromEnv(config *Config) {
 	}
 }
 
-// parsePort 解析端口号
+// 解析端口号
 func parsePort(portStr string) (int, error) {
 	port, err := strconv.Atoi(portStr)
 	if err != nil {

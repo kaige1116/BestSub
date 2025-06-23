@@ -5,7 +5,7 @@ import (
 )
 
 // 订阅输出系统的保存功能配置
-type SaveConfig struct {
+type SubSaveConfig struct {
 	ID               int64     `db:"id" json:"id"`
 	Name             string    `db:"name" json:"name"`                             // 保存配置名称
 	Description      string    `db:"description" json:"description"`               // 配置描述
