@@ -1,0 +1,12 @@
+services:
+    bestsub:
+        image: ghcr.io/bestruirui/bestsub:latest
+        container_name: bestsub
+        restart: always
+        ports:
+            - '8080:8080'
+        volumes:
+            - './bestsub:/app/data'
+        environment:
+            - 'BESTSUB_LOG_LEVEL=warn'
+
