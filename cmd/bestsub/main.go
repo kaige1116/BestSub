@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-	builtBy = "unknown"
+	Version   = "dev"
+	Commit    = "none"
+	BuildTime = "unknown"
+	Author    = "unknown"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	configPath := flag.String("c", config.DefaultConfigPath, "config file path")
 	flag.Parse()
 
-	banner.Print(version, commit, date, builtBy)
+	banner.Print(Version, Commit, BuildTime, Author)
 
 	if err := config.Initialize(*configPath); err != nil {
 		panic(err)
