@@ -9,6 +9,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/utils"
+	"github.com/bestruirui/bestsub/internal/utils/passwd"
 )
 
 // AuthRepository 认证数据访问实现
@@ -45,9 +46,15 @@ func (r *AuthRepository) Get(ctx context.Context) (*models.Auth, error) {
 
 // Update 更新认证信息
 func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
+
+	hashedPassword, err := passwd.Hash(auth.Password)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	query := `UPDATE auth SET password = ?, updated_at = ? WHERE user_name = ?`
 
-	_, err := r.db.ExecContext(ctx, query, auth.Password, utils.Now(), auth.UserName)
+	_, err = r.db.ExecContext(ctx, query, hashedPassword, utils.Now(), auth.UserName)
 	if err != nil {
 		return fmt.Errorf("failed to update auth: %w", err)
 	}
@@ -57,10 +64,16 @@ func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
 
 // Initialize 初始化认证信息
 func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) error {
+
+	hashedPassword, err := passwd.Hash(auth.Password)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	query := `INSERT INTO auth (user_name, password, created_at, updated_at) VALUES (?, ?, ?, ?)`
 
 	now := utils.Now()
-	_, err := r.db.ExecContext(ctx, query, auth.UserName, auth.Password, now, now)
+	_, err = r.db.ExecContext(ctx, query, auth.UserName, hashedPassword, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to initialize auth: %w", err)
 	}
@@ -79,6 +92,32 @@ func (r *AuthRepository) IsInitialized(ctx context.Context) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+// VerifyPassword 验证密码
+func (r *AuthRepository) VerifyPassword(ctx context.Context, username, password string) error {
+	if username == "" {
+		return fmt.Errorf("用户名不能为空")
+	}
+
+	if password == "" {
+		return fmt.Errorf("密码不能为空")
+	}
+
+	// 获取存储的密码哈希
+	query := `SELECT password FROM auth WHERE user_name = ? LIMIT 1`
+
+	var hashedPassword string
+	err := r.db.QueryRowContext(ctx, query, username).Scan(&hashedPassword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("用户不存在")
+		}
+		return fmt.Errorf("failed to get user password: %w", err)
+	}
+
+	// 验证密码
+	return passwd.Verify(password, hashedPassword)
 }
 
 // SessionRepository 会话数据访问实现

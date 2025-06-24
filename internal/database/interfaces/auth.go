@@ -19,6 +19,9 @@ type AuthRepository interface {
 
 	// 验证是否已初始化
 	IsInitialized(ctx context.Context) (bool, error)
+
+	// 验证密码
+	VerifyPassword(ctx context.Context, username, password string) error
 }
 
 // 会话数据访问接口

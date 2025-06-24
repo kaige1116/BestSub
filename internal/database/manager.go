@@ -150,10 +150,13 @@ func (m *Manager) init() error {
 		return fmt.Errorf("failed to check if database is initialized: %w", err)
 	}
 	if !isInitialized {
-		auth.Initialize(context.Background(), &models.Auth{
+		if err := auth.Initialize(context.Background(), &models.Auth{
 			UserName: "admin",
 			Password: "admin",
-		})
+		}); err != nil {
+			return fmt.Errorf("failed to initialize auth: %w", err)
+		}
+		log.Info("初始化默认管理员账号 用户名: admin 密码: admin")
 	}
 
 	log.Debugf("数据库初始化成功")
