@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // SystemConfigRepository 系统配置数据访问实现
 type SystemConfigRepository struct {
-	db *Database
+	db *database.Database
 }
 
 // NewSystemConfigRepository 创建系统配置仓库
-func NewSystemConfigRepository(db *Database) interfaces.SystemConfigRepository {
+func newSystemConfigRepository(db *database.Database) interfaces.SystemConfigRepository {
 	return &SystemConfigRepository{db: db}
 }
 
@@ -26,7 +27,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *models.Syst
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
 		config.Type,
@@ -58,7 +59,7 @@ func (r *SystemConfigRepository) GetByID(ctx context.Context, id int64) (*models
 	          FROM system_configs WHERE id = ?`
 
 	var config models.SystemConfig
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.Key,
 		&config.Value,
@@ -85,7 +86,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*mod
 	          FROM system_configs WHERE key = ?`
 
 	var config models.SystemConfig
-	err := r.db.db.QueryRowContext(ctx, query, key).Scan(
+	err := r.db.QueryRowContext(ctx, query, key).Scan(
 		&config.ID,
 		&config.Key,
 		&config.Value,
@@ -111,7 +112,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *models.Syst
 	query := `UPDATE system_configs SET key = ?, value = ?, type = ?, group_name = ?, 
 	          description = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
 		config.Type,
@@ -132,7 +133,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *models.Syst
 func (r *SystemConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM system_configs WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete system config: %w", err)
 	}
@@ -144,7 +145,7 @@ func (r *SystemConfigRepository) Delete(ctx context.Context, id int64) error {
 func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) error {
 	query := `DELETE FROM system_configs WHERE key = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, key)
+	_, err := r.db.ExecContext(ctx, query, key)
 	if err != nil {
 		return fmt.Errorf("failed to delete system config by key: %w", err)
 	}
@@ -157,7 +158,7 @@ func (r *SystemConfigRepository) List(ctx context.Context, offset, limit int) ([
 	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
 	          FROM system_configs ORDER BY group_name, key LIMIT ? OFFSET ?`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list system configs: %w", err)
 	}
@@ -194,7 +195,7 @@ func (r *SystemConfigRepository) ListByGroup(ctx context.Context, group string) 
 	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
 	          FROM system_configs WHERE group_name = ? ORDER BY key`
 
-	rows, err := r.db.db.QueryContext(ctx, query, group)
+	rows, err := r.db.QueryContext(ctx, query, group)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list system configs by group: %w", err)
 	}
@@ -231,7 +232,7 @@ func (r *SystemConfigRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM system_configs`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count system configs: %w", err)
 	}
@@ -243,7 +244,7 @@ func (r *SystemConfigRepository) Count(ctx context.Context) (int64, error) {
 func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
 	// 首先尝试更新
 	updateQuery := `UPDATE system_configs SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.db.ExecContext(ctx, updateQuery, value, configType, group, description, time.Now(), key)
+	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, time.Now(), key)
 	if err != nil {
 		return fmt.Errorf("failed to update system config value: %w", err)
 	}
@@ -258,7 +259,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 		insertQuery := `INSERT INTO system_configs (key, value, type, group_name, description, created_at, updated_at) 
 		                VALUES (?, ?, ?, ?, ?, ?, ?)`
 		now := time.Now()
-		_, err = r.db.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
+		_, err = r.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert system config value: %w", err)
 		}
@@ -272,7 +273,7 @@ func (r *SystemConfigRepository) GetValue(ctx context.Context, key string) (stri
 	query := `SELECT value FROM system_configs WHERE key = ?`
 
 	var value string
-	err := r.db.db.QueryRowContext(ctx, query, key).Scan(&value)
+	err := r.db.QueryRowContext(ctx, query, key).Scan(&value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -285,11 +286,11 @@ func (r *SystemConfigRepository) GetValue(ctx context.Context, key string) (stri
 
 // NotificationChannelRepository 通知渠道数据访问实现
 type NotificationChannelRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewNotificationChannelRepository 创建通知渠道仓库
-func NewNotificationChannelRepository(db *Database) interfaces.NotificationChannelRepository {
+// newNotificationChannelRepository 创建通知渠道仓库
+func newNotificationChannelRepository(db *database.Database) interfaces.NotificationChannelRepository {
 	return &NotificationChannelRepository{db: db}
 }
 
@@ -299,7 +300,7 @@ func (r *NotificationChannelRepository) Create(ctx context.Context, channel *mod
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		channel.Name,
 		channel.Type,
 		channel.Config,
@@ -332,7 +333,7 @@ func (r *NotificationChannelRepository) GetByID(ctx context.Context, id int64) (
 	          FROM notification_channels WHERE id = ?`
 
 	var channel models.NotificationChannel
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&channel.ID,
 		&channel.Name,
 		&channel.Type,
@@ -359,7 +360,7 @@ func (r *NotificationChannelRepository) Update(ctx context.Context, channel *mod
 	query := `UPDATE notification_channels SET name = ?, type = ?, config = ?, is_active = ?, 
 	          test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		channel.Name,
 		channel.Type,
 		channel.Config,
@@ -381,7 +382,7 @@ func (r *NotificationChannelRepository) Update(ctx context.Context, channel *mod
 func (r *NotificationChannelRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM notification_channels WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete notification channel: %w", err)
 	}
@@ -394,7 +395,7 @@ func (r *NotificationChannelRepository) List(ctx context.Context, offset, limit 
 	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
 	          FROM notification_channels ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notification channels: %w", err)
 	}
@@ -432,7 +433,7 @@ func (r *NotificationChannelRepository) ListActive(ctx context.Context) ([]*mode
 	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
 	          FROM notification_channels WHERE is_active = true ORDER BY created_at DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active notification channels: %w", err)
 	}
@@ -470,7 +471,7 @@ func (r *NotificationChannelRepository) ListByType(ctx context.Context, channelT
 	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
 	          FROM notification_channels WHERE type = ? ORDER BY created_at DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query, channelType)
+	rows, err := r.db.QueryContext(ctx, query, channelType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notification channels by type: %w", err)
 	}
@@ -508,7 +509,7 @@ func (r *NotificationChannelRepository) Count(ctx context.Context) (int64, error
 	query := `SELECT COUNT(*) FROM notification_channels`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count notification channels: %w", err)
 	}
@@ -521,7 +522,7 @@ func (r *NotificationChannelRepository) UpdateTestResult(ctx context.Context, id
 	query := `UPDATE notification_channels SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, testResult, now, now, id)
+	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update notification channel test result: %w", err)
 	}

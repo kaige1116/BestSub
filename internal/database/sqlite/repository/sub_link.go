@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // SubLinkRepository 链接数据访问实现
 type SubLinkRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubLinkRepository 创建链接仓库
-func NewSubLinkRepository(db *Database) interfaces.SubLinkRepository {
+// newSubLinkRepository 创建链接仓库
+func newSubLinkRepository(db *database.Database) interfaces.SubLinkRepository {
 	return &SubLinkRepository{db: db}
 }
 
@@ -27,7 +28,7 @@ func (r *SubLinkRepository) Create(ctx context.Context, link *models.SubLink) er
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		link.Name,
 		link.URL,
 		link.UserAgent,
@@ -64,7 +65,7 @@ func (r *SubLinkRepository) GetByID(ctx context.Context, id int64) (*models.SubL
 	          FROM sub_links WHERE id = ?`
 
 	var link models.SubLink
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&link.ID,
 		&link.Name,
 		&link.URL,
@@ -96,7 +97,7 @@ func (r *SubLinkRepository) GetByURL(ctx context.Context, url string) (*models.S
 	          FROM sub_links WHERE url = ?`
 
 	var link models.SubLink
-	err := r.db.db.QueryRowContext(ctx, query, url).Scan(
+	err := r.db.QueryRowContext(ctx, query, url).Scan(
 		&link.ID,
 		&link.Name,
 		&link.URL,
@@ -126,7 +127,7 @@ func (r *SubLinkRepository) Update(ctx context.Context, link *models.SubLink) er
 	query := `UPDATE sub_links SET name = ?, url = ?, user_agent = ?, is_enabled = ?, use_proxy = ?, 
 	          cron_expr = ?, last_update = ?, last_status = ?, error_msg = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		link.Name,
 		link.URL,
 		link.UserAgent,
@@ -151,7 +152,7 @@ func (r *SubLinkRepository) Update(ctx context.Context, link *models.SubLink) er
 func (r *SubLinkRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_links WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete sub link: %w", err)
 	}
@@ -182,7 +183,7 @@ func (r *SubLinkRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM sub_links`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count sub links: %w", err)
 	}
@@ -195,7 +196,7 @@ func (r *SubLinkRepository) UpdateStatus(ctx context.Context, id int64, status, 
 	query := `UPDATE sub_links SET last_status = ?, error_msg = ?, last_update = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
+	_, err := r.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update sub link status: %w", err)
 	}
@@ -205,7 +206,7 @@ func (r *SubLinkRepository) UpdateStatus(ctx context.Context, id int64, status, 
 
 // querySubLinks 通用链接查询方法
 func (r *SubLinkRepository) querySubLinks(ctx context.Context, query string, args ...interface{}) ([]*models.SubLink, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sub links: %w", err)
 	}
@@ -243,11 +244,11 @@ func (r *SubLinkRepository) querySubLinks(ctx context.Context, query string, arg
 
 // SubLinkModuleConfigRepository 模块配置数据访问实现
 type SubLinkModuleConfigRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubLinkModuleConfigRepository 创建模块配置仓库
-func NewSubLinkModuleConfigRepository(db *Database) interfaces.SubLinkModuleConfigRepository {
+// newSubLinkModuleConfigRepository 创建模块配置仓库
+func newSubLinkModuleConfigRepository(db *database.Database) interfaces.SubLinkModuleConfigRepository {
 	return &SubLinkModuleConfigRepository{db: db}
 }
 
@@ -257,7 +258,7 @@ func (r *SubLinkModuleConfigRepository) Create(ctx context.Context, config *mode
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		config.SubLinkID,
 		config.ModuleType,
 		config.ModuleName,
@@ -290,7 +291,7 @@ func (r *SubLinkModuleConfigRepository) GetByID(ctx context.Context, id int64) (
 	          FROM sub_link_module_configs WHERE id = ?`
 
 	var config models.SubLinkModuleConfig
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.SubLinkID,
 		&config.ModuleType,
@@ -317,7 +318,7 @@ func (r *SubLinkModuleConfigRepository) Update(ctx context.Context, config *mode
 	query := `UPDATE sub_link_module_configs SET sub_link_id = ?, module_type = ?, module_name = ?, 
 	          is_enabled = ?, priority = ?, config = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		config.SubLinkID,
 		config.ModuleType,
 		config.ModuleName,
@@ -339,7 +340,7 @@ func (r *SubLinkModuleConfigRepository) Update(ctx context.Context, config *mode
 func (r *SubLinkModuleConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_link_module_configs WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete module config: %w", err)
 	}
@@ -351,7 +352,7 @@ func (r *SubLinkModuleConfigRepository) Delete(ctx context.Context, id int64) er
 func (r *SubLinkModuleConfigRepository) DeleteByLinkID(ctx context.Context, linkID int64) error {
 	query := `DELETE FROM sub_link_module_configs WHERE sub_link_id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, linkID)
+	_, err := r.db.ExecContext(ctx, query, linkID)
 	if err != nil {
 		return fmt.Errorf("failed to delete module configs by link id: %w", err)
 	}
@@ -396,7 +397,7 @@ func (r *SubLinkModuleConfigRepository) Count(ctx context.Context) (int64, error
 	query := `SELECT COUNT(*) FROM sub_link_module_configs`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count module configs: %w", err)
 	}
@@ -409,7 +410,7 @@ func (r *SubLinkModuleConfigRepository) CountByLinkID(ctx context.Context, linkI
 	query := `SELECT COUNT(*) FROM sub_link_module_configs WHERE sub_link_id = ?`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query, linkID).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query, linkID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count module configs by link id: %w", err)
 	}
@@ -419,7 +420,7 @@ func (r *SubLinkModuleConfigRepository) CountByLinkID(ctx context.Context, linkI
 
 // queryModuleConfigs 通用模块配置查询方法
 func (r *SubLinkModuleConfigRepository) queryModuleConfigs(ctx context.Context, query string, args ...interface{}) ([]*models.SubLinkModuleConfig, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query module configs: %w", err)
 	}

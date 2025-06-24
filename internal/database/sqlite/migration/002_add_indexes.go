@@ -1,4 +1,4 @@
-package sqlite
+package migration
 
 // Migration002AddIndexes 添加数据库索引
 func Migration002AddIndexes() string {
@@ -58,5 +58,49 @@ CREATE INDEX IF NOT EXISTS idx_sub_share_links_enabled ON sub_share_links(enable
 CREATE INDEX IF NOT EXISTS idx_sub_share_links_expires_at ON sub_share_links(expires_at);
 CREATE INDEX IF NOT EXISTS idx_sub_share_links_created_at ON sub_share_links(created_at);
 `
+}
 
+// Migration002AddIndexesDown 回滚数据库索引
+func Migration002AddIndexesDown() string {
+	return `
+-- 删除索引
+DROP INDEX IF EXISTS idx_sessions_token_hash;
+DROP INDEX IF EXISTS idx_sessions_refresh_token;
+DROP INDEX IF EXISTS idx_sessions_expires_at;
+DROP INDEX IF EXISTS idx_sessions_is_active;
+DROP INDEX IF EXISTS idx_system_config_key;
+DROP INDEX IF EXISTS idx_notification_channels_type;
+DROP INDEX IF EXISTS idx_notification_channels_enabled;
+DROP INDEX IF EXISTS idx_tasks_type;
+DROP INDEX IF EXISTS idx_tasks_status;
+DROP INDEX IF EXISTS idx_tasks_scheduled_at;
+DROP INDEX IF EXISTS idx_tasks_created_at;
+DROP INDEX IF EXISTS idx_sub_storage_configs_type;
+DROP INDEX IF EXISTS idx_sub_storage_configs_enabled;
+DROP INDEX IF EXISTS idx_sub_output_templates_format;
+DROP INDEX IF EXISTS idx_sub_output_templates_enabled;
+DROP INDEX IF EXISTS idx_sub_node_filter_rules_type;
+DROP INDEX IF EXISTS idx_sub_node_filter_rules_enabled;
+DROP INDEX IF EXISTS idx_sub_node_filter_rules_priority;
+DROP INDEX IF EXISTS idx_sub_links_enabled;
+DROP INDEX IF EXISTS idx_sub_links_last_updated;
+DROP INDEX IF EXISTS idx_sub_links_created_at;
+DROP INDEX IF EXISTS idx_sub_link_module_configs_sub_link_id;
+DROP INDEX IF EXISTS idx_sub_link_module_configs_module_type;
+DROP INDEX IF EXISTS idx_sub_link_module_configs_enabled;
+DROP INDEX IF EXISTS idx_sub_link_module_configs_priority;
+DROP INDEX IF EXISTS idx_sub_save_configs_enabled;
+DROP INDEX IF EXISTS idx_sub_save_configs_output_template_id;
+DROP INDEX IF EXISTS idx_sub_save_configs_storage_config_id;
+DROP INDEX IF EXISTS idx_sub_share_links_token;
+DROP INDEX IF EXISTS idx_sub_share_links_sub_save_config_id;
+DROP INDEX IF EXISTS idx_sub_share_links_enabled;
+DROP INDEX IF EXISTS idx_sub_share_links_expires_at;
+DROP INDEX IF EXISTS idx_sub_share_links_created_at;
+`
+}
+
+// init 自动注册所有迁移
+func init() {
+	RegisterMigration("002", "Add database indexes", Migration002AddIndexes)
 }

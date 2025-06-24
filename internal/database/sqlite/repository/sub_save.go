@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // SubSaveConfigRepository 保存配置数据访问实现
 type SubSaveConfigRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubSaveConfigRepository 创建保存配置仓库
-func NewSubSaveConfigRepository(db *Database) interfaces.SubSaveConfigRepository {
+// newSubSaveConfigRepository 创建保存配置仓库
+func newSubSaveConfigRepository(db *database.Database) interfaces.SubSaveConfigRepository {
 	return &SubSaveConfigRepository{db: db}
 }
 
@@ -27,7 +28,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *models.Sub
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Description,
 		config.IsEnabled,
@@ -67,7 +68,7 @@ func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*model
 	          FROM sub_save_configs WHERE id = ?`
 
 	var config models.SubSaveConfig
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.Name,
 		&config.Description,
@@ -101,7 +102,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *models.Sub
 	          output_template_id = ?, node_filter_id = ?, file_name = ?, save_interval = ?, 
 	          last_save = ?, last_status = ?, error_msg = ?, save_count = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Description,
 		config.IsEnabled,
@@ -129,7 +130,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *models.Sub
 func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_save_configs WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete save config: %w", err)
 	}
@@ -160,7 +161,7 @@ func (r *SubSaveConfigRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM sub_save_configs`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count save configs: %w", err)
 	}
@@ -173,7 +174,7 @@ func (r *SubSaveConfigRepository) UpdateStatus(ctx context.Context, id int64, st
 	query := `UPDATE sub_save_configs SET last_status = ?, error_msg = ?, last_save = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
+	_, err := r.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update save config status: %w", err)
 	}
@@ -185,7 +186,7 @@ func (r *SubSaveConfigRepository) UpdateStatus(ctx context.Context, id int64, st
 func (r *SubSaveConfigRepository) IncrementSaveCount(ctx context.Context, id int64) error {
 	query := `UPDATE sub_save_configs SET save_count = save_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment save count: %w", err)
 	}
@@ -195,7 +196,7 @@ func (r *SubSaveConfigRepository) IncrementSaveCount(ctx context.Context, id int
 
 // querySaveConfigs 通用保存配置查询方法
 func (r *SubSaveConfigRepository) querySaveConfigs(ctx context.Context, query string, args ...interface{}) ([]*models.SubSaveConfig, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query save configs: %w", err)
 	}

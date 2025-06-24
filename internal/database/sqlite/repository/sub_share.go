@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // SubShareLinkRepository 分享链接数据访问实现
 type SubShareLinkRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubShareLinkRepository 创建分享链接仓库
-func NewSubShareLinkRepository(db *Database) interfaces.SubShareLinkRepository {
+// newSubShareLinkRepository 创建分享链接仓库
+func newSubShareLinkRepository(db *database.Database) interfaces.SubShareLinkRepository {
 	return &SubShareLinkRepository{db: db}
 }
 
@@ -27,7 +28,7 @@ func (r *SubShareLinkRepository) Create(ctx context.Context, shareLink *models.S
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		shareLink.Name,
 		shareLink.Description,
 		shareLink.Token,
@@ -65,7 +66,7 @@ func (r *SubShareLinkRepository) GetByID(ctx context.Context, id int64) (*models
 	          FROM sub_share_links WHERE id = ?`
 
 	var shareLink models.SubShareLink
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&shareLink.ID,
 		&shareLink.Name,
 		&shareLink.Description,
@@ -98,7 +99,7 @@ func (r *SubShareLinkRepository) GetByToken(ctx context.Context, token string) (
 	          FROM sub_share_links WHERE token = ?`
 
 	var shareLink models.SubShareLink
-	err := r.db.db.QueryRowContext(ctx, query, token).Scan(
+	err := r.db.QueryRowContext(ctx, query, token).Scan(
 		&shareLink.ID,
 		&shareLink.Name,
 		&shareLink.Description,
@@ -130,7 +131,7 @@ func (r *SubShareLinkRepository) Update(ctx context.Context, shareLink *models.S
 	          output_template_id = ?, node_filter_id = ?, expires_at = ?, max_downloads = ?, 
 	          download_count = ?, last_access = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		shareLink.Name,
 		shareLink.Description,
 		shareLink.Token,
@@ -156,7 +157,7 @@ func (r *SubShareLinkRepository) Update(ctx context.Context, shareLink *models.S
 func (r *SubShareLinkRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_share_links WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete share link: %w", err)
 	}
@@ -188,7 +189,7 @@ func (r *SubShareLinkRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM sub_share_links`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count share links: %w", err)
 	}
@@ -200,7 +201,7 @@ func (r *SubShareLinkRepository) Count(ctx context.Context) (int64, error) {
 func (r *SubShareLinkRepository) IncrementDownloadCount(ctx context.Context, id int64) error {
 	query := `UPDATE sub_share_links SET download_count = download_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment download count: %w", err)
 	}
@@ -213,7 +214,7 @@ func (r *SubShareLinkRepository) UpdateLastAccess(ctx context.Context, id int64)
 	query := `UPDATE sub_share_links SET last_access = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, now, now, id)
+	_, err := r.db.ExecContext(ctx, query, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update last access: %w", err)
 	}
@@ -225,7 +226,7 @@ func (r *SubShareLinkRepository) UpdateLastAccess(ctx context.Context, id int64)
 func (r *SubShareLinkRepository) DeleteExpired(ctx context.Context) error {
 	query := `DELETE FROM sub_share_links WHERE expires_at IS NOT NULL AND expires_at < ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now())
+	_, err := r.db.ExecContext(ctx, query, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to delete expired share links: %w", err)
 	}
@@ -238,7 +239,7 @@ func (r *SubShareLinkRepository) IsTokenUnique(ctx context.Context, token string
 	query := `SELECT COUNT(*) FROM sub_share_links WHERE token = ?`
 
 	var count int
-	err := r.db.db.QueryRowContext(ctx, query, token).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query, token).Scan(&count)
 	if err != nil {
 		return false, fmt.Errorf("failed to check token uniqueness: %w", err)
 	}
@@ -248,7 +249,7 @@ func (r *SubShareLinkRepository) IsTokenUnique(ctx context.Context, token string
 
 // queryShareLinks 通用分享链接查询方法
 func (r *SubShareLinkRepository) queryShareLinks(ctx context.Context, query string, args ...interface{}) ([]*models.SubShareLink, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query share links: %w", err)
 	}

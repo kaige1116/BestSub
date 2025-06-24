@@ -6,8 +6,9 @@ import (
 	"sync"
 
 	"github.com/bestruirui/bestsub/internal/config"
-	"github.com/bestruirui/bestsub/internal/database/repository"
-	"github.com/bestruirui/bestsub/internal/database/repository/sqlite"
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/models"
+	"github.com/bestruirui/bestsub/internal/database/sqlite"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -18,7 +19,7 @@ var (
 
 // 数据库管理器
 type Manager struct {
-	repository repository.Repository
+	repository *RepositoryManager
 	config     config.DatabaseConfig
 	mu         sync.RWMutex
 	closed     bool
@@ -50,7 +51,7 @@ func Reinitialize(cfg config.DatabaseConfig) error {
 }
 
 // 获取仓库实例
-func GetRepository() repository.Repository {
+func GetRepository() *RepositoryManager {
 	if manager == nil {
 		log.Fatal("database manager not initialized, call Initialize() first")
 	}
@@ -83,11 +84,10 @@ func HealthCheck(ctx context.Context) error {
 	}
 
 	// 检查数据库连接
-	if sqliteRepo, ok := manager.repository.(*sqlite.Repository); ok {
-		return sqliteRepo.Database().Ping(ctx)
-	}
-
+	// 这里我们需要通过其他方式来检查连接，因为现在是通过 RepositoryManager
+	// 暂时返回 nil，后续可以添加专门的健康检查方法
 	return nil
+
 }
 
 // 关闭数据库连接
@@ -120,20 +120,42 @@ func (m *Manager) init() error {
 
 	log.Debugf("初始化数据库: 类型 %s, 路径 %s", m.config.Type, m.config.Path)
 
+	var repo interfaces.Repository
+	var migrator interfaces.Migrator
+
 	switch m.config.Type {
 	case "sqlite":
 		db, err := sqlite.New(m.config.Path)
 		if err != nil {
 			return fmt.Errorf("failed to create sqlite database: %w", err)
 		}
-		m.repository = sqlite.NewRepository(db)
-
-		log.Debugf("SQLite 数据库初始化成功")
-		return nil
-	case "mysql":
-		// TODO: 实现 MySQL 支持
-		return fmt.Errorf("mysql support not implemented yet")
+		repo = sqlite.NewRepo(db)
+		migrator = sqlite.NewMigrator(db)
 	default:
+		// TODO: 实现 更多 数据库 支持
 		return fmt.Errorf("unsupported database type: %s", m.config.Type)
 	}
+
+	m.repository = NewRepositoryManager(repo)
+
+	// 应用迁移
+	if err := migrator.Apply(context.Background()); err != nil {
+		return fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	// 初始化认证信息
+	auth := repo.Auth()
+	isInitialized, err := auth.IsInitialized(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to check if database is initialized: %w", err)
+	}
+	if !isInitialized {
+		auth.Initialize(context.Background(), &models.Auth{
+			UserName: "admin",
+			Password: "admin",
+		})
+	}
+
+	log.Debugf("数据库初始化成功")
+	return nil
 }

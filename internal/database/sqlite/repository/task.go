@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // TaskRepository 任务数据访问实现
 type TaskRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewTaskRepository 创建任务仓库
-func NewTaskRepository(db *Database) interfaces.TaskRepository {
+// newTaskRepository 创建任务仓库
+func newTaskRepository(db *database.Database) interfaces.TaskRepository {
 	return &TaskRepository{db: db}
 }
 
@@ -27,7 +28,7 @@ func (r *TaskRepository) Create(ctx context.Context, task *models.Task) error {
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		task.Type,
 		task.Name,
 		task.Description,
@@ -71,7 +72,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*models.Task, e
 	          FROM tasks WHERE id = ?`
 
 	var task models.Task
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&task.ID,
 		&task.Type,
 		&task.Name,
@@ -109,7 +110,7 @@ func (r *TaskRepository) Update(ctx context.Context, task *models.Task) error {
 	          link_id = ?, config = ?, result = ?, error_msg = ?, start_time = ?, end_time = ?, 
 	          duration = ?, retry_count = ?, max_retries = ?, next_run = ?, cron_expr = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		task.Type,
 		task.Name,
 		task.Description,
@@ -141,7 +142,7 @@ func (r *TaskRepository) Update(ctx context.Context, task *models.Task) error {
 func (r *TaskRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM tasks WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
 	}
@@ -208,7 +209,7 @@ func (r *TaskRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM tasks`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count tasks: %w", err)
 	}
@@ -221,7 +222,7 @@ func (r *TaskRepository) CountByStatus(ctx context.Context, status string) (int6
 	query := `SELECT COUNT(*) FROM tasks WHERE status = ?`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query, status).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query, status).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count tasks by status: %w", err)
 	}
@@ -233,7 +234,7 @@ func (r *TaskRepository) CountByStatus(ctx context.Context, status string) (int6
 func (r *TaskRepository) UpdateStatus(ctx context.Context, id int64, status string) error {
 	query := `UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, status, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, status, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task status: %w", err)
 	}
@@ -245,7 +246,7 @@ func (r *TaskRepository) UpdateStatus(ctx context.Context, id int64, status stri
 func (r *TaskRepository) UpdateResult(ctx context.Context, id int64, result, errorMsg string) error {
 	query := `UPDATE tasks SET result = ?, error_msg = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, result, errorMsg, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, result, errorMsg, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task result: %w", err)
 	}
@@ -257,7 +258,7 @@ func (r *TaskRepository) UpdateResult(ctx context.Context, id int64, result, err
 func (r *TaskRepository) UpdateTiming(ctx context.Context, id int64, startTime, endTime time.Time, duration int) error {
 	query := `UPDATE tasks SET start_time = ?, end_time = ?, duration = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, startTime, endTime, duration, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, startTime, endTime, duration, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task timing: %w", err)
 	}
@@ -269,7 +270,7 @@ func (r *TaskRepository) UpdateTiming(ctx context.Context, id int64, startTime, 
 func (r *TaskRepository) IncrementRetryCount(ctx context.Context, id int64) error {
 	query := `UPDATE tasks SET retry_count = retry_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment retry count: %w", err)
 	}
@@ -281,7 +282,7 @@ func (r *TaskRepository) IncrementRetryCount(ctx context.Context, id int64) erro
 func (r *TaskRepository) UpdateNextRun(ctx context.Context, id int64, nextRun time.Time) error {
 	query := `UPDATE tasks SET next_run = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, nextRun, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, nextRun, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update next run: %w", err)
 	}
@@ -293,7 +294,7 @@ func (r *TaskRepository) UpdateNextRun(ctx context.Context, id int64, nextRun ti
 func (r *TaskRepository) DeleteCompleted(ctx context.Context, before time.Time) error {
 	query := `DELETE FROM tasks WHERE status = ? AND end_time < ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, models.TaskStatusCompleted, before)
+	_, err := r.db.ExecContext(ctx, query, models.TaskStatusCompleted, before)
 	if err != nil {
 		return fmt.Errorf("failed to delete completed tasks: %w", err)
 	}
@@ -305,7 +306,7 @@ func (r *TaskRepository) DeleteCompleted(ctx context.Context, before time.Time) 
 func (r *TaskRepository) DeleteFailed(ctx context.Context, before time.Time) error {
 	query := `DELETE FROM tasks WHERE status = ? AND end_time < ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, models.TaskStatusFailed, before)
+	_, err := r.db.ExecContext(ctx, query, models.TaskStatusFailed, before)
 	if err != nil {
 		return fmt.Errorf("failed to delete failed tasks: %w", err)
 	}
@@ -315,7 +316,7 @@ func (r *TaskRepository) DeleteFailed(ctx context.Context, before time.Time) err
 
 // queryTasks 通用任务查询方法
 func (r *TaskRepository) queryTasks(ctx context.Context, query string, args ...interface{}) ([]*models.Task, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tasks: %w", err)
 	}

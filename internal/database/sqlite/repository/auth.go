@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // AuthRepository 认证数据访问实现
 type AuthRepository struct {
-	db *Database
+	db *database.Database
 }
 
 // NewAuthRepository 创建认证仓库
-func NewAuthRepository(db *Database) interfaces.AuthRepository {
+func newAuthRepository(db *database.Database) interfaces.AuthRepository {
 	return &AuthRepository{db: db}
 }
 
@@ -25,7 +26,7 @@ func (r *AuthRepository) Get(ctx context.Context) (*models.Auth, error) {
 	query := `SELECT user_name, password, created_at, updated_at FROM auth LIMIT 1`
 
 	var auth models.Auth
-	err := r.db.db.QueryRowContext(ctx, query).Scan(
+	err := r.db.QueryRowContext(ctx, query).Scan(
 		&auth.UserName,
 		&auth.Password,
 		&auth.CreatedAt,
@@ -46,7 +47,7 @@ func (r *AuthRepository) Get(ctx context.Context) (*models.Auth, error) {
 func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
 	query := `UPDATE auth SET password = ?, updated_at = ? WHERE user_name = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, auth.Password, time.Now(), auth.UserName)
+	_, err := r.db.ExecContext(ctx, query, auth.Password, time.Now(), auth.UserName)
 	if err != nil {
 		return fmt.Errorf("failed to update auth: %w", err)
 	}
@@ -59,7 +60,7 @@ func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) erro
 	query := `INSERT INTO auth (user_name, password, created_at, updated_at) VALUES (?, ?, ?, ?)`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, auth.UserName, auth.Password, now, now)
+	_, err := r.db.ExecContext(ctx, query, auth.UserName, auth.Password, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to initialize auth: %w", err)
 	}
@@ -72,7 +73,7 @@ func (r *AuthRepository) IsInitialized(ctx context.Context) (bool, error) {
 	query := `SELECT COUNT(*) FROM auth`
 
 	var count int
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return false, fmt.Errorf("failed to check auth initialization: %w", err)
 	}
@@ -82,11 +83,11 @@ func (r *AuthRepository) IsInitialized(ctx context.Context) (bool, error) {
 
 // SessionRepository 会话数据访问实现
 type SessionRepository struct {
-	db *Database
+	db *database.Database
 }
 
 // NewSessionRepository 创建会话仓库
-func NewSessionRepository(db *Database) interfaces.SessionRepository {
+func newSessionRepository(db *database.Database) interfaces.SessionRepository {
 	return &SessionRepository{db: db}
 }
 
@@ -96,7 +97,7 @@ func (r *SessionRepository) Create(ctx context.Context, session *models.Session)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		session.TokenHash,
 		session.ExpiresAt,
 		session.RefreshToken,
@@ -129,7 +130,7 @@ func (r *SessionRepository) GetByID(ctx context.Context, id int64) (*models.Sess
 	          FROM sessions WHERE id = ?`
 
 	var session models.Session
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&session.ID,
 		&session.TokenHash,
 		&session.ExpiresAt,
@@ -157,7 +158,7 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, tokenHash string
 	          FROM sessions WHERE token_hash = ? AND is_active = true`
 
 	var session models.Session
-	err := r.db.db.QueryRowContext(ctx, query, tokenHash).Scan(
+	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
 		&session.ID,
 		&session.TokenHash,
 		&session.ExpiresAt,
@@ -185,7 +186,7 @@ func (r *SessionRepository) GetByRefreshToken(ctx context.Context, refreshToken 
 	          FROM sessions WHERE refresh_token = ? AND is_active = true`
 
 	var session models.Session
-	err := r.db.db.QueryRowContext(ctx, query, refreshToken).Scan(
+	err := r.db.QueryRowContext(ctx, query, refreshToken).Scan(
 		&session.ID,
 		&session.TokenHash,
 		&session.ExpiresAt,
@@ -212,7 +213,7 @@ func (r *SessionRepository) Update(ctx context.Context, session *models.Session)
 	query := `UPDATE sessions SET token_hash = ?, expires_at = ?, refresh_token = ?, ip_address = ?, 
 	          user_agent = ?, is_active = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		session.TokenHash,
 		session.ExpiresAt,
 		session.RefreshToken,
@@ -234,7 +235,7 @@ func (r *SessionRepository) Update(ctx context.Context, session *models.Session)
 func (r *SessionRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sessions WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete session: %w", err)
 	}
@@ -246,7 +247,7 @@ func (r *SessionRepository) Delete(ctx context.Context, id int64) error {
 func (r *SessionRepository) DeleteAll(ctx context.Context) error {
 	query := `DELETE FROM sessions`
 
-	_, err := r.db.db.ExecContext(ctx, query)
+	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to delete all sessions: %w", err)
 	}
@@ -258,7 +259,7 @@ func (r *SessionRepository) DeleteAll(ctx context.Context) error {
 func (r *SessionRepository) DeleteExpired(ctx context.Context) error {
 	query := `DELETE FROM sessions WHERE expires_at < ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now())
+	_, err := r.db.ExecContext(ctx, query, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to delete expired sessions: %w", err)
 	}
@@ -271,7 +272,7 @@ func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*models.Session
 	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at 
 	          FROM sessions WHERE is_active = true ORDER BY created_at DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active sessions: %w", err)
 	}
@@ -308,7 +309,7 @@ func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*models.Session
 func (r *SessionRepository) DeactivateAll(ctx context.Context) error {
 	query := `UPDATE sessions SET is_active = false, updated_at = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, time.Now())
+	_, err := r.db.ExecContext(ctx, query, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to deactivate all sessions: %w", err)
 	}

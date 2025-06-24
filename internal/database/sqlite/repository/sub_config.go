@@ -1,4 +1,4 @@
-package sqlite
+package repository
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 )
 
 // SubStorageConfigRepository 存储配置数据访问实现
 type SubStorageConfigRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubStorageConfigRepository 创建存储配置仓库
-func NewSubStorageConfigRepository(db *Database) interfaces.SubStorageConfigRepository {
+// newSubStorageConfigRepository 创建存储配置仓库
+func newSubStorageConfigRepository(db *database.Database) interfaces.SubStorageConfigRepository {
 	return &SubStorageConfigRepository{db: db}
 }
 
@@ -26,7 +27,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *models.
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Type,
 		config.Config,
@@ -59,7 +60,7 @@ func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*mo
 	          FROM sub_storage_configs WHERE id = ?`
 
 	var config models.SubStorageConfig
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.Name,
 		&config.Type,
@@ -86,7 +87,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *models.
 	query := `UPDATE sub_storage_configs SET name = ?, type = ?, config = ?, is_active = ?, 
 	          test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Type,
 		config.Config,
@@ -108,7 +109,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *models.
 func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_storage_configs WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete storage config: %w", err)
 	}
@@ -145,7 +146,7 @@ func (r *SubStorageConfigRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM sub_storage_configs`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count storage configs: %w", err)
 	}
@@ -158,7 +159,7 @@ func (r *SubStorageConfigRepository) UpdateTestResult(ctx context.Context, id in
 	query := `UPDATE sub_storage_configs SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := r.db.db.ExecContext(ctx, query, testResult, now, now, id)
+	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update storage config test result: %w", err)
 	}
@@ -168,7 +169,7 @@ func (r *SubStorageConfigRepository) UpdateTestResult(ctx context.Context, id in
 
 // queryStorageConfigs 通用存储配置查询方法
 func (r *SubStorageConfigRepository) queryStorageConfigs(ctx context.Context, query string, args ...interface{}) ([]*models.SubStorageConfig, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query storage configs: %w", err)
 	}
@@ -203,11 +204,11 @@ func (r *SubStorageConfigRepository) queryStorageConfigs(ctx context.Context, qu
 
 // SubOutputTemplateRepository 输出模板数据访问实现
 type SubOutputTemplateRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubOutputTemplateRepository 创建输出模板仓库
-func NewSubOutputTemplateRepository(db *Database) interfaces.SubOutputTemplateRepository {
+// newSubOutputTemplateRepository 创建输出模板仓库
+func newSubOutputTemplateRepository(db *database.Database) interfaces.SubOutputTemplateRepository {
 	return &SubOutputTemplateRepository{db: db}
 }
 
@@ -217,7 +218,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *mode
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		template.Format,
 		template.Version,
 		template.Template,
@@ -250,7 +251,7 @@ func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*m
 	          FROM sub_output_templates WHERE id = ?`
 
 	var template models.SubOutputTemplate
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&template.ID,
 		&template.Format,
 		&template.Version,
@@ -277,7 +278,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *mode
 	query := `UPDATE sub_output_templates SET format = ?, version = ?, template = ?, description = ?, 
 	          is_default = ?, is_active = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		template.Format,
 		template.Version,
 		template.Template,
@@ -299,7 +300,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *mode
 func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_output_templates WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete output template: %w", err)
 	}
@@ -337,7 +338,7 @@ func (r *SubOutputTemplateRepository) GetDefault(ctx context.Context, format str
 	          FROM sub_output_templates WHERE format = ? AND is_default = true LIMIT 1`
 
 	var template models.SubOutputTemplate
-	err := r.db.db.QueryRowContext(ctx, query, format).Scan(
+	err := r.db.QueryRowContext(ctx, query, format).Scan(
 		&template.ID,
 		&template.Format,
 		&template.Version,
@@ -389,7 +390,7 @@ func (r *SubOutputTemplateRepository) Count(ctx context.Context) (int64, error) 
 	query := `SELECT COUNT(*) FROM sub_output_templates`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count output templates: %w", err)
 	}
@@ -399,7 +400,7 @@ func (r *SubOutputTemplateRepository) Count(ctx context.Context) (int64, error) 
 
 // queryOutputTemplates 通用输出模板查询方法
 func (r *SubOutputTemplateRepository) queryOutputTemplates(ctx context.Context, query string, args ...interface{}) ([]*models.SubOutputTemplate, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query output templates: %w", err)
 	}
@@ -434,11 +435,11 @@ func (r *SubOutputTemplateRepository) queryOutputTemplates(ctx context.Context, 
 
 // SubNodeFilterRuleRepository 节点筛选规则数据访问实现
 type SubNodeFilterRuleRepository struct {
-	db *Database
+	db *database.Database
 }
 
-// NewSubNodeFilterRuleRepository 创建节点筛选规则仓库
-func NewSubNodeFilterRuleRepository(db *Database) interfaces.SubNodeFilterRuleRepository {
+// newSubNodeFilterRuleRepository 创建节点筛选规则仓库
+func newSubNodeFilterRuleRepository(db *database.Database) interfaces.SubNodeFilterRuleRepository {
 	return &SubNodeFilterRuleRepository{db: db}
 }
 
@@ -448,7 +449,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *models.S
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	result, err := r.db.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(ctx, query,
 		rule.RuleType,
 		rule.Operator,
 		rule.Value,
@@ -480,7 +481,7 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*m
 	          FROM sub_node_filter_rules WHERE id = ?`
 
 	var rule models.SubNodeFilterRule
-	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&rule.ID,
 		&rule.RuleType,
 		&rule.Operator,
@@ -506,7 +507,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *models.S
 	query := `UPDATE sub_node_filter_rules SET rule_type = ?, operator = ?, value = ?, is_enabled = ?, 
 	          priority = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		rule.RuleType,
 		rule.Operator,
 		rule.Value,
@@ -527,7 +528,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *models.S
 func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_node_filter_rules WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete filter rule: %w", err)
 	}
@@ -564,7 +565,7 @@ func (r *SubNodeFilterRuleRepository) Count(ctx context.Context) (int64, error) 
 	query := `SELECT COUNT(*) FROM sub_node_filter_rules`
 
 	var count int64
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count filter rules: %w", err)
 	}
@@ -576,7 +577,7 @@ func (r *SubNodeFilterRuleRepository) Count(ctx context.Context) (int64, error) 
 func (r *SubNodeFilterRuleRepository) UpdatePriority(ctx context.Context, id int64, priority int) error {
 	query := `UPDATE sub_node_filter_rules SET priority = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.db.ExecContext(ctx, query, priority, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, priority, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update filter rule priority: %w", err)
 	}
@@ -586,7 +587,7 @@ func (r *SubNodeFilterRuleRepository) UpdatePriority(ctx context.Context, id int
 
 // queryFilterRules 通用筛选规则查询方法
 func (r *SubNodeFilterRuleRepository) queryFilterRules(ctx context.Context, query string, args ...interface{}) ([]*models.SubNodeFilterRule, error) {
-	rows, err := r.db.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query filter rules: %w", err)
 	}
