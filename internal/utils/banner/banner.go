@@ -1,25 +1,14 @@
-package utils
+package banner
 
 import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/bestruirui/bestsub/internal/utils/color"
 )
 
-const (
-	ColorReset  = "\033[0m"
-	ColorRed    = "\033[31m"
-	ColorGreen  = "\033[32m"
-	ColorYellow = "\033[33m"
-	ColorBlue   = "\033[34m"
-	ColorPurple = "\033[35m"
-	ColorCyan   = "\033[36m"
-	ColorWhite  = "\033[37m"
-	ColorBold   = "\033[1m"
-	ColorDim    = "\033[2m"
-)
-
-func PrintBanner(version, commit, date, builtBy string) {
+func Print(version, commit, date, builtBy string) {
 	logo := `
   ██████╗ ███████╗███████╗████████╗███████╗██╗   ██╗██████╗ 
   ██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔════╝██║   ██║██╔══██╗
@@ -29,32 +18,32 @@ func PrintBanner(version, commit, date, builtBy string) {
   ╚═════╝ ╚══════╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝ ╚═════╝ 
 `
 
-	fmt.Print(ColorCyan + ColorBold)
+	fmt.Print(color.Cyan + color.Bold)
 	fmt.Println(logo)
-	fmt.Print(ColorReset)
+	fmt.Print(color.Reset)
 
-	fmt.Print(ColorBlue + ColorBold)
+	fmt.Print(color.Blue + color.Bold)
 	fmt.Println("          🚀 BestSub - Best Subscription Manager")
-	fmt.Print(ColorReset)
+	fmt.Print(color.Reset)
 
-	fmt.Print(ColorDim)
+	fmt.Print(color.Dim)
 	fmt.Println("  " + strings.Repeat("─", 60))
-	fmt.Print(ColorReset)
+	fmt.Print(color.Reset)
 
-	printInfo("Version", version, ColorGreen)
-	printInfo("Commit", commit[:min(8, len(commit))], ColorYellow)
-	printInfo("Build Time", formatDate(date), ColorBlue)
-	printInfo("Built By", builtBy, ColorPurple)
+	printInfo("Version", version, color.Green)
+	printInfo("Commit", commit[:min(8, len(commit))], color.Yellow)
+	printInfo("Build Time", formatDate(date), color.Blue)
+	printInfo("Built By", builtBy, color.Purple)
 
-	fmt.Print(ColorDim)
+	fmt.Print(color.Dim)
 	fmt.Println("  " + strings.Repeat("═", 60))
-	fmt.Print(ColorReset)
+	fmt.Print(color.Reset)
 }
 
-func printInfo(label, value, color string) {
+func printInfo(label, value, print_color string) {
 	fmt.Printf("  %s%-12s%s %s%s%s\n",
-		ColorDim, label+":", ColorReset,
-		color, value, ColorReset)
+		color.Dim, label+":", color.Reset,
+		print_color, value, color.Reset)
 }
 
 func formatDate(date string) string {
