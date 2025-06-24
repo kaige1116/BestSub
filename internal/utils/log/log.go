@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -74,9 +75,17 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	level := strings.ToUpper(entry.Level.String())[:1]
 
 	var caller string
-	if f.ShowCaller && entry.HasCaller() {
-		file := filepath.Base(entry.Caller.File)
-		caller = fmt.Sprintf(" [%s:%d]", file, entry.Caller.Line)
+	if f.ShowCaller {
+		// 优先使用我们手动设置的调用者信息
+		if file, ok := entry.Data["file"]; ok {
+			if line, ok := entry.Data["line"]; ok {
+				caller = fmt.Sprintf(" [%s:%v]", file, line)
+			}
+		} else if entry.HasCaller() {
+			// 回退到 logrus 自动获取的调用者信息
+			file := filepath.Base(entry.Caller.File)
+			caller = fmt.Sprintf(" [%s:%d]", file, entry.Caller.Line)
+		}
 	}
 
 	logColor := f.getColorByLevel(entry.Level)
@@ -94,8 +103,11 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		msg = fmt.Sprintf("[%s] [%s]%s %s\n", timestamp, level, caller, entry.Message)
 	}
 
-	// 添加字段信息
+	// 添加字段信息（排除我们用于调用者信息的字段）
 	for key, value := range entry.Data {
+		if key == "file" || key == "line" {
+			continue // 跳过调用者信息字段
+		}
 		if f.EnableColor {
 			msg += fmt.Sprintf("  %s%s=%v%s\n", logColor, key, value, reset)
 		} else {
@@ -125,7 +137,7 @@ func Initialize(config config.LogConfig) error {
 		level = logrus.InfoLevel
 	}
 	Logger.SetLevel(level)
-	Logger.SetReportCaller(true)
+	Logger.SetReportCaller(false) // 我们手动处理调用者信息
 
 	showCaller := level == logrus.DebugLevel
 	enableColor := false
@@ -214,62 +226,130 @@ func Close() error {
 	return closeLogFile()
 }
 
-func Debug(args ...interface{}) {
-	if Logger != nil {
-		Logger.Debug(args...)
+// logWithCaller 带调用者信息的日志记录
+func logWithCaller(level logrus.Level, skip int, args ...interface{}) {
+	if Logger == nil {
+		return
 	}
+
+	// 获取调用者信息
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		Logger.Log(level, args...)
+		return
+	}
+
+	// 创建带调用者信息的日志条目
+	entry := Logger.WithFields(logrus.Fields{
+		"file": filepath.Base(file),
+		"line": line,
+	})
+
+	entry.Log(level, args...)
+}
+
+// logfWithCaller 带调用者信息的格式化日志记录
+func logfWithCaller(level logrus.Level, skip int, format string, args ...interface{}) {
+	if Logger == nil {
+		return
+	}
+
+	// 获取调用者信息
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		Logger.Logf(level, format, args...)
+		return
+	}
+
+	// 创建带调用者信息的日志条目
+	entry := Logger.WithFields(logrus.Fields{
+		"file": filepath.Base(file),
+		"line": line,
+	})
+
+	entry.Logf(level, format, args...)
+}
+
+func Debug(args ...interface{}) {
+	logWithCaller(logrus.DebugLevel, 2, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	if Logger != nil {
-		Logger.Debugf(format, args...)
-	}
+	logfWithCaller(logrus.DebugLevel, 2, format, args...)
 }
 
 func Info(args ...interface{}) {
-	if Logger != nil {
-		Logger.Info(args...)
-	}
+	logWithCaller(logrus.InfoLevel, 2, args...)
 }
 
 func Infof(format string, args ...interface{}) {
-	if Logger != nil {
-		Logger.Infof(format, args...)
-	}
+	logfWithCaller(logrus.InfoLevel, 2, format, args...)
 }
 
 func Warn(args ...interface{}) {
-	if Logger != nil {
-		Logger.Warn(args...)
-	}
+	logWithCaller(logrus.WarnLevel, 2, args...)
 }
 
 func Warnf(format string, args ...interface{}) {
-	if Logger != nil {
-		Logger.Warnf(format, args...)
-	}
+	logfWithCaller(logrus.WarnLevel, 2, format, args...)
 }
 
 func Error(args ...interface{}) {
-	if Logger != nil {
-		Logger.Error(args...)
-	}
+	logWithCaller(logrus.ErrorLevel, 2, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	if Logger != nil {
-		Logger.Errorf(format, args...)
-	}
+	logfWithCaller(logrus.ErrorLevel, 2, format, args...)
 }
 
 func Fatal(args ...interface{}) {
-	if Logger != nil {
-		Logger.Fatal(args...)
-	}
+	logWithCaller(logrus.FatalLevel, 2, args...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	if Logger != nil {
-		Logger.Fatalf(format, args...)
+	logfWithCaller(logrus.FatalLevel, 2, format, args...)
+}
+
+// WithFields 创建带字段的日志条目（带调用者信息）
+func WithFields(fields map[string]interface{}) *logrus.Entry {
+	if Logger == nil {
+		return nil
 	}
+
+	// 获取调用者信息
+	_, file, line, ok := runtime.Caller(1)
+	if ok {
+		// 合并调用者信息和用户字段
+		allFields := make(map[string]interface{})
+		allFields["file"] = filepath.Base(file)
+		allFields["line"] = line
+
+		// 添加用户字段
+		for k, v := range fields {
+			allFields[k] = v
+		}
+
+		return Logger.WithFields(allFields)
+	}
+
+	return Logger.WithFields(fields)
+}
+
+// WithField 创建带单个字段的日志条目（带调用者信息）
+func WithField(key string, value interface{}) *logrus.Entry {
+	if Logger == nil {
+		return nil
+	}
+
+	// 获取调用者信息
+	_, file, line, ok := runtime.Caller(1)
+	if ok {
+		return Logger.WithFields(logrus.Fields{
+			"file": filepath.Base(file),
+			"line": line,
+			key:    value,
+		})
+	}
+
+	return Logger.WithField(key, value)
 }
