@@ -52,18 +52,27 @@ func (d *Database) Ping(ctx context.Context) error {
 
 // enablePragmas 启用SQLite优化选项
 func enablePragmas(db *sql.DB) error {
-	pragmas := []string{
-		"PRAGMA journal_mode = WAL",
-		"PRAGMA synchronous = NORMAL",
-		"PRAGMA cache_size = 1000000000",
-		"PRAGMA foreign_keys = true",
-		"PRAGMA temp_store = memory",
-		"PRAGMA busy_timeout = 5000",
+	pragmas := map[string]string{
+		"journal_mode":       "WAL",    // 启用WAL模式提高并发性能
+		"synchronous":        "NORMAL", // 平衡性能和安全性
+		"cache_size":         "-64000", // 64MB缓存
+		"foreign_keys":       "ON",     // 启用外键约束
+		"temp_store":         "MEMORY", // 临时表存储在内存中
+		"busy_timeout":       "5000",   // 5秒忙等待超时
+		"wal_autocheckpoint": "1000",   // WAL自动检查点
+		"optimize":           "",       // 优化数据库
 	}
 
-	for _, pragma := range pragmas {
-		if _, err := db.Exec(pragma); err != nil {
-			return fmt.Errorf("failed to execute pragma %s: %w", pragma, err)
+	for key, value := range pragmas {
+		var query string
+		if value == "" {
+			query = fmt.Sprintf("PRAGMA %s", key)
+		} else {
+			query = fmt.Sprintf("PRAGMA %s = %s", key, value)
+		}
+
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("failed to execute pragma %s: %w", query, err)
 		}
 	}
 
@@ -107,4 +116,51 @@ func (t *Transaction) Query(query string, args ...interface{}) (*sql.Rows, error
 // QueryRow 查询单行
 func (t *Transaction) QueryRow(query string, args ...interface{}) *sql.Row {
 	return t.tx.QueryRow(query, args...)
+}
+
+// Stats 获取数据库统计信息
+func (d *Database) Stats() sql.DBStats {
+	return d.db.Stats()
+}
+
+// Exec 执行SQL语句
+func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return d.db.Exec(query, args...)
+}
+
+// ExecContext 执行SQL语句（带上下文）
+func (d *Database) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return d.db.ExecContext(ctx, query, args...)
+}
+
+// Query 查询
+func (d *Database) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return d.db.Query(query, args...)
+}
+
+// QueryContext 查询（带上下文）
+func (d *Database) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return d.db.QueryContext(ctx, query, args...)
+}
+
+// QueryRow 查询单行
+func (d *Database) QueryRow(query string, args ...interface{}) *sql.Row {
+	return d.db.QueryRow(query, args...)
+}
+
+// QueryRowContext 查询单行（带上下文）
+func (d *Database) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return d.db.QueryRowContext(ctx, query, args...)
+}
+
+// Vacuum 清理数据库
+func (d *Database) Vacuum(ctx context.Context) error {
+	_, err := d.db.ExecContext(ctx, "VACUUM")
+	return err
+}
+
+// Analyze 分析数据库统计信息
+func (d *Database) Analyze(ctx context.Context) error {
+	_, err := d.db.ExecContext(ctx, "ANALYZE")
+	return err
 }

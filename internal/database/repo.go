@@ -4,8 +4,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/repository/interfaces"
 )
 
-// 便于使用的仓库访问函数
-
 // Auth 获取认证仓库
 func Auth() interfaces.AuthRepository {
 	return GetRepository().Auth()
