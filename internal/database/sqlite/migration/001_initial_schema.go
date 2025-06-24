@@ -1,5 +1,7 @@
 package migration
 
+import "github.com/bestruirui/bestsub/internal/database/migration"
+
 // Migration001InitialSchema 初始数据库架构
 func Migration001InitialSchema() string {
 	return `
@@ -173,7 +175,8 @@ DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS auth;
 `
 }
+
 // init 自动注册所有迁移
 func init() {
-	RegisterMigration("001", "Initial database schema", Migration001InitialSchema)
+	migration.Register(migrations, "001", "Initial database schema", Migration001InitialSchema)
 }
