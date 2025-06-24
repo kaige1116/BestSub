@@ -9,6 +9,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/utils"
 )
 
 // TaskRepository 任务数据访问实现
@@ -27,7 +28,7 @@ func (r *TaskRepository) Create(ctx context.Context, task *models.Task) error {
 	          error_msg, start_time, end_time, duration, retry_count, max_retries, next_run, cron_expr, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
+	now := utils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		task.Type,
 		task.Name,
@@ -127,7 +128,7 @@ func (r *TaskRepository) Update(ctx context.Context, task *models.Task) error {
 		task.MaxRetries,
 		task.NextRun,
 		task.CronExpr,
-		time.Now(),
+		utils.Now(),
 		task.ID,
 	)
 
@@ -234,7 +235,7 @@ func (r *TaskRepository) CountByStatus(ctx context.Context, status string) (int6
 func (r *TaskRepository) UpdateStatus(ctx context.Context, id int64, status string) error {
 	query := `UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, status, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, status, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task status: %w", err)
 	}
@@ -246,7 +247,7 @@ func (r *TaskRepository) UpdateStatus(ctx context.Context, id int64, status stri
 func (r *TaskRepository) UpdateResult(ctx context.Context, id int64, result, errorMsg string) error {
 	query := `UPDATE tasks SET result = ?, error_msg = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, result, errorMsg, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, result, errorMsg, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task result: %w", err)
 	}
@@ -258,7 +259,7 @@ func (r *TaskRepository) UpdateResult(ctx context.Context, id int64, result, err
 func (r *TaskRepository) UpdateTiming(ctx context.Context, id int64, startTime, endTime time.Time, duration int) error {
 	query := `UPDATE tasks SET start_time = ?, end_time = ?, duration = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, startTime, endTime, duration, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, startTime, endTime, duration, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update task timing: %w", err)
 	}
@@ -270,7 +271,7 @@ func (r *TaskRepository) UpdateTiming(ctx context.Context, id int64, startTime, 
 func (r *TaskRepository) IncrementRetryCount(ctx context.Context, id int64) error {
 	query := `UPDATE tasks SET retry_count = retry_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment retry count: %w", err)
 	}
@@ -282,7 +283,7 @@ func (r *TaskRepository) IncrementRetryCount(ctx context.Context, id int64) erro
 func (r *TaskRepository) UpdateNextRun(ctx context.Context, id int64, nextRun time.Time) error {
 	query := `UPDATE tasks SET next_run = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, nextRun, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, nextRun, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update next run: %w", err)
 	}

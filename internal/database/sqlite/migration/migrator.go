@@ -8,6 +8,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/utils"
 )
 
 // MigrationFunc 迁移函数类型
@@ -130,7 +131,7 @@ func (m *Migrator) createMigrationTable(ctx context.Context) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version TEXT PRIMARY KEY,
-			applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			applied_at DATETIME NOT NULL,
 			success BOOLEAN NOT NULL DEFAULT TRUE,
 			error TEXT
 		)
@@ -177,8 +178,9 @@ func (m *Migrator) applyMigration(ctx context.Context, migration *interfaces.Mig
 
 	// 记录成功的迁移
 	_, err = tx.Exec(
-		`INSERT INTO schema_migrations (version, applied_at, success) VALUES (?, CURRENT_TIMESTAMP, TRUE)`,
+		`INSERT INTO schema_migrations (version, applied_at, success) VALUES (?, ?, TRUE)`,
 		migration.Version,
+		utils.Now(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to record migration: %w", err)
@@ -194,8 +196,8 @@ func (m *Migrator) applyMigration(ctx context.Context, migration *interfaces.Mig
 
 // recordMigration 记录迁移结果
 func (m *Migrator) recordMigration(ctx context.Context, version string, success bool, errorMsg string) {
-	query := `INSERT OR REPLACE INTO schema_migrations (version, applied_at, success, error) VALUES (?, CURRENT_TIMESTAMP, ?, ?)`
-	m.db.ExecContext(ctx, query, version, success, errorMsg)
+	query := `INSERT OR REPLACE INTO schema_migrations (version, applied_at, success, error) VALUES (?, ?, ?, ?)`
+	m.db.ExecContext(ctx, query, version, utils.Now(), success, errorMsg)
 }
 
 // getMigrationSQL 根据版本号获取迁移SQL

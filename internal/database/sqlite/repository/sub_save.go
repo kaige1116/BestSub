@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/utils"
 )
 
 // SubSaveConfigRepository 保存配置数据访问实现
@@ -27,7 +27,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *models.Sub
 	          node_filter_id, file_name, save_interval, last_save, last_status, error_msg, save_count, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
+	now := utils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Description,
@@ -115,7 +115,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *models.Sub
 		config.LastStatus,
 		config.ErrorMsg,
 		config.SaveCount,
-		time.Now(),
+		utils.Now(),
 		config.ID,
 	)
 
@@ -173,7 +173,7 @@ func (r *SubSaveConfigRepository) Count(ctx context.Context) (int64, error) {
 func (r *SubSaveConfigRepository) UpdateStatus(ctx context.Context, id int64, status, errorMsg string) error {
 	query := `UPDATE sub_save_configs SET last_status = ?, error_msg = ?, last_save = ?, updated_at = ? WHERE id = ?`
 
-	now := time.Now()
+	now := utils.Now()
 	_, err := r.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update save config status: %w", err)
@@ -186,7 +186,7 @@ func (r *SubSaveConfigRepository) UpdateStatus(ctx context.Context, id int64, st
 func (r *SubSaveConfigRepository) IncrementSaveCount(ctx context.Context, id int64) error {
 	query := `UPDATE sub_save_configs SET save_count = save_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, utils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment save count: %w", err)
 	}

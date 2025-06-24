@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/utils"
 )
 
 // SystemConfigRepository 系统配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *models.Syst
 	query := `INSERT INTO system_configs (key, value, type, group_name, description, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
+	now := utils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
@@ -118,7 +118,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *models.Syst
 		config.Type,
 		config.Group,
 		config.Description,
-		time.Now(),
+		utils.Now(),
 		config.ID,
 	)
 
@@ -244,7 +244,7 @@ func (r *SystemConfigRepository) Count(ctx context.Context) (int64, error) {
 func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
 	// 首先尝试更新
 	updateQuery := `UPDATE system_configs SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, time.Now(), key)
+	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, utils.Now(), key)
 	if err != nil {
 		return fmt.Errorf("failed to update system config value: %w", err)
 	}
@@ -258,7 +258,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 	if rowsAffected == 0 {
 		insertQuery := `INSERT INTO system_configs (key, value, type, group_name, description, created_at, updated_at) 
 		                VALUES (?, ?, ?, ?, ?, ?, ?)`
-		now := time.Now()
+		now := utils.Now()
 		_, err = r.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert system config value: %w", err)
@@ -299,7 +299,7 @@ func (r *NotificationChannelRepository) Create(ctx context.Context, channel *mod
 	query := `INSERT INTO notification_channels (name, type, config, is_active, test_result, last_test, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
+	now := utils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		channel.Name,
 		channel.Type,
@@ -367,7 +367,7 @@ func (r *NotificationChannelRepository) Update(ctx context.Context, channel *mod
 		channel.IsActive,
 		channel.TestResult,
 		channel.LastTest,
-		time.Now(),
+		utils.Now(),
 		channel.ID,
 	)
 
@@ -521,7 +521,7 @@ func (r *NotificationChannelRepository) Count(ctx context.Context) (int64, error
 func (r *NotificationChannelRepository) UpdateTestResult(ctx context.Context, id int64, testResult string) error {
 	query := `UPDATE notification_channels SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	now := time.Now()
+	now := utils.Now()
 	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update notification channel test result: %w", err)
