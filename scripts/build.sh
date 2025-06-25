@@ -208,7 +208,7 @@ rename_files() {
 
 copy_docker_bin() {
     echo "Copying binaries for Docker build..."
-    mkdir -p docker/{glibc,musl}
+    mkdir -p docker
     
     local platforms=(
         "amd64:linux/amd64"
@@ -220,44 +220,28 @@ copy_docker_bin() {
     local max_length=0
     for platform in "${platforms[@]}"; do
         local arch="${platform%%:*}"
-        local name_glibc="${APP_NAME}-linux-${arch}"
-        local name_musl="${APP_NAME}-linux-musl-${arch}"
+        local name="${APP_NAME}-linux-${arch}"
         
-        [ ${#name_glibc} -gt $max_length ] && max_length=${#name_glibc}
-        [ ${#name_musl} -gt $max_length ] && max_length=${#name_musl}
+        [ ${#name} -gt $max_length ] && max_length=${#name}
     done
     
     for platform in "${platforms[@]}"; do
         local arch="${platform%%:*}"
         local docker_platform="${platform#*:}"
         
-        mkdir -p "docker/glibc/${docker_platform}"
-        mkdir -p "docker/musl/${docker_platform}"
+        mkdir -p "docker/${docker_platform}"
         
-        local name_glibc="${APP_NAME}-linux-${arch}"
-        if [ -f "${OUTPUT_DIR}/${name_glibc}" ]; then
-            printf "%-${max_length}s -> docker/glibc/%s/%s\n" \
-                "${name_glibc}" "${docker_platform}" "${APP_NAME}"
-            cp "${OUTPUT_DIR}/${name_glibc}" "docker/glibc/${docker_platform}/${APP_NAME}"
-        elif [ -f "${OUTPUT_DIR}/${name_glibc}.tar.gz" ]; then
-            printf "%-${max_length}s -> docker/glibc/%s/%s (from tar)\n" \
-                "${name_glibc}" "${docker_platform}" "${APP_NAME}"
-            tar xzf "${OUTPUT_DIR}/${name_glibc}.tar.gz" -C "docker/glibc/${docker_platform}" "${APP_NAME}"
+        local name="${APP_NAME}-linux-${arch}"
+        if [ -f "${OUTPUT_DIR}/${name}" ]; then
+            printf "%-${max_length}s -> docker/%s/%s\n" \
+                "${name}" "${docker_platform}" "${APP_NAME}"
+            cp "${OUTPUT_DIR}/${name}" "docker/${docker_platform}/${APP_NAME}"
+        elif [ -f "${OUTPUT_DIR}/${name}.tar.gz" ]; then
+            printf "%-${max_length}s -> docker/%s/%s (from tar)\n" \
+                "${name}" "${docker_platform}" "${APP_NAME}"
+            tar xzf "${OUTPUT_DIR}/${name}.tar.gz" -C "docker/${docker_platform}" "${APP_NAME}"
         else
-            printf "%-${max_length}s -> not found\n" "${name_glibc}"
-        fi
-        
-        local name_musl="${APP_NAME}-linux-musl-${arch}"
-        if [ -f "${OUTPUT_DIR}/${name_musl}" ]; then
-            printf "%-${max_length}s -> docker/musl/%s/%s\n" \
-                "${name_musl}" "${docker_platform}" "${APP_NAME}"
-            cp "${OUTPUT_DIR}/${name_musl}" "docker/musl/${docker_platform}/${APP_NAME}"
-        elif [ -f "${OUTPUT_DIR}/${name_musl}.tar.gz" ]; then
-            printf "%-${max_length}s -> docker/musl/%s/%s (from tar)\n" \
-                "${name_musl}" "${docker_platform}" "${APP_NAME}"
-            tar xzf "${OUTPUT_DIR}/${name_musl}.tar.gz" -C "docker/musl/${docker_platform}" "${APP_NAME}"
-        else
-            printf "%-${max_length}s -> not found\n" "${name_musl}"
+            printf "%-${max_length}s -> not found\n" "${name}"
         fi
     done
     
@@ -271,10 +255,10 @@ if [ "$1" == "release" ]; then
     setup_android_toolchain  # Only needed for Android builds
 
     # Android builds (requires CGO)
-    build_android amd64
-    build_android 386
-    build_android arm-7
-    build_android arm64
+    # build_android amd64
+    # build_android 386
+    # build_android arm-7
+    # build_android arm64
 
     # Standard Linux builds (CGO disabled for pure Go)
     build linux amd64
@@ -284,18 +268,16 @@ if [ "$1" == "release" ]; then
 
     # Windows builds
     build windows amd64
-    build windows arm64
-    build windows arm-7
-    build windows 386
+    # build windows arm64
+    # build windows 386
 
     # macOS builds
-    build darwin amd64
-    build darwin arm64
-    build darwin arm-7
-    build darwin 386
+    # build darwin amd64
+    # build darwin arm64
 
     copy_docker_bin
     rename_files
     generate_checksums
     compress_files
+
 fi

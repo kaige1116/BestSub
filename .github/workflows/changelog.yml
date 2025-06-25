@@ -35,6 +35,6 @@ jobs:
           git fetch origin dev
           git merge origin/dev
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-          git push origin master
+          git push origin master --force
         env:
           GITHUB_TOKEN: ${{secrets.MY_TOKEN}}

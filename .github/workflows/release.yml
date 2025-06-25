@@ -24,13 +24,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bestsub/toolchains
-          key: ${{ runner.os }}-toolchains-${{ hashFiles('go.mod') }}-${{ hashFiles('build/release.sh') }}
+          key: ${{ runner.os }}-toolchains-${{ hashFiles('go.mod') }}-${{ hashFiles('scripts/build.sh') }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
 
       - name: Build
-        run: bash build/release.sh release
+        run: bash scripts/build.sh release
 
       - name: Get latest tag
         id: tag
@@ -41,7 +41,7 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: build/*
           prerelease: false
           tag_name: ${{ steps.tag.outputs.TAG_NAME }}
 
@@ -90,7 +90,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./build/docker/Dockerfile.alpine
+          file: ./scripts/dockerfiles/Dockerfile.alpine
           push: true
           platforms: linux/amd64,linux/i386,linux/arm64,linux/arm/v7
           tags: ${{ steps.meta-alpine.outputs.tags }}
@@ -102,7 +102,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./build/docker/Dockerfile.debian
+          file: ./scripts/dockerfiles/Dockerfile.debian
           push: true
           platforms: linux/amd64,linux/i386,linux/arm64,linux/arm/v7
           tags: ${{ steps.meta-debian.outputs.tags }}

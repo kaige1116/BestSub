@@ -9,8 +9,8 @@ RUN apk add --no-cache alpine-conf ca-certificates && \
     rm -rf /var/cache/apk/* &&\
     mkdir -p /app
 
-COPY docker/musl/${TARGETPLATFORM}/bestsub /app/bestsub
-COPY build/docker/entrypoint.sh /entrypoint.sh
+COPY docker/${TARGETPLATFORM}/bestsub /app/bestsub
+COPY scripts/dockerfiles/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 
