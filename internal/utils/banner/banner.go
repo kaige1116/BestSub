@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/utils/color"
+	"github.com/bestruirui/bestsub/internal/utils/info"
 )
 
-func Print(version, commit, date, builtBy string) {
+func Print() {
 	logo := `
   ██████╗ ███████╗███████╗████████╗███████╗██╗   ██╗██████╗ 
   ██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔════╝██║   ██║██╔══██╗
@@ -30,10 +31,11 @@ func Print(version, commit, date, builtBy string) {
 	fmt.Println("  " + strings.Repeat("─", 60))
 	fmt.Print(color.Reset)
 
-	printInfo("Version", version, color.Green)
-	printInfo("Commit", commit[:min(8, len(commit))], color.Yellow)
-	printInfo("Build Time", formatDate(date), color.Blue)
-	printInfo("Built By", builtBy, color.Purple)
+	printInfo("Version", info.Version, color.Green)
+	printInfo("Commit", info.Commit[:min(8, len(info.Commit))], color.Yellow)
+	printInfo("Build Time", formatDate(info.BuildTime), color.Blue)
+	printInfo("Built By", info.Author, color.Purple)
+	printInfo("Repo", info.Repo, color.Cyan)
 
 	fmt.Print(color.Dim)
 	fmt.Println("  " + strings.Repeat("═", 60))

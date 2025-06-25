@@ -23,10 +23,10 @@ readonly GIT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'dev'
 readonly COMMIT_ID="$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 
 # Build flags
-readonly LDFLAGS="-X 'main.Version=${GIT_VERSION}' \
-                  -X 'main.BuildTime=${BUILD_TIME}' \
-                  -X 'main.Author=${GIT_AUTHOR}' \
-                  -X 'main.Commit=${COMMIT_ID}' \
+readonly LDFLAGS="-X 'github.com/bestruirui/bestsub/internal/utils/info.Version=${GIT_VERSION}' \
+                  -X 'github.com/bestruirui/bestsub/internal/utils/info.BuildTime=${BUILD_TIME}' \
+                  -X 'github.com/bestruirui/bestsub/internal/utils/info.Author=${GIT_AUTHOR}' \
+                  -X 'github.com/bestruirui/bestsub/internal/utils/info.Commit=${COMMIT_ID}' \
                   -s -w"
 
 # Android NDK configuration
