@@ -62,8 +62,6 @@ setup_android_toolchain() {
     fi
 }
 
-
-# Build for standard Linux
 build() {
     local os=$1
     local arch=$2
@@ -79,7 +77,7 @@ build() {
         "x86")
             cgo_arch=386
             ;;
-        "arm")
+        "arm-7")
             cgo_arch=arm
             ;;
         *)
@@ -90,7 +88,7 @@ build() {
 
     echo "Building ${os} ${arch}..."
     GOOS=${os} GOARCH=${cgo_arch} CGO_ENABLED=0 \
-        go build -o "${OUTPUT_DIR}/${APP_NAME}-${os}-${cgo_arch}" -ldflags="${LDFLAGS}" -tags=jsoniter ${MAIN_DIR}
+        go build -o "${OUTPUT_DIR}/${APP_NAME}-${os}-${arch}" -ldflags="${LDFLAGS}" -tags=jsoniter ${MAIN_DIR}
     echo "${os} ${arch} build completed"
 }
 
@@ -258,7 +256,7 @@ if [ "$1" == "release" ]; then
     # build_android amd64
     # build_android 386
     # build_android arm-7
-    # build_android arm64
+    build_android arm64
 
     # Standard Linux builds (CGO disabled for pure Go)
     build linux amd64
@@ -273,7 +271,7 @@ if [ "$1" == "release" ]; then
 
     # macOS builds
     # build darwin amd64
-    # build darwin arm64
+    build darwin arm64
 
     copy_docker_bin
     rename_files
