@@ -1,0 +1,47 @@
+package models
+
+// APIResponse 统一API响应结构
+type APIResponse struct {
+	Code    int         `json:"code" example:"200"`                  // 状态码
+	Message string      `json:"message" example:"success"`           // 响应消息
+	Data    interface{} `json:"data,omitempty"`                      // 响应数据
+	Error   string      `json:"error,omitempty" example:"error_msg"` // 错误信息
+}
+
+// SuccessResponse 成功响应
+type SuccessResponse struct {
+	Code    int         `json:"code" example:"200"`        // 状态码
+	Message string      `json:"message" example:"success"` // 响应消息
+	Data    interface{} `json:"data,omitempty"`            // 响应数据
+}
+
+// ErrorResponse 错误响应
+type ErrorResponse struct {
+	Code    int    `json:"code" example:"400"`                     // 状态码
+	Message string `json:"message" example:"Bad Request"`          // 响应消息
+	Error   string `json:"error" example:"Invalid request format"` // 错误详情
+}
+
+// ValidationErrorResponse 验证错误响应
+type ValidationErrorResponse struct {
+	Code    int                    `json:"code" example:"422"`                  // 状态码
+	Message string                 `json:"message" example:"Validation failed"` // 响应消息
+	Error   string                 `json:"error" example:"Validation error"`    // 错误信息
+	Details map[string]interface{} `json:"details,omitempty"`                   // 验证错误详情
+}
+
+// PaginationResponse 分页响应结构
+type PaginationResponse struct {
+	Page     int         `json:"page" example:"1"`       // 当前页码
+	PageSize int         `json:"page_size" example:"10"` // 每页大小
+	Total    int64       `json:"total" example:"100"`    // 总记录数
+	Data     interface{} `json:"data"`                   // 数据列表
+}
+
+// HealthResponse 健康检查响应
+type HealthResponse struct {
+	Status    string `json:"status" example:"ok"`                     // 服务状态
+	Timestamp string `json:"timestamp" example:"2024-01-01T12:00:00"` // 检查时间
+	Version   string `json:"version" example:"1.0.0"`                 // 版本信息
+	Database  string `json:"database" example:"connected"`            // 数据库状态
+}

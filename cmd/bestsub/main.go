@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 
+	"github.com/bestruirui/bestsub/internal/api/server"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/utils/banner"
@@ -10,25 +11,18 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/shutdown"
 )
 
-var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildTime = "unknown"
-	Author    = "unknown"
-)
-
 func main() {
 
 	configPath := flag.String("c", config.DefaultConfigPath, "config file path")
 	flag.Parse()
 
-	banner.Print(Version, Commit, BuildTime, Author)
+	banner.Print()
 
 	if err := config.Initialize(*configPath); err != nil {
 		panic(err)
 	}
 
-	cfg := config.GetConfig()
+	cfg := config.Get()
 
 	if err := log.Initialize(cfg.Log); err != nil {
 		panic(err)
@@ -36,8 +30,15 @@ func main() {
 	if err := database.Initialize(cfg.Database); err != nil {
 		log.Fatal(err)
 	}
+
+	if err := server.Initialize(); err != nil {
+		panic(err)
+	}
+	go server.Start()
+
 	shutdown.Register("Log", log.Close)
 	shutdown.Register("Database", database.Close)
+	shutdown.Register("HTTP Server", server.Close)
 
 	shutdown.Listen()
 }

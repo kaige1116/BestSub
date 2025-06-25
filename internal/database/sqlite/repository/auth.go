@@ -52,11 +52,46 @@ func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	query := `UPDATE auth SET password = ?, updated_at = ? WHERE user_name = ?`
+	query := `UPDATE auth SET password = ?, updated_at = ?`
 
-	_, err = r.db.ExecContext(ctx, query, hashedPassword, timeutils.Now(), auth.UserName)
+	result, err := r.db.ExecContext(ctx, query, hashedPassword, timeutils.Now())
 	if err != nil {
 		return fmt.Errorf("failed to update auth: %w", err)
+	}
+
+	// 检查是否有记录被更新
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("用户不存在")
+	}
+
+	return nil
+}
+
+// UpdateUsername 更新用户名
+func (r *AuthRepository) UpdateUsername(ctx context.Context, username string) error {
+	if username == "" {
+		return fmt.Errorf("用户名不能为空")
+	}
+
+	// 单用户系统，直接更新唯一记录
+	query := `UPDATE auth SET user_name = ?, updated_at = ?`
+
+	result, err := r.db.ExecContext(ctx, query, username, timeutils.Now())
+	if err != nil {
+		return fmt.Errorf("failed to update username: %w", err)
+	}
+
+	// 检查是否有记录被更新
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("用户不存在")
 	}
 
 	return nil
@@ -83,15 +118,15 @@ func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) erro
 
 // IsInitialized 验证是否已初始化
 func (r *AuthRepository) IsInitialized(ctx context.Context) (bool, error) {
-	query := `SELECT COUNT(*) FROM auth`
+	query := `SELECT EXISTS(SELECT 1 FROM auth LIMIT 1)`
 
-	var count int
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	var exists bool
+	err := r.db.QueryRowContext(ctx, query).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check auth initialization: %w", err)
 	}
 
-	return count > 0, nil
+	return exists, nil
 }
 
 // VerifyPassword 验证密码
@@ -111,7 +146,7 @@ func (r *AuthRepository) VerifyPassword(ctx context.Context, username, password 
 	err := r.db.QueryRowContext(ctx, query, username).Scan(&hashedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("用户不存在")
+			return fmt.Errorf("用户名或密码错误")
 		}
 		return fmt.Errorf("failed to get user password: %w", err)
 	}

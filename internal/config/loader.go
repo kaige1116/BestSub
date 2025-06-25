@@ -45,7 +45,7 @@ func Initialize(configPath string) error {
 	return nil
 }
 
-func GetConfig() Config {
+func Get() Config {
 	return config
 }
 

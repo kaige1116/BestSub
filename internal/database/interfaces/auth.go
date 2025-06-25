@@ -14,6 +14,9 @@ type AuthRepository interface {
 	// 更新认证信息
 	Update(ctx context.Context, auth *models.Auth) error
 
+	// 更新用户名
+	UpdateUsername(ctx context.Context, username string) error
+
 	// 初始化认证信息（首次创建密码）
 	Initialize(ctx context.Context, auth *models.Auth) error
 

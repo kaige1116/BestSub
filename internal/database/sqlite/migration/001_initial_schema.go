@@ -7,7 +7,8 @@ func Migration001InitialSchema() string {
 	return `
 -- 认证表
 CREATE TABLE IF NOT EXISTS auth (
-    user_name TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_name TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
