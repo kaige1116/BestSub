@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // SystemConfigRepository 系统配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *models.Syst
 	query := `INSERT INTO system_configs (key, value, type, group_name, description, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
@@ -51,33 +51,6 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *models.Syst
 	config.UpdatedAt = now
 
 	return nil
-}
-
-// GetByID 根据ID获取配置
-func (r *SystemConfigRepository) GetByID(ctx context.Context, id int64) (*models.SystemConfig, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
-	          FROM system_configs WHERE id = ?`
-
-	var config models.SystemConfig
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&config.ID,
-		&config.Key,
-		&config.Value,
-		&config.Type,
-		&config.Group,
-		&config.Description,
-		&config.CreatedAt,
-		&config.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get system config by id: %w", err)
-	}
-
-	return &config, nil
 }
 
 // GetByKey 根据键获取配置
@@ -118,24 +91,12 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *models.Syst
 		config.Type,
 		config.Group,
 		config.Description,
-		utils.Now(),
+		timeutils.Now(),
 		config.ID,
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to update system config: %w", err)
-	}
-
-	return nil
-}
-
-// Delete 删除配置
-func (r *SystemConfigRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM system_configs WHERE id = ?`
-
-	_, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete system config: %w", err)
 	}
 
 	return nil
@@ -153,98 +114,11 @@ func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) er
 	return nil
 }
 
-// List 获取配置列表
-func (r *SystemConfigRepository) List(ctx context.Context, offset, limit int) ([]*models.SystemConfig, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
-	          FROM system_configs ORDER BY group_name, key LIMIT ? OFFSET ?`
-
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list system configs: %w", err)
-	}
-	defer rows.Close()
-
-	var configs []*models.SystemConfig
-	for rows.Next() {
-		var config models.SystemConfig
-		err := rows.Scan(
-			&config.ID,
-			&config.Key,
-			&config.Value,
-			&config.Type,
-			&config.Group,
-			&config.Description,
-			&config.CreatedAt,
-			&config.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan system config: %w", err)
-		}
-		configs = append(configs, &config)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate system configs: %w", err)
-	}
-
-	return configs, nil
-}
-
-// ListByGroup 根据分组获取配置列表
-func (r *SystemConfigRepository) ListByGroup(ctx context.Context, group string) ([]*models.SystemConfig, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
-	          FROM system_configs WHERE group_name = ? ORDER BY key`
-
-	rows, err := r.db.QueryContext(ctx, query, group)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list system configs by group: %w", err)
-	}
-	defer rows.Close()
-
-	var configs []*models.SystemConfig
-	for rows.Next() {
-		var config models.SystemConfig
-		err := rows.Scan(
-			&config.ID,
-			&config.Key,
-			&config.Value,
-			&config.Type,
-			&config.Group,
-			&config.Description,
-			&config.CreatedAt,
-			&config.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan system config: %w", err)
-		}
-		configs = append(configs, &config)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate system configs: %w", err)
-	}
-
-	return configs, nil
-}
-
-// Count 获取配置总数
-func (r *SystemConfigRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM system_configs`
-
-	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("failed to count system configs: %w", err)
-	}
-
-	return count, nil
-}
-
 // SetValue 设置配置值
 func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
 	// 首先尝试更新
 	updateQuery := `UPDATE system_configs SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, utils.Now(), key)
+	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, timeutils.Now(), key)
 	if err != nil {
 		return fmt.Errorf("failed to update system config value: %w", err)
 	}
@@ -258,7 +132,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 	if rowsAffected == 0 {
 		insertQuery := `INSERT INTO system_configs (key, value, type, group_name, description, created_at, updated_at) 
 		                VALUES (?, ?, ?, ?, ?, ?, ?)`
-		now := utils.Now()
+		now := timeutils.Now()
 		_, err = r.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert system config value: %w", err)
@@ -266,22 +140,6 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 	}
 
 	return nil
-}
-
-// GetValue 获取配置值
-func (r *SystemConfigRepository) GetValue(ctx context.Context, key string) (string, error) {
-	query := `SELECT value FROM system_configs WHERE key = ?`
-
-	var value string
-	err := r.db.QueryRowContext(ctx, query, key).Scan(&value)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", nil
-		}
-		return "", fmt.Errorf("failed to get system config value: %w", err)
-	}
-
-	return value, nil
 }
 
 // NotificationChannelRepository 通知渠道数据访问实现
@@ -299,7 +157,7 @@ func (r *NotificationChannelRepository) Create(ctx context.Context, channel *mod
 	query := `INSERT INTO notification_channels (name, type, config, is_active, test_result, last_test, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		channel.Name,
 		channel.Type,
@@ -367,7 +225,7 @@ func (r *NotificationChannelRepository) Update(ctx context.Context, channel *mod
 		channel.IsActive,
 		channel.TestResult,
 		channel.LastTest,
-		utils.Now(),
+		timeutils.Now(),
 		channel.ID,
 	)
 
@@ -521,7 +379,7 @@ func (r *NotificationChannelRepository) Count(ctx context.Context) (int64, error
 func (r *NotificationChannelRepository) UpdateTestResult(ctx context.Context, id int64, testResult string) error {
 	query := `UPDATE notification_channels SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update notification channel test result: %w", err)

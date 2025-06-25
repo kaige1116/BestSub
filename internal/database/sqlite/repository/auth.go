@@ -8,8 +8,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/passwd"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // AuthRepository 认证数据访问实现
@@ -54,7 +54,7 @@ func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
 
 	query := `UPDATE auth SET password = ?, updated_at = ? WHERE user_name = ?`
 
-	_, err = r.db.ExecContext(ctx, query, hashedPassword, utils.Now(), auth.UserName)
+	_, err = r.db.ExecContext(ctx, query, hashedPassword, timeutils.Now(), auth.UserName)
 	if err != nil {
 		return fmt.Errorf("failed to update auth: %w", err)
 	}
@@ -72,7 +72,7 @@ func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) erro
 
 	query := `INSERT INTO auth (user_name, password, created_at, updated_at) VALUES (?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	_, err = r.db.ExecContext(ctx, query, auth.UserName, hashedPassword, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to initialize auth: %w", err)
@@ -135,7 +135,7 @@ func (r *SessionRepository) Create(ctx context.Context, session *models.Session)
 	query := `INSERT INTO sessions (token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		session.TokenHash,
 		session.ExpiresAt,
@@ -259,7 +259,7 @@ func (r *SessionRepository) Update(ctx context.Context, session *models.Session)
 		session.IPAddress,
 		session.UserAgent,
 		session.IsActive,
-		utils.Now(),
+		timeutils.Now(),
 		session.ID,
 	)
 
@@ -298,7 +298,7 @@ func (r *SessionRepository) DeleteAll(ctx context.Context) error {
 func (r *SessionRepository) DeleteExpired(ctx context.Context) error {
 	query := `DELETE FROM sessions WHERE expires_at < ?`
 
-	_, err := r.db.ExecContext(ctx, query, utils.Now())
+	_, err := r.db.ExecContext(ctx, query, timeutils.Now())
 	if err != nil {
 		return fmt.Errorf("failed to delete expired sessions: %w", err)
 	}
@@ -348,7 +348,7 @@ func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*models.Session
 func (r *SessionRepository) DeactivateAll(ctx context.Context) error {
 	query := `UPDATE sessions SET is_active = false, updated_at = ?`
 
-	_, err := r.db.ExecContext(ctx, query, utils.Now())
+	_, err := r.db.ExecContext(ctx, query, timeutils.Now())
 	if err != nil {
 		return fmt.Errorf("failed to deactivate all sessions: %w", err)
 	}

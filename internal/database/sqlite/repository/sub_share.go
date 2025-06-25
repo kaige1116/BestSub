@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // SubShareLinkRepository 分享链接数据访问实现
@@ -27,7 +27,7 @@ func (r *SubShareLinkRepository) Create(ctx context.Context, shareLink *models.S
 	          node_filter_id, expires_at, max_downloads, download_count, last_access, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		shareLink.Name,
 		shareLink.Description,
@@ -142,7 +142,7 @@ func (r *SubShareLinkRepository) Update(ctx context.Context, shareLink *models.S
 		shareLink.MaxDownloads,
 		shareLink.DownloadCount,
 		shareLink.LastAccess,
-		utils.Now(),
+		timeutils.Now(),
 		shareLink.ID,
 	)
 
@@ -181,7 +181,7 @@ func (r *SubShareLinkRepository) ListEnabled(ctx context.Context) ([]*models.Sub
 	          FROM sub_share_links WHERE is_enabled = true AND (expires_at IS NULL OR expires_at > ?) 
 	          ORDER BY created_at DESC`
 
-	return r.queryShareLinks(ctx, query, utils.Now())
+	return r.queryShareLinks(ctx, query, timeutils.Now())
 }
 
 // Count 获取分享链接总数
@@ -201,7 +201,7 @@ func (r *SubShareLinkRepository) Count(ctx context.Context) (int64, error) {
 func (r *SubShareLinkRepository) IncrementDownloadCount(ctx context.Context, id int64) error {
 	query := `UPDATE sub_share_links SET download_count = download_count + 1, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, utils.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, timeutils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to increment download count: %w", err)
 	}
@@ -213,7 +213,7 @@ func (r *SubShareLinkRepository) IncrementDownloadCount(ctx context.Context, id 
 func (r *SubShareLinkRepository) UpdateLastAccess(ctx context.Context, id int64) error {
 	query := `UPDATE sub_share_links SET last_access = ?, updated_at = ? WHERE id = ?`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	_, err := r.db.ExecContext(ctx, query, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update last access: %w", err)
@@ -226,7 +226,7 @@ func (r *SubShareLinkRepository) UpdateLastAccess(ctx context.Context, id int64)
 func (r *SubShareLinkRepository) DeleteExpired(ctx context.Context) error {
 	query := `DELETE FROM sub_share_links WHERE expires_at IS NOT NULL AND expires_at < ?`
 
-	_, err := r.db.ExecContext(ctx, query, utils.Now())
+	_, err := r.db.ExecContext(ctx, query, timeutils.Now())
 	if err != nil {
 		return fmt.Errorf("failed to delete expired share links: %w", err)
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // SubLinkRepository 链接数据访问实现
@@ -27,7 +27,7 @@ func (r *SubLinkRepository) Create(ctx context.Context, link *models.SubLink) er
 	          last_update, last_status, error_msg, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		link.Name,
 		link.URL,
@@ -137,7 +137,7 @@ func (r *SubLinkRepository) Update(ctx context.Context, link *models.SubLink) er
 		link.LastUpdate,
 		link.LastStatus,
 		link.ErrorMsg,
-		utils.Now(),
+		timeutils.Now(),
 		link.ID,
 	)
 
@@ -195,7 +195,7 @@ func (r *SubLinkRepository) Count(ctx context.Context) (int64, error) {
 func (r *SubLinkRepository) UpdateStatus(ctx context.Context, id int64, status, errorMsg string) error {
 	query := `UPDATE sub_links SET last_status = ?, error_msg = ?, last_update = ?, updated_at = ? WHERE id = ?`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	_, err := r.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update sub link status: %w", err)
@@ -257,7 +257,7 @@ func (r *SubLinkModuleConfigRepository) Create(ctx context.Context, config *mode
 	query := `INSERT INTO sub_link_module_configs (sub_link_id, module_type, module_name, is_enabled, priority, config, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		config.SubLinkID,
 		config.ModuleType,
@@ -325,7 +325,7 @@ func (r *SubLinkModuleConfigRepository) Update(ctx context.Context, config *mode
 		config.IsEnabled,
 		config.Priority,
 		config.Config,
-		utils.Now(),
+		timeutils.Now(),
 		config.ID,
 	)
 

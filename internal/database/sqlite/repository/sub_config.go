@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // SubStorageConfigRepository 存储配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *models.
 	query := `INSERT INTO sub_storage_configs (name, type, config, is_active, test_result, last_test, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Name,
 		config.Type,
@@ -94,7 +94,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *models.
 		config.IsActive,
 		config.TestResult,
 		config.LastTest,
-		utils.Now(),
+		timeutils.Now(),
 		config.ID,
 	)
 
@@ -158,7 +158,7 @@ func (r *SubStorageConfigRepository) Count(ctx context.Context) (int64, error) {
 func (r *SubStorageConfigRepository) UpdateTestResult(ctx context.Context, id int64, testResult string) error {
 	query := `UPDATE sub_storage_configs SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
 	if err != nil {
 		return fmt.Errorf("failed to update storage config test result: %w", err)
@@ -217,7 +217,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *mode
 	query := `INSERT INTO sub_output_templates (format, version, template, description, is_default, is_active, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		template.Format,
 		template.Version,
@@ -285,7 +285,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *mode
 		template.Description,
 		template.IsDefault,
 		template.IsActive,
-		utils.Now(),
+		timeutils.Now(),
 		template.ID,
 	)
 
@@ -448,7 +448,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *models.S
 	query := `INSERT INTO sub_node_filter_rules (rule_type, operator, value, is_enabled, priority, created_at, updated_at) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := utils.Now()
+	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		rule.RuleType,
 		rule.Operator,
@@ -513,7 +513,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *models.S
 		rule.Value,
 		rule.IsEnabled,
 		rule.Priority,
-		utils.Now(),
+		timeutils.Now(),
 		rule.ID,
 	)
 
@@ -577,7 +577,7 @@ func (r *SubNodeFilterRuleRepository) Count(ctx context.Context) (int64, error) 
 func (r *SubNodeFilterRuleRepository) UpdatePriority(ctx context.Context, id int64, priority int) error {
 	query := `UPDATE sub_node_filter_rules SET priority = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, priority, utils.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, priority, timeutils.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update filter rule priority: %w", err)
 	}

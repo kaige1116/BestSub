@@ -11,35 +11,17 @@ type SystemConfigRepository interface {
 	// Create 创建配置
 	Create(ctx context.Context, config *models.SystemConfig) error
 
-	// GetByID 根据ID获取配置
-	GetByID(ctx context.Context, id int64) (*models.SystemConfig, error)
-
 	// GetByKey 根据键获取配置
 	GetByKey(ctx context.Context, key string) (*models.SystemConfig, error)
 
 	// Update 更新配置
 	Update(ctx context.Context, config *models.SystemConfig) error
 
-	// Delete 删除配置
-	Delete(ctx context.Context, id int64) error
-
 	// DeleteByKey 根据键删除配置
 	DeleteByKey(ctx context.Context, key string) error
 
-	// List 获取配置列表
-	List(ctx context.Context, offset, limit int) ([]*models.SystemConfig, error)
-
-	// ListByGroup 根据分组获取配置列表
-	ListByGroup(ctx context.Context, group string) ([]*models.SystemConfig, error)
-
-	// Count 获取配置总数
-	Count(ctx context.Context) (int64, error)
-
-	// SetValue 设置配置值
+	// SetValue 设置配置值（如果不存在则创建，存在则更新）
 	SetValue(ctx context.Context, key, value, configType, group, description string) error
-
-	// GetValue 获取配置值
-	GetValue(ctx context.Context, key string) (string, error)
 }
 
 // NotificationChannelRepository 通知渠道数据访问接口

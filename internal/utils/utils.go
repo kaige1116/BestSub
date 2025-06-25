@@ -3,13 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
-	"time"
 )
-
-// 统一的时间函数，用于数据库操作中的时间戳
-func Now() time.Time {
-	return time.Now().Local()
-}
 
 // 检查目录是否可写
 func IsWritableDir(dir string) bool {

@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/migration"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	"github.com/bestruirui/bestsub/internal/utils"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // migrations 迁移注册表
@@ -118,7 +118,7 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 	_, err = tx.Exec(
 		`INSERT INTO schema_migrations (version, applied_at, success) VALUES (?, ?, TRUE)`,
 		migra.Version,
-		utils.Now(),
+		timeutils.Now(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to record migration: %w", err)
@@ -135,5 +135,5 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 // recordMigration 记录迁移结果
 func (m *Migrator) recordMigration(ctx context.Context, version string, success bool, errorMsg string) {
 	query := `INSERT OR REPLACE INTO schema_migrations (version, applied_at, success, error) VALUES (?, ?, ?, ?)`
-	m.db.ExecContext(ctx, query, version, utils.Now(), success, errorMsg)
+	m.db.ExecContext(ctx, query, version, timeutils.Now(), success, errorMsg)
 }
