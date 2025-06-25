@@ -112,7 +112,7 @@ build_android() {
             cgo_cc="armv7a-linux-androideabi24-clang"
             cgo_arch="arm"
             ;;
-        "386")
+        "x86")
             cgo_cc="i686-linux-android24-clang"
             cgo_arch="386"
             ;;
@@ -176,7 +176,6 @@ rename_files() {
     
     local renames=(
         "amd64:x86_64"
-        "386:x86"
         "arm-7:armv7"
     )
     
@@ -210,7 +209,7 @@ copy_docker_bin() {
     
     local platforms=(
         "amd64:linux/amd64"
-        "386:linux/386"
+        "x86:linux/386"
         "arm-7:linux/arm/v7"
         "arm64:linux/arm64"
     )
@@ -262,7 +261,7 @@ if [ "$1" == "release" ]; then
     build linux amd64
     build linux arm64
     build linux arm-7
-    build linux 386
+    build linux x86
 
     # Windows builds
     build windows amd64
