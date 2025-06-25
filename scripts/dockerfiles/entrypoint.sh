@@ -3,4 +3,4 @@ set -e
 
 chmod +x /app/bestsub
 
-exec "cd /app && ./bestsub" "$@" 
+cd /app && exec ./bestsub "$@"
