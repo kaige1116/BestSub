@@ -253,7 +253,7 @@ if [ "$1" == "release" ]; then
 
     # Android builds (requires CGO)
     # build_android amd64
-    # build_android 386
+    # build_android x86
     # build_android arm-7
     build_android arm64
 
@@ -266,7 +266,7 @@ if [ "$1" == "release" ]; then
     # Windows builds
     build windows amd64
     # build windows arm64
-    # build windows 386
+    # build windows x86
 
     # macOS builds
     # build darwin amd64
