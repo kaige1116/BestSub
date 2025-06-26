@@ -1,112 +1,170 @@
-// Package router provides HTTP routing configuration
-// @title BestSub API
-// @version 1.0.0
-// @description BestSub - Best Subscription Manager API Documentation
-// @description
-// @description This is the API documentation for BestSub, a subscription management system.
-// @description
-// @description ## Authentication
-// @description Most endpoints require authentication using JWT tokens.
-// @description To authenticate, include the JWT token in the Authorization header:
-// @description `Authorization: Bearer <your-jwt-token>`
-// @description
-// @description ## Error Responses
-// @description All error responses follow a consistent format with code, message, and error fields.
-// @description
-// @description ## Success Responses
-// @description All success responses follow a consistent format with code, message, and data fields.
-
-// @contact.name BestSub API Support
-// @contact.email support@bestsub.com
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
-// @BasePath /
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
-
-// @tag.name 认证
-// @tag.description 用户认证相关接口
-
-// @tag.name 系统
-// @tag.description 系统状态和健康检查接口
-
 package router
 
 import (
-	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"fmt"
+	"strings"
 
-	_ "github.com/bestruirui/bestsub/docs" // 导入生成的swagger文档
-	"github.com/bestruirui/bestsub/internal/api/handlers"
-	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/config"
+	"github.com/bestruirui/bestsub/internal/utils/log"
+	"github.com/gin-gonic/gin"
 )
 
-// SetupRouter 设置路由
-func SetupRouter() *gin.Engine {
-	// 根据配置设置Gin模式
-	cfg := config.Get()
-	if cfg.Log.Level == "debug" {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
+// Method represents HTTP methods
+type Method string
+
+const (
+	GET     Method = "GET"
+	POST    Method = "POST"
+	PUT     Method = "PUT"
+	DELETE  Method = "DELETE"
+	HEAD    Method = "HEAD"
+	OPTIONS Method = "OPTIONS"
+	PATCH   Method = "PATCH"
+	ANY     Method = "ANY"
+)
+
+// GroupRouter represents a group of routes with shared path prefix and middlewares
+type GroupRouter struct {
+	Path        string
+	Routes      []*Route
+	Middlewares []gin.HandlerFunc
+}
+
+// NewGroupRouter creates a new GroupRouter with the given path and automatically registers it.
+func NewGroupRouter(path string) *GroupRouter {
+	router := &GroupRouter{
+		Path:   path,
+		Routes: make([]*Route, 0),
 	}
+	registeredRouters = append(registeredRouters, router)
+	return router
+}
 
-	r := gin.New()
+// Use adds middlewares to the group.
+func (g *GroupRouter) Use(middlewares ...gin.HandlerFunc) *GroupRouter {
+	g.Middlewares = append(g.Middlewares, middlewares...)
+	return g
+}
 
-	// 添加中间件
-	r.Use(middleware.Logging())
-	r.Use(middleware.Recovery())
-	r.Use(middleware.Cors())
+// AddRoute adds a route to the group.
+func (g *GroupRouter) AddRoute(route *Route) *GroupRouter {
+	g.Routes = append(g.Routes, route)
+	return g
+}
 
-	// 创建处理器
-	authHandler := handlers.NewAuthHandler()
-	healthHandler := handlers.NewHealthHandler()
+// Route defines a single endpoint with its handlers and middlewares.
+type Route struct {
+	Path        string
+	Method      Method
+	Handlers    []gin.HandlerFunc
+	Middlewares []gin.HandlerFunc
+	Description string
+}
 
-	// 健康检查路由
-	r.GET("/health", healthHandler.HealthCheck)
-	r.GET("/ready", healthHandler.ReadinessCheck)
-	r.GET("/live", healthHandler.LivenessCheck)
-
-	// Swagger文档路由
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
-
-	// API v1 路由组
-	v1 := r.Group("/api/v1")
-	{
-		// 认证相关路由（无需认证）
-		authGroup := v1.Group("/auth")
-		{
-			authGroup.POST("/login", authHandler.Login)
-			authGroup.POST("/refresh", authHandler.RefreshToken)
-		}
-
-		// 需要认证的路由
-		protectedGroup := v1.Group("/auth")
-		protectedGroup.Use(middleware.Auth())
-		{
-			protectedGroup.POST("/logout", authHandler.Logout)
-			protectedGroup.POST("/change-password", authHandler.ChangePassword)
-			protectedGroup.POST("/update-username", authHandler.UpdateUsername)
-			protectedGroup.GET("/user", authHandler.GetUserInfo)
-			protectedGroup.GET("/sessions", authHandler.GetSessions)
-			protectedGroup.DELETE("/sessions/:id", authHandler.DeleteSession)
-		}
-
-		// 其他API路由组可以在这里添加
-		// 例如：
-		// configGroup := v1.Group("/config")
-		// configGroup.Use(auth.AuthMiddleware())
-		// {
-		//     // 配置相关路由
-		// }
+// NewRoute creates a new Route instance with the given path and method.
+func NewRoute(path string, method Method) *Route {
+	return &Route{
+		Path:     path,
+		Method:   method,
+		Handlers: make([]gin.HandlerFunc, 0),
 	}
+}
 
+// Handle adds handler functions to the route.
+func (r *Route) Handle(handlers ...gin.HandlerFunc) *Route {
+	r.Handlers = append(r.Handlers, handlers...)
 	return r
+}
+
+// Use adds middlewares to the route.
+func (r *Route) Use(middlewares ...gin.HandlerFunc) *Route {
+	r.Middlewares = append(r.Middlewares, middlewares...)
+	return r
+}
+
+// WithDescription adds a description to the route.
+func (r *Route) WithDescription(description string) *Route {
+	r.Description = description
+	return r
+}
+
+// Validate checks if the route is valid
+func (r *Route) Validate() error {
+	if r.Path == "" {
+		return fmt.Errorf("route path cannot be empty")
+	}
+	if len(r.Handlers) == 0 {
+		return fmt.Errorf("route must have at least one handler")
+	}
+	return nil
+}
+
+// Global registry for route groups
+var registeredRouters []*GroupRouter
+
+// GetRouterCount returns the total count of registered routes
+func GetRouterCount() int {
+	count := 0
+	for _, router := range registeredRouters {
+		count += len(router.Routes)
+	}
+	return count
+}
+
+// RegisterAll registers all globally registered route groups to the Gin engine
+func RegisterAll(engine *gin.Engine) error {
+	for _, router := range registeredRouters {
+		// Validate all routes in the group first
+		for _, route := range router.Routes {
+			if err := route.Validate(); err != nil {
+				return fmt.Errorf("invalid route in group %s: %w", router.Path, err)
+			}
+		}
+
+		// Create the route group
+		group := engine.Group(router.Path, router.Middlewares...)
+
+		// Register all routes in the group
+		for _, route := range router.Routes {
+			handlers := make([]gin.HandlerFunc, 0, len(route.Middlewares)+len(route.Handlers))
+			handlers = append(handlers, route.Middlewares...)
+			handlers = append(handlers, route.Handlers...)
+
+			registerRoute(group, route.Method, route.Path, handlers)
+		}
+	}
+
+	return nil
+}
+
+// registerRoute registers a single route to a Gin route group.
+func registerRoute(group *gin.RouterGroup, method Method, path string, handlers []gin.HandlerFunc) {
+	if len(handlers) == 0 {
+		return
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	switch method {
+	case GET:
+		group.GET(path, handlers...)
+	case POST:
+		group.POST(path, handlers...)
+	case PUT:
+		group.PUT(path, handlers...)
+	case DELETE:
+		group.DELETE(path, handlers...)
+	case HEAD:
+		group.HEAD(path, handlers...)
+	case OPTIONS:
+		group.OPTIONS(path, handlers...)
+	case PATCH:
+		group.PATCH(path, handlers...)
+	case ANY:
+		group.Any(path, handlers...)
+	default:
+		group.GET(path, handlers...)
+	}
+	log.Debugf("注册路由 %-7s %s", method, group.BasePath()+path)
 }

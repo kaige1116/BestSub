@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/models"
+	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database"
 	dbModels "github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
@@ -16,6 +18,58 @@ import (
 
 // AuthHandler 认证处理器
 type AuthHandler struct{}
+
+// init 函数用于自动注册路由
+func init() {
+	h := NewAuthHandler()
+
+	// 公开的认证路由（无需认证）
+	router.NewGroupRouter("/api/v1/auth").
+		AddRoute(
+			router.NewRoute("/login", router.POST).
+				Handle(h.Login).
+				WithDescription("User login"),
+		).
+		AddRoute(
+			router.NewRoute("/refresh", router.POST).
+				Handle(h.RefreshToken).
+				WithDescription("Refresh access token"),
+		)
+
+	// 需要认证的路由
+	router.NewGroupRouter("/api/v1/auth").
+		Use(middleware.Auth()).
+		AddRoute(
+			router.NewRoute("/logout", router.POST).
+				Handle(h.Logout).
+				WithDescription("User logout"),
+		).
+		AddRoute(
+			router.NewRoute("/user/password", router.POST).
+				Handle(h.ChangePassword).
+				WithDescription("Change user password"),
+		).
+		AddRoute(
+			router.NewRoute("/user/name", router.POST).
+				Handle(h.UpdateUsername).
+				WithDescription("Update username"),
+		).
+		AddRoute(
+			router.NewRoute("/user", router.GET).
+				Handle(h.GetUserInfo).
+				WithDescription("Get user information"),
+		).
+		AddRoute(
+			router.NewRoute("/sessions", router.GET).
+				Handle(h.GetSessions).
+				WithDescription("Get user sessions"),
+		).
+		AddRoute(
+			router.NewRoute("/sessions/:id", router.DELETE).
+				Handle(h.DeleteSession).
+				WithDescription("Delete session"),
+		)
+}
 
 // NewAuthHandler 创建认证处理器
 func NewAuthHandler() *AuthHandler {
@@ -49,7 +103,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	authRepo := database.Auth()
 	err := authRepo.VerifyPassword(context.Background(), req.Username, req.Password)
 	if err != nil {
-		log.Warnf("Login failed for user %s: %v", req.Username, err)
+		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
@@ -61,7 +115,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// 获取用户信息
 	authInfo, err := authRepo.Get(context.Background())
 	if err != nil {
-		log.Errorf("Failed to get auth info: %v", err)
+		log.Errorf("Failed to get auth info: %v from %s", err, c.ClientIP())
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -81,7 +135,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// 先创建会话以获取ID
 	err = sessionRepo.Create(context.Background(), session)
 	if err != nil {
-		log.Errorf("Failed to create session: %v", err)
+		log.Errorf("Failed to create session: %v from %s", err, c.ClientIP())
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -93,7 +147,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// 生成JWT令牌对
 	tokenPair, err := jwt.GenerateTokenPair(session.ID)
 	if err != nil {
-		log.Errorf("Failed to generate token pair: %v", err)
+		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -108,7 +162,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	session.ExpiresAt = tokenPair.ExpiresAt
 	err = sessionRepo.Update(context.Background(), session)
 	if err != nil {
-		log.Errorf("Failed to update session: %v", err)
+		log.Errorf("Failed to update session: %v from %s", err, c.ClientIP())
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -311,7 +365,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // @Failure 400 {object} models.ErrorResponse "请求参数错误"
 // @Failure 401 {object} models.ErrorResponse "未授权或旧密码错误"
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
-// @Router /api/v1/auth/change-password [post]
+// @Router /api/v1/auth/user/password [post]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	var req models.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -379,7 +433,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		log.Errorf("Failed to delete all sessions: %v", err)
 	}
 
-	log.Infof("Password changed successfully for user %s", username)
+	log.Infof("Password changed successfully for user %s from %s", username, c.ClientIP())
 
 	c.JSON(http.StatusOK, models.SuccessResponse{
 		Code:    http.StatusOK,
@@ -607,7 +661,7 @@ func (h *AuthHandler) DeleteSession(c *gin.Context) {
 // @Failure 401 {object} models.ErrorResponse "未授权"
 // @Failure 409 {object} models.ErrorResponse "用户名已存在"
 // @Failure 500 {object} models.ErrorResponse "服务器内部错误"
-// @Router /api/v1/auth/update-username [post]
+// @Router /api/v1/auth/user/name [post]
 func (h *AuthHandler) UpdateUsername(c *gin.Context) {
 	var req models.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

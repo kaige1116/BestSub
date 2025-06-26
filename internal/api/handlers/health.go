@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/api/models"
+	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -15,6 +16,28 @@ import (
 
 // HealthHandler 健康检查处理器
 type HealthHandler struct{}
+
+// init 函数用于自动注册路由
+func init() {
+	h := NewHealthHandler()
+
+	router.NewGroupRouter("/api/v1/system").
+		AddRoute(
+			router.NewRoute("/health", router.GET).
+				Handle(h.HealthCheck).
+				WithDescription("Health check endpoint"),
+		).
+		AddRoute(
+			router.NewRoute("/ready", router.GET).
+				Handle(h.ReadinessCheck).
+				WithDescription("Readiness check endpoint"),
+		).
+		AddRoute(
+			router.NewRoute("/live", router.GET).
+				Handle(h.LivenessCheck).
+				WithDescription("Liveness check endpoint"),
+		)
+}
 
 // NewHealthHandler 创建健康检查处理器
 func NewHealthHandler() *HealthHandler {
@@ -29,7 +52,7 @@ func NewHealthHandler() *HealthHandler {
 // @Produce json
 // @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务正常"
 // @Failure 503 {object} models.ErrorResponse "服务不可用"
-// @Router /health [get]
+// @Router /api/v1/system/health [get]
 func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	// 检查数据库连接状态
 	databaseStatus := "connected"
@@ -78,7 +101,7 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务就绪"
 // @Failure 503 {object} models.ErrorResponse "服务未就绪"
-// @Router /ready [get]
+// @Router /api/v1/system/ready [get]
 func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
 	ready := true
@@ -128,7 +151,7 @@ func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} models.SuccessResponse "服务存活"
-// @Router /live [get]
+// @Router /api/v1/system/live [get]
 func (h *HealthHandler) LivenessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, models.SuccessResponse{
 		Code:    http.StatusOK,
