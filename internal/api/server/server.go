@@ -44,7 +44,7 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/bestruirui/bestsub/internal/api/handlers" // 导入handlers以触发init函数
+	_ "github.com/bestruirui/bestsub/internal/api/handlers"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"

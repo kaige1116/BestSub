@@ -14,37 +14,37 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// HealthHandler 健康检查处理器
-type HealthHandler struct{}
+// healthHandler 健康检查处理器
+type healthHandler struct{}
 
 // init 函数用于自动注册路由
 func init() {
-	h := NewHealthHandler()
+	h := newHealthHandler()
 
 	router.NewGroupRouter("/api/v1/system").
 		AddRoute(
 			router.NewRoute("/health", router.GET).
-				Handle(h.HealthCheck).
+				Handle(h.healthCheck).
 				WithDescription("Health check endpoint"),
 		).
 		AddRoute(
 			router.NewRoute("/ready", router.GET).
-				Handle(h.ReadinessCheck).
+				Handle(h.readinessCheck).
 				WithDescription("Readiness check endpoint"),
 		).
 		AddRoute(
 			router.NewRoute("/live", router.GET).
-				Handle(h.LivenessCheck).
+				Handle(h.livenessCheck).
 				WithDescription("Liveness check endpoint"),
 		)
 }
 
-// NewHealthHandler 创建健康检查处理器
-func NewHealthHandler() *HealthHandler {
-	return &HealthHandler{}
+// newHealthHandler 创建健康检查处理器
+func newHealthHandler() *healthHandler {
+	return &healthHandler{}
 }
 
-// HealthCheck 健康检查
+// healthCheck 健康检查
 // @Summary 健康检查
 // @Description 检查服务健康状态，包括数据库连接状态
 // @Tags 系统
@@ -53,7 +53,7 @@ func NewHealthHandler() *HealthHandler {
 // @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务正常"
 // @Failure 503 {object} models.ErrorResponse "服务不可用"
 // @Router /api/v1/system/health [get]
-func (h *HealthHandler) HealthCheck(c *gin.Context) {
+func (h *healthHandler) healthCheck(c *gin.Context) {
 	// 检查数据库连接状态
 	databaseStatus := "connected"
 
@@ -93,7 +93,7 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	})
 }
 
-// ReadinessCheck 就绪检查
+// readinessCheck 就绪检查
 // @Summary 就绪检查
 // @Description 检查服务是否准备好接收请求
 // @Tags 系统
@@ -102,7 +102,7 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 // @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务就绪"
 // @Failure 503 {object} models.ErrorResponse "服务未就绪"
 // @Router /api/v1/system/ready [get]
-func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
+func (h *healthHandler) readinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
 	ready := true
 	var errorMsg string
@@ -144,7 +144,7 @@ func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 	})
 }
 
-// LivenessCheck 存活检查
+// livenessCheck 存活检查
 // @Summary 存活检查
 // @Description 检查服务是否存活（简单的ping检查）
 // @Tags 系统
@@ -152,7 +152,7 @@ func (h *HealthHandler) ReadinessCheck(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} models.SuccessResponse "服务存活"
 // @Router /api/v1/system/live [get]
-func (h *HealthHandler) LivenessCheck(c *gin.Context) {
+func (h *healthHandler) livenessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, models.SuccessResponse{
 		Code:    http.StatusOK,
 		Message: "Service is alive",
