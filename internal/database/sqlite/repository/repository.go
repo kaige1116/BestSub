@@ -30,9 +30,9 @@ func (r *Repository) SystemConfig() interfaces.SystemConfigRepository {
 	return newSystemConfigRepository(r.db)
 }
 
-// NotificationChannel 获取通知渠道仓库
-func (r *Repository) NotificationChannel() interfaces.NotificationChannelRepository {
-	return newNotificationChannelRepository(r.db)
+// Notify 获取通知渠道仓库
+func (r *Repository) Notify() interfaces.NotifyRepository {
+	return newNotifyRepository(r.db)
 }
 
 // Task 获取任务仓库

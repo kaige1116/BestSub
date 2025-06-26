@@ -15,7 +15,7 @@ type RepositoryManager struct {
 	authRepo                interfaces.AuthRepository
 	sessionRepo             interfaces.SessionRepository
 	systemConfigRepo        interfaces.SystemConfigRepository
-	notificationChannelRepo interfaces.NotificationChannelRepository
+	notifyRepo              interfaces.NotifyRepository
 	taskRepo                interfaces.TaskRepository
 	subStorageConfigRepo    interfaces.SubStorageConfigRepository
 	subOutputTemplateRepo   interfaces.SubOutputTemplateRepository
@@ -61,14 +61,14 @@ func (rm *RepositoryManager) SystemConfig() interfaces.SystemConfigRepository {
 	return rm.systemConfigRepo
 }
 
-// NotificationChannel 获取通知渠道仓库
-func (rm *RepositoryManager) NotificationChannel() interfaces.NotificationChannelRepository {
+// Notify 获取通知渠道仓库
+func (rm *RepositoryManager) Notify() interfaces.NotifyRepository {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
-	if rm.notificationChannelRepo == nil {
-		rm.notificationChannelRepo = rm.repo.NotificationChannel()
+	if rm.notifyRepo == nil {
+		rm.notifyRepo = rm.repo.Notify()
 	}
-	return rm.notificationChannelRepo
+	return rm.notifyRepo
 }
 
 // Task 获取任务仓库
@@ -175,9 +175,9 @@ func SystemConfig() interfaces.SystemConfigRepository {
 	return GetRepository().SystemConfig()
 }
 
-// NotificationChannel 获取通知渠道仓库
-func NotificationChannel() interfaces.NotificationChannelRepository {
-	return GetRepository().NotificationChannel()
+// Notify 获取通知渠道仓库
+func Notify() interfaces.NotifyRepository {
+	return GetRepository().Notify()
 }
 
 // Task 获取任务仓库

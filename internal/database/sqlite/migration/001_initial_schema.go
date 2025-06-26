@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS system_config (
 );
 
 -- 通知渠道表
-CREATE TABLE IF NOT EXISTS notification_channels (
+CREATE TABLE IF NOT EXISTS notify (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     type TEXT NOT NULL, -- email, webhook, telegram, etc.
@@ -155,25 +155,6 @@ CREATE TABLE IF NOT EXISTS sub_share_links (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sub_save_config_id) REFERENCES sub_save_configs(id) ON DELETE CASCADE
 );
-`
-}
-
-// Migration001InitialSchemaDown 回滚初始数据库架构
-func Migration001InitialSchemaDown() string {
-	return `
--- 删除表（按依赖关系逆序）
-DROP TABLE IF EXISTS sub_share_links;
-DROP TABLE IF EXISTS sub_save_configs;
-DROP TABLE IF EXISTS sub_link_module_configs;
-DROP TABLE IF EXISTS sub_links;
-DROP TABLE IF EXISTS sub_node_filter_rules;
-DROP TABLE IF EXISTS sub_output_templates;
-DROP TABLE IF EXISTS sub_storage_configs;
-DROP TABLE IF EXISTS tasks;
-DROP TABLE IF EXISTS notification_channels;
-DROP TABLE IF EXISTS system_config;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS auth;
 `
 }
 

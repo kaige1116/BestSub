@@ -8,7 +8,7 @@ type Repository interface {
 
 	// 配置相关
 	SystemConfig() SystemConfigRepository
-	NotificationChannel() NotificationChannelRepository
+	Notify() NotifyRepository
 
 	// 任务相关
 	Task() TaskRepository

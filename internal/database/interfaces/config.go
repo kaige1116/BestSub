@@ -24,32 +24,3 @@ type SystemConfigRepository interface {
 	SetValue(ctx context.Context, key, value, configType, group, description string) error
 }
 
-// NotificationChannelRepository 通知渠道数据访问接口
-type NotificationChannelRepository interface {
-	// Create 创建通知渠道
-	Create(ctx context.Context, channel *models.NotificationChannel) error
-
-	// GetByID 根据ID获取通知渠道
-	GetByID(ctx context.Context, id int64) (*models.NotificationChannel, error)
-
-	// Update 更新通知渠道
-	Update(ctx context.Context, channel *models.NotificationChannel) error
-
-	// Delete 删除通知渠道
-	Delete(ctx context.Context, id int64) error
-
-	// List 获取通知渠道列表
-	List(ctx context.Context, offset, limit int) ([]*models.NotificationChannel, error)
-
-	// ListActive 获取活跃的通知渠道列表
-	ListActive(ctx context.Context) ([]*models.NotificationChannel, error)
-
-	// ListByType 根据类型获取通知渠道列表
-	ListByType(ctx context.Context, channelType string) ([]*models.NotificationChannel, error)
-
-	// Count 获取通知渠道总数
-	Count(ctx context.Context) (int64, error)
-
-	// UpdateTestResult 更新测试结果
-	UpdateTestResult(ctx context.Context, id int64, testResult string) error
-}
