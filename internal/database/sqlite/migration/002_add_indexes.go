@@ -14,9 +14,6 @@ CREATE INDEX IF NOT EXISTS idx_sessions_is_active ON sessions(is_active);
 -- 系统配置表索引
 CREATE INDEX IF NOT EXISTS idx_system_config_key ON system_config(key);
 
--- 通知渠道表索引
-CREATE INDEX IF NOT EXISTS idx_notification_channels_type ON notification_channels(type);
-CREATE INDEX IF NOT EXISTS idx_notification_channels_enabled ON notification_channels(enabled);
 
 -- 任务表索引
 CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
