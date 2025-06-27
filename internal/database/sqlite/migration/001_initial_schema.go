@@ -17,20 +17,23 @@ CREATE TABLE IF NOT EXISTS auth (
 -- 会话表
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_hash TEXT UNIQUE NOT NULL,
-    expires_at DATETIME NOT NULL,
-    refresh_token TEXT UNIQUE,
     ip_address TEXT,
     user_agent TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    expires_at DATETIME NOT NULL,
+    token_hash TEXT UNIQUE NOT NULL,
+    refresh_token TEXT UNIQUE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 系统配置表
 CREATE TABLE IF NOT EXISTS system_config (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_name TEXT NOT NULL,
+    type TEXT NOT NULL, 
+    key TEXT NOT NULL,   
+    value TEXT DEFAULT '',
     description TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -22,5 +22,13 @@ type SystemConfigRepository interface {
 
 	// SetValue 设置配置值（如果不存在则创建，存在则更新）
 	SetValue(ctx context.Context, key, value, configType, group, description string) error
-}
 
+	// GetAllKeys 获取所有配置键
+	GetAllKeys(ctx context.Context) ([]string, error)
+
+	// GetAllGroups 获取所有配置分组
+	GetAllGroups(ctx context.Context) ([]string, error)
+
+	// GetConfigsByGroup 获取指定分组下的所有配置
+	GetConfigsByGroup(ctx context.Context, group string) ([]models.SystemConfig, error)
+}
