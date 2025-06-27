@@ -544,15 +544,108 @@ prepare_docker_binaries() {
 # =============================================================================
 
 show_usage() {
-    echo "Usage: $0 <command>"
+    echo "Usage: $0 <command> [os] [arch]"
     echo ""
     echo "Commands:"
-    echo "  release    Build all platforms and create distribution packages"
-    echo "  help       Show this help message"
+    echo "  release              Build all platforms and create distribution packages"
+    echo "  build <os> <arch>    Build for specific OS and architecture"
+    echo "  help                 Show this help message"
+    echo ""
+    echo "Supported OS:"
+    echo "  linux, windows, darwin, android"
+    echo ""
+    echo "Supported architectures:"
+    echo "  x86_64, arm64, armv7, x86"
+    echo ""
+    echo "Examples:"
+    echo "  $0 build windows x86_64"
+    echo "  $0 build linux x86_64"
+    echo "  $0 build android arm64"
+    echo "  $0 release"
+}
+
+validate_os_arch() {
+    local os="$1"
+    local arch="$2"
+
+    # Validate OS
+    case "$os" in
+        "linux"|"windows"|"darwin"|"android")
+            ;;
+        *)
+            log_error "Unsupported OS: $os"
+            log_error "Supported OS: linux, windows, darwin, android"
+            return 1
+            ;;
+    esac
+
+    # Validate architecture
+    case "$arch" in
+        "x86_64"|"arm64"|"armv7"|"x86")
+            ;;
+        *)
+            log_error "Unsupported architecture: $arch"
+            log_error "Supported architectures: x86_64, arm64, armv7, x86"
+            return 1
+            ;;
+    esac
+
+    return 0
 }
 
 main() {
     case "${1:-}" in
+        "build")
+            if [ $# -ne 3 ]; then
+                log_error "Build command requires OS and architecture"
+                log_error "Usage: $0 build <os> <arch>"
+                show_usage
+                exit 1
+            fi
+
+            local os="$2"
+            local arch="$3"
+
+            if ! validate_os_arch "$os" "$arch"; then
+                exit 1
+            fi
+
+            log_step "Starting single platform build"
+            echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID}) for ${os}/${arch}"
+            echo ""
+
+            # Setup
+            if ! prepare_environment; then
+                log_error "Failed to prepare build environment"
+                exit 1
+            fi
+
+            # Setup Android NDK if building for Android
+            if [ "$os" = "android" ]; then
+                if ! setup_android_ndk; then
+                    log_error "Failed to setup Android NDK"
+                    exit 1
+                fi
+            fi
+
+            # Build for specified platform
+            log_step "Building binary"
+
+            if [ "$os" = "android" ]; then
+                if ! build_android "$arch"; then
+                    log_error "Failed to build ${os}/${arch}"
+                    exit 1
+                fi
+            else
+                if ! build_standard "$os" "$arch"; then
+                    log_error "Failed to build ${os}/${arch}"
+                    exit 1
+                fi
+            fi
+
+            log_step "Build completed"
+            log_success "Binary ready: ${OUTPUT_DIR}/bin/${APP_NAME}-${os}-${arch}"
+            ;;
         "release")
             log_step "Starting release build"
             echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID})"
