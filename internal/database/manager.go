@@ -7,8 +7,6 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
-	"github.com/bestruirui/bestsub/internal/database/sqlite"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -19,7 +17,7 @@ var (
 
 // 数据库管理器
 type Manager struct {
-	repository *RepositoryManager
+	repository *interfaces.RepositoryManager
 	config     config.DatabaseConfig
 	mu         sync.RWMutex
 	closed     bool
@@ -37,21 +35,8 @@ func Initialize(cfg config.DatabaseConfig) error {
 	return err
 }
 
-// Reinitialize 重新初始化数据库管理器（用于测试或配置更改）
-func Reinitialize(cfg config.DatabaseConfig) error {
-	// 关闭现有连接
-	if manager != nil {
-		Close()
-	}
-
-	// 重置 once，允许重新初始化
-	once = sync.Once{}
-
-	return Initialize(cfg)
-}
-
 // 获取仓库实例
-func GetRepository() *RepositoryManager {
+func GetRepository() *interfaces.RepositoryManager {
 	if manager == nil {
 		log.Fatal("database manager not initialized, call Initialize() first")
 	}
@@ -120,45 +105,10 @@ func (m *Manager) init() error {
 
 	log.Debugf("初始化数据库: 类型 %s, 路径 %s", m.config.Type, m.config.Path)
 
-	var repo interfaces.Repository
-	var migrator interfaces.Migrator
-
-	switch m.config.Type {
-	case "sqlite":
-		db, err := sqlite.New(m.config.Path)
-		if err != nil {
-			return fmt.Errorf("failed to create sqlite database: %w", err)
-		}
-		repo = sqlite.NewRepo(db)
-		migrator = sqlite.NewMigrator(db)
-	default:
-		// TODO: 实现 更多 数据库 支持
-		return fmt.Errorf("unsupported database type: %s", m.config.Type)
-	}
-
-	m.repository = NewRepositoryManager(repo)
-
-	// 应用迁移
-	if err := migrator.Apply(context.Background()); err != nil {
-		return fmt.Errorf("failed to apply migrations: %w", err)
-	}
-
-	// 初始化认证信息
-	auth := repo.Auth()
-	isInitialized, err := auth.IsInitialized(context.Background())
+	repository, err := Init(context.Background(), &m.config)
 	if err != nil {
-		return fmt.Errorf("failed to check if database is initialized: %w", err)
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	if !isInitialized {
-		if err := auth.Initialize(context.Background(), &models.Auth{
-			UserName: "admin",
-			Password: "admin",
-		}); err != nil {
-			return fmt.Errorf("failed to initialize auth: %w", err)
-		}
-		log.Info("初始化默认管理员账号 用户名: admin 密码: admin")
-	}
-
-	log.Debugf("数据库初始化成功")
+	m.repository = repository
 	return nil
 }
