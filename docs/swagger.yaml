@@ -1,0 +1,758 @@
+basePath: /
+definitions:
+  github_com_bestruirui_bestsub_internal_api_models.ChangePasswordRequest:
+    properties:
+      new_password:
+        description: 新密码
+        example: new_password
+        type: string
+      old_password:
+        description: 旧密码
+        example: old_password
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.ConfigItemData:
+    properties:
+      description:
+        description: 配置描述
+        example: 是否启用代理
+        type: string
+      id:
+        description: 配置ID
+        example: 1
+        type: integer
+      value:
+        description: 配置值
+        example: "true"
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse:
+    properties:
+      created_at:
+        description: 创建时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      description:
+        description: 配置描述
+        example: 是否启用代理
+        type: string
+      group_name:
+        description: 配置分组
+        example: proxy
+        type: string
+      id:
+        description: 配置ID
+        example: 1
+        type: integer
+      key:
+        description: 配置键
+        example: proxy.enable
+        type: string
+      type:
+        description: 配置类型
+        example: bool
+        type: string
+      updated_at:
+        description: 更新时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      value:
+        description: 配置值
+        example: "true"
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse:
+    properties:
+      items:
+        description: 配置项列表
+        items:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse'
+        type: array
+      total:
+        description: 总数
+        type: integer
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.ErrorResponse:
+    properties:
+      code:
+        description: 状态码
+        example: 400
+        type: integer
+      error:
+        description: 错误详情
+        example: Invalid request format
+        type: string
+      message:
+        description: 响应消息
+        example: Bad Request
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.HealthResponse:
+    properties:
+      database:
+        description: 数据库状态
+        example: connected
+        type: string
+      status:
+        description: 服务状态
+        example: ok
+        type: string
+      timestamp:
+        description: 检查时间
+        example: 2024-01-01T12:00:00
+        type: string
+      version:
+        description: 版本信息
+        example: 1.0.0
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.LoginRequest:
+    properties:
+      password:
+        description: 密码
+        example: admin
+        type: string
+      username:
+        description: 用户名
+        example: admin
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.LoginResponse:
+    properties:
+      access_token:
+        description: JWT访问令牌
+        example: access_token_string
+        type: string
+      expires_at:
+        description: 令牌过期时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      refresh_token:
+        description: 刷新令牌
+        example: refresh_token_string
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.UserInfo'
+        description: 用户信息
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        description: 刷新令牌
+        example: refresh_token_string
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.RefreshTokenResponse:
+    properties:
+      access_token:
+        description: 新的JWT访问令牌
+        example: new_access_token_string
+        type: string
+      expires_at:
+        description: 新令牌过期时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      refresh_token:
+        description: 新的刷新令牌
+        example: new_refresh_token_string
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.SessionInfo:
+    properties:
+      created_at:
+        description: 创建时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      expires_at:
+        description: 过期时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      id:
+        description: 会话ID
+        example: 1
+        type: integer
+      ip_address:
+        description: IP地址
+        example: 192.168.1.1
+        type: string
+      is_active:
+        description: 是否活跃
+        example: true
+        type: boolean
+      updated_at:
+        description: 更新时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      user_agent:
+        description: 用户代理
+        example: Mozilla/5.0...
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.SessionListResponse:
+    properties:
+      sessions:
+        description: 会话列表
+        items:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SessionInfo'
+        type: array
+      total:
+        description: 总数
+        type: integer
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.SuccessResponse:
+    properties:
+      code:
+        description: 状态码
+        example: 200
+        type: integer
+      data:
+        description: 响应数据
+      message:
+        description: 响应消息
+        example: success
+        type: string
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.UpdateConfigItemRequest:
+    properties:
+      data:
+        description: 配置数据
+        items:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemData'
+        type: array
+    required:
+    - data
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.UpdateUserInfoRequest:
+    properties:
+      username:
+        description: 新用户名
+        example: admin
+        type: string
+    required:
+    - username
+    type: object
+  github_com_bestruirui_bestsub_internal_api_models.UserInfo:
+    properties:
+      created_at:
+        description: 创建时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      updated_at:
+        description: 更新时间
+        example: "2024-01-01T12:00:00Z"
+        type: string
+      username:
+        description: 用户名
+        example: admin
+        type: string
+    type: object
+info:
+  contact:
+    email: support@bestsub.com
+    name: BestSub API Support
+  description: |-
+    BestSub - Best Subscription Manager API Documentation
+
+    This is the API documentation for BestSub, a subscription management system.
+
+    ## Authentication
+    Most endpoints require authentication using JWT tokens.
+    To authenticate, include the JWT token in the Authorization header:
+    `Authorization: Bearer <your-jwt-token>`
+
+    ## Error Responses
+    All error responses follow a consistent format with code, message, and error fields.
+
+    ## Success Responses
+    All success responses follow a consistent format with code, message, and data fields.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: BestSub API
+  version: 1.0.0
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口，验证用户名和密码，返回JWT令牌
+      parameters:
+      - description: 登录请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.LoginResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 用户名或密码错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      summary: 用户登录
+      tags:
+      - 认证
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: 用户登出接口，使当前会话失效
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 用户登出
+      tags:
+      - 认证
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌
+      parameters:
+      - description: 刷新令牌请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.RefreshTokenResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 刷新令牌无效
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      summary: 刷新访问令牌
+      tags:
+      - 认证
+  /api/v1/auth/sessions:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的所有活跃会话信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SessionListResponse'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取用户会话列表
+      tags:
+      - 认证
+  /api/v1/auth/sessions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的会话，使其失效
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "404":
+          description: 会话不存在
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除会话
+      tags:
+      - 认证
+  /api/v1/auth/user:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的详细信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.UserInfo'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取用户信息
+      tags:
+      - 认证
+  /api/v1/auth/user/name:
+    post:
+      consumes:
+      - application/json
+      description: 修改当前用户的用户名
+      parameters:
+      - description: 修改用户名请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.UpdateUserInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户名修改成功
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "409":
+          description: 用户名已存在
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改用户名
+      tags:
+      - 认证
+  /api/v1/auth/user/password:
+    post:
+      consumes:
+      - application/json
+      description: 修改当前用户的密码
+      parameters:
+      - description: 修改密码请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 密码修改成功
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 未授权或旧密码错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改密码
+      tags:
+      - 认证
+  /api/v1/config/items:
+    get:
+      consumes:
+      - application/json
+      description: 获取系统所有配置项，支持按分组过滤和关键字搜索
+      parameters:
+      - description: 配置分组过滤
+        in: query
+        name: group
+        type: string
+      - description: 关键字搜索配置名或描述
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取所有配置项
+      tags:
+      - 配置管理
+    patch:
+      consumes:
+      - application/json
+      description: 根据请求数据中的ID批量更新配置项的值和描述
+      parameters:
+      - description: 更新配置项请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.UpdateConfigItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 批量更新配置项
+      tags:
+      - 配置管理
+  /api/v1/config/items/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取指定的配置项详细信息
+      parameters:
+      - description: 配置项ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "404":
+          description: 配置项不存在
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取单个配置项
+      tags:
+      - 配置管理
+  /api/v1/system/health:
+    get:
+      consumes:
+      - application/json
+      description: 检查服务健康状态，包括数据库连接状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务正常
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.HealthResponse'
+              type: object
+        "503":
+          description: 服务不可用
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      summary: 健康检查
+      tags:
+      - 系统
+  /api/v1/system/live:
+    get:
+      consumes:
+      - application/json
+      description: 检查服务是否存活（简单的ping检查）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务存活
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+      summary: 存活检查
+      tags:
+      - 系统
+  /api/v1/system/ready:
+    get:
+      consumes:
+      - application/json
+      description: 检查服务是否准备好接收请求
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务就绪
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.HealthResponse'
+              type: object
+        "503":
+          description: 服务未就绪
+          schema:
+            $ref: '#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse'
+      summary: 就绪检查
+      tags:
+      - 系统
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: 用户认证相关接口
+  name: 认证
+- description: 系统状态和健康检查接口
+  name: 系统

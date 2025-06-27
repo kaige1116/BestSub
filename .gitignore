@@ -8,4 +8,7 @@ api/*
 
 # build
 dist/*
-build/*
+build
+
+# vscode
+.vscode
