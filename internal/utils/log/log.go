@@ -304,10 +304,12 @@ func Errorf(format string, args ...interface{}) {
 
 func Fatal(args ...interface{}) {
 	logWithCaller(logrus.FatalLevel, 2, args...)
+	os.Exit(1)
 }
 
 func Fatalf(format string, args ...interface{}) {
 	logfWithCaller(logrus.FatalLevel, 2, format, args...)
+	os.Exit(1)
 }
 
 // WithFields 创建带字段的日志条目（带调用者信息）
