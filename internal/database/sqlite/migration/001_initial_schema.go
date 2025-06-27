@@ -104,30 +104,23 @@ CREATE TABLE IF NOT EXISTS sub_node_filter_rules (
 -- 订阅链接表
 CREATE TABLE IF NOT EXISTS sub_links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
     url TEXT NOT NULL,
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    update_interval INTEGER NOT NULL DEFAULT 3600, -- 更新间隔（秒）
-    last_updated DATETIME,
-    last_error TEXT,
-    node_count INTEGER DEFAULT 0,
+    type TEXT NOT NULL,
+    user_agent TEXT,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    use_proxy BOOLEAN NOT NULL DEFAULT FALSE,
+    detector TEXT, -- JSON格式的检测器配置
+    notify TEXT, -- JSON格式的通知配置
+    cron_expr TEXT,
+    last_update DATETIME,
+    last_status TEXT,
+    error_msg TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 订阅链接模块配置表
-CREATE TABLE IF NOT EXISTS sub_link_module_configs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sub_link_id INTEGER NOT NULL,
-    module_type TEXT NOT NULL, -- filter, template, storage
-    module_id INTEGER NOT NULL,
-    config TEXT, -- 额外配置
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    priority INTEGER NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sub_link_id) REFERENCES sub_links(id) ON DELETE CASCADE
-);
+
 
 -- 订阅保存配置表
 CREATE TABLE IF NOT EXISTS sub_save_configs (

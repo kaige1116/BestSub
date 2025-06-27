@@ -24,7 +24,6 @@ type Repository interface {
 
 	// 订阅链接相关
 	SubLink() SubLinkRepository
-	SubLinkModuleConfig() SubLinkModuleConfigRepository
 
 	// 订阅保存相关
 	SubSaveConfig() SubSaveConfigRepository
@@ -42,18 +41,17 @@ type RepositoryManager struct {
 	mu   sync.RWMutex
 
 	// 缓存的仓库实例
-	authRepo                AuthRepository
-	sessionRepo             SessionRepository
-	systemConfigRepo        SystemConfigRepository
-	notifyRepo              NotifyRepository
-	taskRepo                TaskRepository
-	subStorageConfigRepo    SubStorageConfigRepository
-	subOutputTemplateRepo   SubOutputTemplateRepository
-	subNodeFilterRuleRepo   SubNodeFilterRuleRepository
-	subLinkRepo             SubLinkRepository
-	subLinkModuleConfigRepo SubLinkModuleConfigRepository
-	subSaveConfigRepo       SubSaveConfigRepository
-	subShareLinkRepo        SubShareLinkRepository
+	authRepo              AuthRepository
+	sessionRepo           SessionRepository
+	systemConfigRepo      SystemConfigRepository
+	notifyRepo            NotifyRepository
+	taskRepo              TaskRepository
+	subStorageConfigRepo  SubStorageConfigRepository
+	subOutputTemplateRepo SubOutputTemplateRepository
+	subNodeFilterRuleRepo SubNodeFilterRuleRepository
+	subLinkRepo           SubLinkRepository
+	subSaveConfigRepo     SubSaveConfigRepository
+	subShareLinkRepo      SubShareLinkRepository
 }
 
 // NewRepositoryManager 创建仓库管理器
@@ -149,16 +147,6 @@ func (rm *RepositoryManager) SubLink() SubLinkRepository {
 		rm.subLinkRepo = rm.repo.SubLink()
 	}
 	return rm.subLinkRepo
-}
-
-// SubLinkModuleConfig 获取链接模块配置仓库
-func (rm *RepositoryManager) SubLinkModuleConfig() SubLinkModuleConfigRepository {
-	rm.mu.Lock()
-	defer rm.mu.Unlock()
-	if rm.subLinkModuleConfigRepo == nil {
-		rm.subLinkModuleConfigRepo = rm.repo.SubLinkModuleConfig()
-	}
-	return rm.subLinkModuleConfigRepo
 }
 
 // SubSaveConfig 获取保存配置仓库

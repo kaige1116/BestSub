@@ -60,11 +60,6 @@ func (r *Repository) SubLink() interfaces.SubLinkRepository {
 	return newSubLinkRepository(r.db)
 }
 
-// SubLinkModuleConfig 获取链接模块配置仓库
-func (r *Repository) SubLinkModuleConfig() interfaces.SubLinkModuleConfigRepository {
-	return newSubLinkModuleConfigRepository(r.db)
-}
-
 // SubSaveConfig 获取保存配置仓库
 func (r *Repository) SubSaveConfig() interfaces.SubSaveConfigRepository {
 	return newSubSaveConfigRepository(r.db)

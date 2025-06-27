@@ -53,11 +53,6 @@ func SubLink() interfaces.SubLinkRepository {
 	return GetRepository().SubLink()
 }
 
-// SubLinkModuleConfig 获取链接模块配置仓库
-func SubLinkModuleConfig() interfaces.SubLinkModuleConfigRepository {
-	return GetRepository().SubLinkModuleConfig()
-}
-
 // SubSaveConfig 获取保存配置仓库
 func SubSaveConfig() interfaces.SubSaveConfigRepository {
 	return GetRepository().SubSaveConfig()
