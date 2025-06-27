@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/models"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/log"
+	"github.com/bestruirui/bestsub/internal/utils/system"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +38,14 @@ func init() {
 			router.NewRoute("/live", router.GET).
 				Handle(h.livenessCheck).
 				WithDescription("Liveness check endpoint"),
+		)
+
+	router.NewGroupRouter("/api/v1/system").
+		Use(middleware.Auth()).
+		AddRoute(
+			router.NewRoute("/info", router.GET).
+				Handle(h.systemInfo).
+				WithDescription("Get system information"),
 		)
 }
 
@@ -160,5 +170,31 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 			"status":    "alive",
 			"timestamp": timeutils.Now().Format(time.RFC3339),
 		},
+	})
+}
+
+// systemInfo 系统信息
+// @Summary 系统信息
+// @Description 获取程序运行相关信息，包括内存使用、运行时长、网络流量、CPU信息等
+// @Tags 系统
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=system.Info} "获取成功"
+// @Failure 401 {object} models.ErrorResponse "未授权"
+// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Router /api/v1/system/info [get]
+func (h *healthHandler) systemInfo(c *gin.Context) {
+	// 获取系统监控器实例
+	sysInfo := system.GetSystemInfo()
+
+	// 获取系统信息
+
+	log.Debug("System information retrieved successfully")
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: "System information retrieved successfully",
+		Data:    sysInfo,
 	})
 }
