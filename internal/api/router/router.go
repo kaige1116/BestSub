@@ -89,9 +89,6 @@ func (r *Route) WithDescription(description string) *Route {
 
 // Validate checks if the route is valid
 func (r *Route) Validate() error {
-	if r.Path == "" {
-		return fmt.Errorf("route path cannot be empty")
-	}
 	if len(r.Handlers) == 0 {
 		return fmt.Errorf("route must have at least one handler")
 	}
@@ -142,8 +139,10 @@ func registerRoute(group *gin.RouterGroup, method Method, path string, handlers 
 		return
 	}
 
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+	if path != "" {
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
 	}
 
 	switch method {
