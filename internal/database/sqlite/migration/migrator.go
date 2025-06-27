@@ -109,8 +109,6 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 	// 执行迁移SQL
 	_, err = tx.Exec(sql)
 	if err != nil {
-		// 记录失败的迁移
-		m.recordMigration(ctx, migra.Version, false, err.Error())
 		return fmt.Errorf("failed to execute migration SQL: %w", err)
 	}
 
@@ -130,10 +128,4 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 	}
 
 	return nil
-}
-
-// recordMigration 记录迁移结果
-func (m *Migrator) recordMigration(ctx context.Context, version string, success bool, errorMsg string) {
-	query := `INSERT OR REPLACE INTO schema_migrations (version, applied_at, success, error) VALUES (?, ?, ?, ?)`
-	m.db.ExecContext(ctx, query, version, timeutils.Now(), success, errorMsg)
 }
