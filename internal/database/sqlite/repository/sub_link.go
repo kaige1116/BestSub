@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/parser"
+	"github.com/bestruirui/bestsub/internal/models/sublink"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
@@ -24,7 +24,7 @@ func newSubLinkRepository(db *database.Database) interfaces.SubLinkRepository {
 }
 
 // Create 创建链接
-func (r *SubLinkRepository) Create(ctx context.Context, link *models.SubLink) error {
+func (r *SubLinkRepository) Create(ctx context.Context, link *sublink.Data) error {
 	// 序列化 detector 配置
 	detectorJSON, err := json.Marshal(link.Detector)
 	if err != nil {
@@ -37,22 +37,23 @@ func (r *SubLinkRepository) Create(ctx context.Context, link *models.SubLink) er
 		return fmt.Errorf("failed to marshal notify config: %w", err)
 	}
 
-	query := `INSERT INTO sub_links (name, url, type, user_agent, is_enabled, use_proxy, detector, notify, cron_expr,
-	          last_update, last_status, error_msg, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO sub_links (name, url, type, user_agent, proxy_enable, timeout, retries, is_enabled, detector, notify, cron_expr,
+	          last_status, error_msg, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
 		link.Name,
-		link.URL,
-		string(link.Type),
-		link.UserAgent,
+		link.FetchConfig.URL,
+		string(link.FetchConfig.Type),
+		link.FetchConfig.UserAgent,
+		link.FetchConfig.ProxyEnable,
+		link.FetchConfig.Timeout,
+		link.FetchConfig.Retries,
 		link.IsEnabled,
-		link.UseProxy,
 		string(detectorJSON),
 		string(notifyJSON),
 		link.CronExpr,
-		link.LastUpdate,
 		link.LastStatus,
 		link.ErrorMsg,
 		now,
@@ -76,27 +77,28 @@ func (r *SubLinkRepository) Create(ctx context.Context, link *models.SubLink) er
 }
 
 // GetByID 根据ID获取链接
-func (r *SubLinkRepository) GetByID(ctx context.Context, id int64) (*models.SubLink, error) {
-	query := `SELECT id, name, url, type, user_agent, is_enabled, use_proxy, detector, notify, cron_expr,
-	          last_update, last_status, error_msg, created_at, updated_at
+func (r *SubLinkRepository) GetByID(ctx context.Context, id int64) (*sublink.Data, error) {
+	query := `SELECT id, name, url, type, user_agent, proxy_enable, timeout, retries, is_enabled, detector, notify, cron_expr,
+	          last_status, error_msg, created_at, updated_at
 	          FROM sub_links WHERE id = ?`
 
-	var link models.SubLink
+	var link sublink.Data
 	var typeStr string
 	var detectorJSON string
 	var notifyJSON string
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&link.ID,
 		&link.Name,
-		&link.URL,
+		&link.FetchConfig.URL,
 		&typeStr,
-		&link.UserAgent,
+		&link.FetchConfig.UserAgent,
+		&link.FetchConfig.ProxyEnable,
+		&link.FetchConfig.Timeout,
+		&link.FetchConfig.Retries,
 		&link.IsEnabled,
-		&link.UseProxy,
 		&detectorJSON,
 		&notifyJSON,
 		&link.CronExpr,
-		&link.LastUpdate,
 		&link.LastStatus,
 		&link.ErrorMsg,
 		&link.CreatedAt,
@@ -111,7 +113,7 @@ func (r *SubLinkRepository) GetByID(ctx context.Context, id int64) (*models.SubL
 	}
 
 	// 反序列化类型和配置
-	link.Type = parser.ParserType(typeStr)
+	link.FetchConfig.Type = parser.ParserType(typeStr)
 	if detectorJSON != "" {
 		if err := json.Unmarshal([]byte(detectorJSON), &link.Detector); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal detector config: %w", err)
@@ -127,27 +129,28 @@ func (r *SubLinkRepository) GetByID(ctx context.Context, id int64) (*models.SubL
 }
 
 // GetByURL 根据URL获取链接
-func (r *SubLinkRepository) GetByURL(ctx context.Context, url string) (*models.SubLink, error) {
-	query := `SELECT id, name, url, type, user_agent, is_enabled, use_proxy, detector, notify, cron_expr,
-	          last_update, last_status, error_msg, created_at, updated_at
+func (r *SubLinkRepository) GetByURL(ctx context.Context, url string) (*sublink.Data, error) {
+	query := `SELECT id, name, url, type, user_agent, proxy_enable, timeout, retries, is_enabled, detector, notify, cron_expr,
+	          last_status, error_msg, created_at, updated_at
 	          FROM sub_links WHERE url = ?`
 
-	var link models.SubLink
+	var link sublink.Data
 	var typeStr string
 	var detectorJSON string
 	var notifyJSON string
 	err := r.db.QueryRowContext(ctx, query, url).Scan(
 		&link.ID,
 		&link.Name,
-		&link.URL,
+		&link.FetchConfig.URL,
 		&typeStr,
-		&link.UserAgent,
+		&link.FetchConfig.UserAgent,
+		&link.FetchConfig.ProxyEnable,
+		&link.FetchConfig.Timeout,
+		&link.FetchConfig.Retries,
 		&link.IsEnabled,
-		&link.UseProxy,
 		&detectorJSON,
 		&notifyJSON,
 		&link.CronExpr,
-		&link.LastUpdate,
 		&link.LastStatus,
 		&link.ErrorMsg,
 		&link.CreatedAt,
@@ -162,7 +165,7 @@ func (r *SubLinkRepository) GetByURL(ctx context.Context, url string) (*models.S
 	}
 
 	// 反序列化类型和配置
-	link.Type = parser.ParserType(typeStr)
+	link.FetchConfig.Type = parser.ParserType(typeStr)
 	if detectorJSON != "" {
 		if err := json.Unmarshal([]byte(detectorJSON), &link.Detector); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal detector config: %w", err)
@@ -178,7 +181,7 @@ func (r *SubLinkRepository) GetByURL(ctx context.Context, url string) (*models.S
 }
 
 // Update 更新链接
-func (r *SubLinkRepository) Update(ctx context.Context, link *models.SubLink) error {
+func (r *SubLinkRepository) Update(ctx context.Context, link *sublink.Data) error {
 	// 序列化 detector 配置
 	detectorJSON, err := json.Marshal(link.Detector)
 	if err != nil {
@@ -191,20 +194,21 @@ func (r *SubLinkRepository) Update(ctx context.Context, link *models.SubLink) er
 		return fmt.Errorf("failed to marshal notify config: %w", err)
 	}
 
-	query := `UPDATE sub_links SET name = ?, url = ?, type = ?, user_agent = ?, is_enabled = ?, use_proxy = ?,
-	          detector = ?, notify = ?, cron_expr = ?, last_update = ?, last_status = ?, error_msg = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE sub_links SET name = ?, url = ?, type = ?, user_agent = ?, proxy_enable = ?, timeout = ?, retries = ?, is_enabled = ?,
+	          detector = ?, notify = ?, cron_expr = ?, last_status = ?, error_msg = ?, updated_at = ? WHERE id = ?`
 
 	_, err = r.db.ExecContext(ctx, query,
 		link.Name,
-		link.URL,
-		string(link.Type),
-		link.UserAgent,
+		link.FetchConfig.URL,
+		string(link.FetchConfig.Type),
+		link.FetchConfig.UserAgent,
+		link.FetchConfig.ProxyEnable,
+		link.FetchConfig.Timeout,
+		link.FetchConfig.Retries,
 		link.IsEnabled,
-		link.UseProxy,
 		string(detectorJSON),
 		string(notifyJSON),
 		link.CronExpr,
-		link.LastUpdate,
 		link.LastStatus,
 		link.ErrorMsg,
 		timeutils.Now(),
@@ -231,9 +235,9 @@ func (r *SubLinkRepository) Delete(ctx context.Context, id int64) error {
 }
 
 // List 获取链接列表
-func (r *SubLinkRepository) List(ctx context.Context, offset, limit int) ([]*models.SubLink, error) {
-	query := `SELECT id, name, url, type, user_agent, is_enabled, use_proxy, detector, notify, cron_expr,
-	          last_update, last_status, error_msg, created_at, updated_at
+func (r *SubLinkRepository) List(ctx context.Context, offset, limit int) ([]*sublink.Data, error) {
+	query := `SELECT id, name, url, type, user_agent, proxy_enable, timeout, retries, is_enabled, detector, notify, cron_expr,
+	          last_status, error_msg, created_at, updated_at
 	          FROM sub_links ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	return r.querySubLinks(ctx, query, limit, offset)
@@ -253,31 +257,32 @@ func (r *SubLinkRepository) Count(ctx context.Context) (int64, error) {
 }
 
 // querySubLinks 通用链接查询方法
-func (r *SubLinkRepository) querySubLinks(ctx context.Context, query string, args ...any) ([]*models.SubLink, error) {
+func (r *SubLinkRepository) querySubLinks(ctx context.Context, query string, args ...any) ([]*sublink.Data, error) {
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sub links: %w", err)
 	}
 	defer rows.Close()
 
-	var links []*models.SubLink
+	var links []*sublink.Data
 	for rows.Next() {
-		var link models.SubLink
+		var link sublink.Data
 		var typeStr string
 		var detectorJSON string
 		var notifyJSON string
 		err := rows.Scan(
 			&link.ID,
 			&link.Name,
-			&link.URL,
+			&link.FetchConfig.URL,
 			&typeStr,
-			&link.UserAgent,
+			&link.FetchConfig.UserAgent,
+			&link.FetchConfig.ProxyEnable,
+			&link.FetchConfig.Timeout,
+			&link.FetchConfig.Retries,
 			&link.IsEnabled,
-			&link.UseProxy,
 			&detectorJSON,
 			&notifyJSON,
 			&link.CronExpr,
-			&link.LastUpdate,
 			&link.LastStatus,
 			&link.ErrorMsg,
 			&link.CreatedAt,
@@ -288,7 +293,7 @@ func (r *SubLinkRepository) querySubLinks(ctx context.Context, query string, arg
 		}
 
 		// 反序列化类型和配置
-		link.Type = parser.ParserType(typeStr)
+		link.FetchConfig.Type = parser.ParserType(typeStr)
 		if detectorJSON != "" {
 			if err := json.Unmarshal([]byte(detectorJSON), &link.Detector); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal detector config: %w", err)

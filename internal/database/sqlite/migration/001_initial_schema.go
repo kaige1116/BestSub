@@ -107,13 +107,14 @@ CREATE TABLE IF NOT EXISTS sub_links (
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     type TEXT NOT NULL,
-    user_agent TEXT,
+    user_agent TEXT DEFAULT 'clash.meta',
+    proxy_enable BOOLEAN NOT NULL DEFAULT FALSE,
+    timeout INTEGER NOT NULL DEFAULT 5,
+    retries INTEGER NOT NULL DEFAULT 3,
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    use_proxy BOOLEAN NOT NULL DEFAULT FALSE,
     detector TEXT, -- JSON格式的检测器配置
     notify TEXT, -- JSON格式的通知配置
     cron_expr TEXT,
-    last_update DATETIME,
     last_status TEXT,
     error_msg TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

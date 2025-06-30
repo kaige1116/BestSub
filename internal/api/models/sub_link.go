@@ -16,9 +16,6 @@ type SubLinkUpdateRequest struct {
 	sublink.BaseData
 }
 
-// SubLinkResponse 订阅链接响应模型
-type SubLinkResponse = sublink.Data
-
 // SubLinkListResponse 订阅链接列表响应模型
 type SubLinkListResponse struct {
 	Items []sublink.Data `json:"items"` // 订阅链接列表
