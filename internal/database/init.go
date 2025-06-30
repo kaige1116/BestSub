@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 
-	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/defaults"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/models"
@@ -11,20 +10,20 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-func Init(ctx context.Context, config *config.DatabaseConfig) (repository *interfaces.RepositoryManager, err error) {
+func Init(ctx context.Context, sqltype, path string) (repository *interfaces.RepositoryManager, err error) {
 	var repo interfaces.Repository
 	var migrator interfaces.Migrator
 
-	switch config.Type {
+	switch sqltype {
 	case "sqlite":
-		db, err := sqlite.New(config.Path)
+		db, err := sqlite.New(path)
 		if err != nil {
 			log.Fatalf("failed to create sqlite database: %v", err)
 		}
 		repo = sqlite.NewRepo(db)
 		migrator = sqlite.NewMigrator(db)
 	default:
-		log.Fatalf("unsupported database type: %s", config.Type)
+		log.Fatalf("unsupported database type: %s", sqltype)
 	}
 	repository = interfaces.NewRepositoryManager(repo)
 	log.Debugf("数据库初始化开始")

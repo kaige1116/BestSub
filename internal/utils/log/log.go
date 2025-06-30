@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/utils/color"
 	"github.com/sirupsen/logrus"
 )
@@ -127,12 +126,12 @@ func isTerminal(w io.Writer) bool {
 }
 
 // 初始化日志系统
-func Initialize(config config.LogConfig) error {
+func Initialize(setLevel string, setOutput string, setDir string) error {
 	StartupTime = time.Now()
 	Logger = logrus.New()
 
 	// 设置日志等级
-	level, err := logrus.ParseLevel(config.Level)
+	level, err := logrus.ParseLevel(setLevel)
 	if err != nil {
 		level = logrus.InfoLevel
 	}
@@ -143,17 +142,17 @@ func Initialize(config config.LogConfig) error {
 	enableColor := false
 
 	// 根据输出类型设置输出和颜色
-	switch strings.ToLower(config.Output) {
+	switch strings.ToLower(setOutput) {
 	case "console":
 		closeLogFile()
 		Logger.SetOutput(os.Stdout)
 		enableColor = isTerminal(os.Stdout)
 	case "file":
-		if err := setupFileOutput(config.Dir); err != nil {
+		if err := setupFileOutput(setDir); err != nil {
 			return fmt.Errorf("设置文件输出失败: %v", err)
 		}
 	case "both":
-		if err := setupBothOutput(config.Dir); err != nil {
+		if err := setupBothOutput(setDir); err != nil {
 			return fmt.Errorf("设置双重输出失败: %v", err)
 		}
 		enableColor = isTerminal(os.Stdout)

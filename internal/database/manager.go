@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -18,17 +17,19 @@ var (
 // 数据库管理器
 type Manager struct {
 	repository *interfaces.RepositoryManager
-	config     config.DatabaseConfig
+	sqltype    string
+	path       string
 	mu         sync.RWMutex
 	closed     bool
 }
 
 // 初始化数据库管理器
-func Initialize(cfg config.DatabaseConfig) error {
+func Initialize(sqltype, path string) error {
 	var err error
 	once.Do(func() {
 		manager = &Manager{
-			config: cfg,
+			sqltype: sqltype,
+			path:    path,
 		}
 		err = manager.init()
 	})
@@ -103,9 +104,9 @@ func (m *Manager) init() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	log.Debugf("初始化数据库: 类型 %s, 路径 %s", m.config.Type, m.config.Path)
+	log.Debugf("初始化数据库: 类型 %s, 路径 %s", m.sqltype, m.path)
 
-	repository, err := Init(context.Background(), &m.config)
+	repository, err := Init(context.Background(), m.sqltype, m.path)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}

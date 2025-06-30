@@ -24,10 +24,10 @@ func main() {
 
 	cfg := config.Get()
 
-	if err := log.Initialize(cfg.Log); err != nil {
+	if err := log.Initialize(cfg.Log.Level, cfg.Log.Output, cfg.Log.Dir); err != nil {
 		panic(err)
 	}
-	if err := database.Initialize(cfg.Database); err != nil {
+	if err := database.Initialize(cfg.Database.Type, cfg.Database.Path); err != nil {
 		log.Fatal(err)
 	}
 
