@@ -20,10 +20,12 @@ type Collection struct {
 
 type Info struct {
 	Id          int64
+	UniqueKey   uint64
 	Alive       bool
-	Delay       int
-	SpeedUp     int
-	SpeedDown   int
+	Delay       [5]int
+	SpeedUp     [5]int
+	SpeedDown   [5]int
+	Timestamp   int64
 	Country     string
 	CountryCode string
 }
