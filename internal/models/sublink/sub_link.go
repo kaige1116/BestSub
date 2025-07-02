@@ -18,11 +18,10 @@ type FetchConfig struct {
 }
 
 type FetchResult struct {
-	StatusCode int    `json:"status_code"`              // HTTP状态码
-	SubType    string `json:"sub_type"`                 // 订阅类型
-	NodeCount  int    `json:"node_count"`               // 节点数量
-	Size       int64  `json:"size"`                     // 内容大小
-	Duration   string `json:"duration" example:"100ms"` // 请求耗时
+	SubType   string `json:"sub_type"`                 // 订阅类型
+	NodeCount int    `json:"node_count"`               // 节点数量
+	Size      int64  `json:"size"`                     // 内容大小
+	Duration  string `json:"duration" example:"100ms"` // 请求耗时
 }
 
 type BaseData struct {
