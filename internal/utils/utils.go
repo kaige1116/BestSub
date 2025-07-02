@@ -3,6 +3,8 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"unicode"
+	"unicode/utf8"
 )
 
 // 检查目录是否可写
@@ -26,4 +28,16 @@ func Contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+func RemoveAllControlCharacters(data *[]byte) {
+	var cleanedData []byte
+	original := *data
+	for len(original) > 0 {
+		r, size := utf8.DecodeRune(original)
+		if r != utf8.RuneError && (r >= 32 && r <= 126) || r == '\n' || r == '\t' || r == '\r' || unicode.Is(unicode.Han, r) {
+			cleanedData = append(cleanedData, original[:size]...)
+		}
+		original = original[size:]
+	}
+	*data = cleanedData
 }
