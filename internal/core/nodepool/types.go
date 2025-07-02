@@ -6,9 +6,27 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/node"
 )
 
+type Collection struct {
+	AnyTLS    []node.AnyTLS
+	Http      []node.Http
+	Hysteria  []node.Hysteria
+	Hysteria2 []node.Hysteria2
+	Mieru     []node.Mieru
+	Snell     []node.Snell
+	Socks     []node.Socks
+	Ss        []node.Ss
+	Ssh       []node.Ssh
+	Ssr       []node.Ssr
+	Trojan    []node.Trojan
+	Tuic      []node.Tuic
+	Vless     []node.Vless
+	Vmess     []node.Vmess
+	WireGuard []node.WireGuard
+}
+
 // NodePool 内存优化的节点池
 type NodePool struct {
-	collection *node.Collection
+	collection *Collection
 	indexes    *NodeIndexes
 	mu         sync.RWMutex
 	totalNodes int64
@@ -23,8 +41,7 @@ type NodeIndexes struct {
 
 // NodeInfo 节点信息
 type NodeInfo struct {
-	ArrayIndex int   // 在数组中的索引位置
-	Timestamp  int64 // 时间戳
+	ArrayIndex int // 在数组中的索引位置
 }
 
 // reflectCache 反射缓存结构
@@ -34,8 +51,10 @@ type reflectCache struct {
 }
 
 type fieldInfo struct {
-	index int
-	name  string
+	index         int    // 字段在结构体中的索引
+	name          string // 字段名称
+	isEmbedded    bool   // 是否为内嵌字段
+	embeddedIndex int    // 如果是内嵌字段，这是内嵌字段在父结构体中的索引
 }
 
 // NodeIterator 节点迭代器，用于多线程安全的顺序访问
@@ -70,11 +89,13 @@ var (
 
 	// 用于生成唯一键的字段名列表
 	uniqueKeyFields = map[string]bool{
-		"Server":   true,
-		"Port":     true,
-		"Username": true,
-		"Password": true,
-		"AuthStr":  true,
+		"Server":     true,
+		"Port":       true,
+		"Username":   true,
+		"Password":   true,
+		"AuthStr":    true,
+		"Uuid":       true,
+		"Servername": true,
 	}
 )
 

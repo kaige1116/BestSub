@@ -1,23 +1,5 @@
 package node
 
-type Collection struct {
-	AnyTLS    []AnyTLS
-	Http      []Http
-	Hysteria  []Hysteria
-	Hysteria2 []Hysteria2
-	Mieru     []Mieru
-	Snell     []Snell
-	Socks     []Socks
-	SS        []SS
-	SSH       []SSH
-	SSR       []SSR
-	Trojan    []Trojan
-	TUIC      []TUIC
-	VLESS     []VLESS
-	VMess     []VMess
-	WireGuard []WireGuard
-}
-
 type Info struct {
 	Id          int64
 	UniqueKey   uint64
@@ -25,7 +7,7 @@ type Info struct {
 	Delay       [5]int
 	SpeedUp     [5]int
 	SpeedDown   [5]int
-	Timestamp   int64
+	Timestamp   [5]int64
 	Country     string
 	CountryCode string
 }
@@ -34,13 +16,13 @@ type BaseConfig struct {
 	Name          string  `yaml:"name"`
 	Type          string  `yaml:"type"`
 	Server        string  `yaml:"server"`
-	Port          string  `yaml:"port"`
+	Port          any     `yaml:"port"`
 	IpVersion     *string `yaml:"ip-version"`
-	Udp           *bool   `yaml:"udp"`
+	Udp           bool    `yaml:"udp"`
 	InterfaceName *string `yaml:"interface-name"`
 	RoutingMark   *int    `yaml:"routing-mark"`
-	Tfo           *bool   `yaml:"tfo"`
-	Mptcp         *bool   `yaml:"mptcp"`
+	Tfo           bool    `yaml:"tfo"`
+	Mptcp         bool    `yaml:"mptcp"`
 	DialerProxy   *string `yaml:"dialer-proxy"`
 }
 
