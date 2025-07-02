@@ -1,10 +1,12 @@
 package nodepool
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 
-	"github.com/bestruirui/bestsub/internal/models/node"
+	"github.com/bestruirui/bestsub/internal/utils/log"
+	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/cespare/xxhash/v2"
 )
 
@@ -17,7 +19,7 @@ var (
 // init 初始化全局节点池
 func init() {
 	globalPool = &NodePool{
-		collection: &node.Collection{},
+		collection: &Collection{},
 		indexes:    createNodeIndexes(),
 	}
 
@@ -136,31 +138,28 @@ func (p *NodePool) removeFromSliceIndex(slice []*NodeInfo, targetNodeInfo *NodeI
 }
 
 // processCollection 处理整个集合
-func (p *NodePool) processCollection(collection *node.Collection, subLinkID, timestamp int64) int {
+func (p *NodePool) processCollection(collection *Collection, subLinkID int64) int {
 	addedCount := 0
 	collectionValue := reflect.ValueOf(collection).Elem()
-
 	for i := 0; i < collectionValue.NumField(); i++ {
 		field := collectionValue.Field(i)
 		if field.Kind() != reflect.Slice || field.Len() == 0 {
 			continue
 		}
-
 		fieldName := collectionValue.Type().Field(i).Name
 		p.ensureCapacityDirect(field, field.Len())
-		addedCount += p.processSlice(field, fieldName, subLinkID, timestamp)
+		addedCount += p.processSlice(field, fieldName, subLinkID)
 	}
 
 	return addedCount
 }
 
 // processSlice 处理单个切片
-func (p *NodePool) processSlice(sliceValue reflect.Value, nodeType string, subLinkID, timestamp int64) int {
+func (p *NodePool) processSlice(sliceValue reflect.Value, nodeType string, subLinkID int64) int {
 	addedCount := 0
-
 	for i := 0; i < sliceValue.Len(); i++ {
 		nodeValue := sliceValue.Index(i)
-		if p.addNode(nodeValue, nodeType, subLinkID, timestamp) {
+		if p.addNode(nodeValue, nodeType, subLinkID) {
 			addedCount++
 		}
 	}
@@ -169,7 +168,7 @@ func (p *NodePool) processSlice(sliceValue reflect.Value, nodeType string, subLi
 }
 
 // addNode 添加单个节点
-func (p *NodePool) addNode(nodeValue reflect.Value, nodeType string, subLinkID, timestamp int64) bool {
+func (p *NodePool) addNode(nodeValue reflect.Value, nodeType string, subLinkID int64) bool {
 	// 生成唯一键
 	uniqueKey := p.generateUniqueKey(nodeValue, nodeType)
 	if uniqueKey == 0 {
@@ -178,15 +177,19 @@ func (p *NodePool) addNode(nodeValue reflect.Value, nodeType string, subLinkID, 
 
 	// 检查是否已存在
 	if _, exists := p.indexes.uniqueKey[uniqueKey]; exists {
+		log.Debugf("node already exists: %v", nodeValue.FieldByName("Config").FieldByName("Name").String())
 		return false
 	}
 
-	// 设置节点的UniqueKey字段
 	infoField := nodeValue.FieldByName("Info")
 	if infoField.IsValid() && infoField.CanSet() {
-		uniqueKeyField := infoField.FieldByName("UniqueKey")
-		if uniqueKeyField.IsValid() && uniqueKeyField.CanSet() && uniqueKeyField.Kind() == reflect.Uint64 {
-			uniqueKeyField.SetUint(uniqueKey)
+		fieldName := infoField.FieldByName("UniqueKey")
+		if fieldName.IsValid() && fieldName.CanSet() && fieldName.Kind() == reflect.Uint64 {
+			fieldName.SetUint(uniqueKey)
+		}
+		fieldName = infoField.FieldByName("Id")
+		if fieldName.IsValid() && fieldName.CanSet() && fieldName.Kind() == reflect.Int64 {
+			fieldName.SetInt(timeutils.Now().Unix())
 		}
 	}
 
@@ -197,7 +200,7 @@ func (p *NodePool) addNode(nodeValue reflect.Value, nodeType string, subLinkID, 
 	}
 
 	// 创建节点信息
-	nodeInfo := p.createNodeInfo(arrayIndex, timestamp)
+	nodeInfo := p.createNodeInfo(arrayIndex)
 
 	// 添加到索引
 	p.addToBasicIndexes(uniqueKey, nodeInfo, nodeType, subLinkID)
@@ -206,10 +209,9 @@ func (p *NodePool) addNode(nodeValue reflect.Value, nodeType string, subLinkID, 
 }
 
 // createNodeInfo 创建节点信息（使用对象池）
-func (p *NodePool) createNodeInfo(arrayIndex int, timestamp int64) *NodeInfo {
+func (p *NodePool) createNodeInfo(arrayIndex int) *NodeInfo {
 	nodeInfo := nodeInfoPool.Get().(*NodeInfo)
 	nodeInfo.ArrayIndex = arrayIndex
-	nodeInfo.Timestamp = timestamp
 	return nodeInfo
 }
 
@@ -220,34 +222,37 @@ func (p *NodePool) generateUniqueKey(nodeValue reflect.Value, nodeType string) u
 		return 0
 	}
 
-	// 从对象池获取字符串切片
 	keyPartsPtr := stringSlicePool.Get().(*[]string)
 	keyParts := *keyPartsPtr
 	keyParts = keyParts[:0]
 	defer func() {
-		if cap(keyParts) <= maxStringSliceCapacity { // 避免过大的切片占用内存
-			*keyPartsPtr = keyParts[:0] // 重置长度但保留容量
+		if cap(keyParts) <= maxStringSliceCapacity {
+			*keyPartsPtr = keyParts[:0]
 			stringSlicePool.Put(keyPartsPtr)
 		}
 	}()
 
-	// 获取反射缓存
 	cache := getReflectCache()
 
-	// 使用缓存的字段信息
 	for _, fieldInfo := range cache.nodeConfigFields[nodeType] {
-		if fieldInfo.index < configField.NumField() {
-			field := configField.Field(fieldInfo.index)
-			if field.Kind() == reflect.String && uniqueKeyFields[fieldInfo.name] {
-				keyParts = append(keyParts, field.String())
+
+		var field reflect.Value
+		if fieldInfo.isEmbedded {
+			if fieldInfo.embeddedIndex < configField.NumField() {
+				embeddedField := configField.Field(fieldInfo.embeddedIndex)
+				if embeddedField.IsValid() && fieldInfo.index < embeddedField.NumField() {
+					field = embeddedField.Field(fieldInfo.index)
+				}
+			}
+		} else {
+			if fieldInfo.index < configField.NumField() {
+				field = configField.Field(fieldInfo.index)
 			}
 		}
+		if field.IsValid() && uniqueKeyFields[fieldInfo.name] {
+			keyParts = append(keyParts, fmt.Sprintf("%v", field.Interface()))
+		}
 	}
-
-	if len(keyParts) == 0 {
-		return 0
-	}
-
 	return generateUniqueKey(keyParts...)
 }
 

@@ -3,23 +3,21 @@ package nodepool
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/node"
 )
 
 // Add 添加节点集合到池中
-func Add(collection *node.Collection, subLinkID int64) error {
+func Add(collection *Collection, subLinkID int64) (int, error) {
 	globalPool.mu.Lock()
 	defer globalPool.mu.Unlock()
 
-	timestamp := time.Now().Unix()
-	addedCount := globalPool.processCollection(collection, subLinkID, timestamp)
+	addedCount := globalPool.processCollection(collection, subLinkID)
 
 	// 更新统计信息
 	globalPool.totalNodes += int64(addedCount)
 
-	return nil
+	return addedCount, nil
 }
 
 // RemoveByUniqueKey 根据唯一键从池中删除节点
@@ -177,7 +175,7 @@ func Reset() {
 	defer globalPool.mu.Unlock()
 
 	// 重置集合
-	globalPool.collection = &node.Collection{}
+	globalPool.collection = &Collection{}
 
 	// 重置索引
 	globalPool.indexes = createNodeIndexes()

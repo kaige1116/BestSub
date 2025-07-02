@@ -2,8 +2,6 @@ package nodepool
 
 import (
 	"reflect"
-
-	"github.com/bestruirui/bestsub/internal/models/node"
 )
 
 // init 初始化反射缓存
@@ -14,7 +12,7 @@ func init() {
 	}
 
 	// 缓存Collection字段信息
-	collectionType := reflect.TypeOf(node.Collection{})
+	collectionType := reflect.TypeOf(Collection{})
 	for i := 0; i < collectionType.NumField(); i++ {
 		fieldName := collectionType.Field(i).Name
 		reflectCacheInstance.collectionFields[fieldName] = i
@@ -37,7 +35,7 @@ func getReflectCache() *reflectCache {
 
 // cacheAllNodeConfigFields 缓存所有节点类型的Config字段信息
 func cacheAllNodeConfigFields() {
-	collectionType := reflect.TypeOf(node.Collection{})
+	collectionType := reflect.TypeOf(Collection{})
 
 	// 遍历Collection中的所有字段（每个字段代表一种节点类型）
 	for i := 0; i < collectionType.NumField(); i++ {
@@ -68,15 +66,41 @@ func cacheConfigFields(nodeType string, configType reflect.Type) {
 
 	for i := 0; i < configType.NumField(); i++ {
 		field := configType.Field(i)
-		if field.Type.Kind() == reflect.String {
+
+		// 处理内嵌字段（如 BaseConfig）
+		if field.Anonymous && field.Type.Kind() == reflect.Struct {
+			// 递归处理内嵌结构体的字段
+			embeddedFields := cacheEmbeddedFields(field.Type, i)
+			fields = append(fields, embeddedFields...)
+		} else if field.Type.Kind() == reflect.String || field.Type.Kind() == reflect.Interface {
 			fields = append(fields, fieldInfo{
-				index: i,
-				name:  field.Name,
+				index:         i,
+				name:          field.Name,
+				isEmbedded:    false,
+				embeddedIndex: -1,
+			})
+		}
+	}
+	reflectCacheInstance.nodeConfigFields[nodeType] = fields
+}
+
+// cacheEmbeddedFields 缓存内嵌结构体的字符串字段信息
+func cacheEmbeddedFields(embeddedType reflect.Type, parentIndex int) []fieldInfo {
+	var fields []fieldInfo
+
+	for i := 0; i < embeddedType.NumField(); i++ {
+		field := embeddedType.Field(i)
+		if field.Type.Kind() == reflect.String || field.Type.Kind() == reflect.Interface {
+			fields = append(fields, fieldInfo{
+				index:         i,
+				name:          field.Name,
+				isEmbedded:    true,
+				embeddedIndex: parentIndex,
 			})
 		}
 	}
 
-	reflectCacheInstance.nodeConfigFields[nodeType] = fields
+	return fields
 }
 
 // GetNodeTypeNames 获取所有节点类型名称（已缓存）
