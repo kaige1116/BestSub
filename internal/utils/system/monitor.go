@@ -1,6 +1,8 @@
 package system
 
 import (
+	"context"
+	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -8,6 +10,8 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // 系统信息结构
@@ -65,10 +69,9 @@ func GetSystemInfo() *Info {
 	uploadBytes := atomic.LoadUint64(&monitor.uploadBytes)
 	downloadBytes := atomic.LoadUint64(&monitor.downloadBytes)
 
-	var memoryPercent float64
-	if memStats.Sys > 0 {
-		memoryPercent = float64(memStats.Alloc) / float64(memStats.Sys) * 100
-	}
+	systemMemory := getSystemMemoryInfo()
+
+	processMemory := getProcessMemoryInfo()
 
 	var lastGCTime string
 	if memStats.LastGC > 0 {
@@ -78,9 +81,9 @@ func GetSystemInfo() *Info {
 	}
 
 	return &Info{
-		MemoryUsed:    memStats.Alloc,
-		MemoryTotal:   memStats.Sys,
-		MemoryPercent: memoryPercent,
+		MemoryUsed:    processMemory.used,
+		MemoryTotal:   systemMemory.total,
+		MemoryPercent: processMemory.percent,
 		HeapUsed:      memStats.HeapAlloc,
 		HeapTotal:     memStats.HeapSys,
 
@@ -108,4 +111,57 @@ func Reset() {
 	monitor.startTime = timeutils.Now()
 
 	log.Debug("System monitor data reset")
+}
+
+// 内存信息结构
+type memoryInfo struct {
+	used    uint64
+	total   uint64
+	percent float64
+}
+
+// 获取系统内存信息
+func getSystemMemoryInfo() memoryInfo {
+	ctx := context.Background()
+	vmStat, err := mem.VirtualMemoryWithContext(ctx)
+	if err != nil {
+		log.Debugf("Failed to get system memory info: %v", err)
+		return memoryInfo{}
+	}
+
+	return memoryInfo{
+		used:    vmStat.Used,
+		total:   vmStat.Total,
+		percent: vmStat.UsedPercent,
+	}
+}
+
+// 获取进程内存信息
+func getProcessMemoryInfo() memoryInfo {
+	ctx := context.Background()
+	pid := int32(os.Getpid())
+
+	proc, err := process.NewProcessWithContext(ctx, pid)
+	if err != nil {
+		log.Debugf("Failed to create process instance: %v", err)
+		return memoryInfo{}
+	}
+
+	memInfo, err := proc.MemoryInfoWithContext(ctx)
+	if err != nil {
+		log.Debugf("Failed to get process memory info: %v", err)
+		return memoryInfo{}
+	}
+
+	systemMem := getSystemMemoryInfo()
+	var percent float64
+	if systemMem.total > 0 {
+		percent = float64(memInfo.RSS) / float64(systemMem.total) * 100
+	}
+
+	return memoryInfo{
+		used:    memInfo.RSS,
+		total:   systemMem.total,
+		percent: percent,
+	}
 }
