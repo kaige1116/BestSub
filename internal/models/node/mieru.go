@@ -6,7 +6,7 @@ type Mieru struct {
 }
 
 type MieruConfig struct {
-	BaseConfig
+	BaseConfig   `yaml:",inline"`
 	PortRange    string `yaml:"port-range"`
 	Transport    string `yaml:"transport"`
 	Username     string `yaml:"username"`

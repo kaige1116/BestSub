@@ -6,9 +6,8 @@ type Trojan struct {
 }
 
 type TrojanConfig struct {
-	BaseConfig
+	BaseConfig        `yaml:",inline"`
 	Password          string       `yaml:"password"`
-	Udp               bool         `yaml:"udp"`
 	Sni               string       `yaml:"sni"`
 	Alpn              []string     `yaml:"alpn"`
 	ClientFingerprint string       `yaml:"client-fingerprint"`

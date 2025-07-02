@@ -6,7 +6,7 @@ type Hysteria struct {
 }
 
 type HysteriaConfig struct {
-	BaseConfig
+	BaseConfig          `yaml:",inline"`
 	Ports               string   `yaml:"ports"`
 	AuthStr             string   `yaml:"auth-str"`
 	Obfs                string   `yaml:"obfs"`
@@ -15,12 +15,12 @@ type HysteriaConfig struct {
 	Up                  string   `yaml:"up"`
 	Down                string   `yaml:"down"`
 	Sni                 string   `yaml:"sni"`
-	SkipCertVerify      bool     `yaml:"skip-cert-verify"`
+	SkipCertVerify      bool    `yaml:"skip-cert-verify"`
 	RecvWindowConn      int      `yaml:"recv-window-conn"`
 	RecvWindow          int      `yaml:"recv-window"`
 	Ca                  string   `yaml:"ca"`
 	CaStr               string   `yaml:"ca-str"`
-	DisableMtuDiscovery bool     `yaml:"disable_mtu_discovery"`
+	DisableMtuDiscovery bool    `yaml:"disable_mtu_discovery"`
 	Fingerprint         string   `yaml:"fingerprint"`
-	FastOpen            bool     `yaml:"fast-open"`
+	FastOpen            bool    `yaml:"fast-open"`
 }

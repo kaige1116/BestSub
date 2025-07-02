@@ -6,7 +6,7 @@ type Hysteria2 struct {
 }
 
 type Hysteria2Config struct {
-	BaseConfig
+	BaseConfig                     `yaml:",inline"`
 	Ports                          string   `yaml:"ports"`
 	Password                       string   `yaml:"password"`
 	Up                             string   `yaml:"up"`
@@ -14,7 +14,7 @@ type Hysteria2Config struct {
 	Obfs                           string   `yaml:"obfs"`
 	ObfsPassword                   string   `yaml:"obfs-password"`
 	Sni                            string   `yaml:"sni"`
-	SkipCertVerify                 bool     `yaml:"skip-cert-verify"`
+	SkipCertVerify                 bool    `yaml:"skip-cert-verify"`
 	Fingerprint                    string   `yaml:"fingerprint"`
 	Alpn                           []string `yaml:"alpn"`
 	Ca                             string   `yaml:"ca"`

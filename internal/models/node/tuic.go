@@ -1,12 +1,12 @@
 package node
 
-type TUIC struct {
+type Tuic struct {
 	Info   Info
-	Config TUICConfig
+	Config TuicConfig
 }
 
-type TUICConfig struct {
-	BaseConfig
+type TuicConfig struct {
+	BaseConfig            `yaml:",inline"`
 	Token                 string   `yaml:"token"`
 	Uuid                  string   `yaml:"uuid"`
 	Password              string   `yaml:"password"`

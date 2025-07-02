@@ -6,7 +6,7 @@ type Socks struct {
 }
 
 type SocksConfig struct {
-	BaseConfig
+	BaseConfig     `yaml:",inline"`
 	Username       string `yaml:"username"`
 	Password       string `yaml:"password"`
 	TLS            bool   `yaml:"tls"`

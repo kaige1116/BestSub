@@ -1,12 +1,12 @@
 package node
 
-type SSH struct {
+type Ssh struct {
 	Info   Info
-	Config SSHConfig
+	Config SshConfig
 }
 
-type SSHConfig struct {
-	BaseConfig
+type SshConfig struct {
+	BaseConfig           `yaml:",inline"`
 	Username             string   `yaml:"username"`
 	Password             string   `yaml:"password"`
 	PrivateKey           string   `yaml:"private-key"`

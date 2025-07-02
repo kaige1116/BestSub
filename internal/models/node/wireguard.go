@@ -6,7 +6,7 @@ type WireGuard struct {
 }
 
 type WireGuardConfig struct {
-	BaseConfig
+	BaseConfig       `yaml:",inline"`
 	PrivateKey       string         `yaml:"private-key"`
 	Ip               string         `yaml:"ip"`
 	Ipv6             string         `yaml:"ipv6"`
@@ -14,7 +14,6 @@ type WireGuardConfig struct {
 	AllowedIps       []string       `yaml:"allowed-ips"`
 	PreSharedKey     string         `yaml:"pre-shared-key"`
 	Reserved         any            `yaml:"reserved"` // Can be array of int or string
-	Udp              bool           `yaml:"udp"`
 	Mtu              int            `yaml:"mtu"`
 	DialerProxy      string         `yaml:"dialer-proxy"`
 	RemoteDnsResolve bool           `yaml:"remote-dns-resolve"`

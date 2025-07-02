@@ -1,13 +1,12 @@
 package node
 
-type VLESS struct {
+type Vless struct {
 	Info   Info
-	Config VLESSConfig
+	Config VlessConfig
 }
 
-type VLESSConfig struct {
-	BaseConfig
-	Udp               bool         `yaml:"udp"`
+type VlessConfig struct {
+	BaseConfig        `yaml:",inline"`
 	Uuid              string       `yaml:"uuid"`
 	Flow              string       `yaml:"flow"`
 	PacketEncoding    string       `yaml:"packet-encoding"`

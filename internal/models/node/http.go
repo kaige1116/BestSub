@@ -6,11 +6,11 @@ type Http struct {
 }
 
 type HttpConfig struct {
-	BaseConfig
+	BaseConfig     `yaml:",inline"`
 	Username       string `yaml:"username"`
 	Password       string `yaml:"password"`
-	TLS            bool   `yaml:"tls"`
-	SkipCertVerify bool   `yaml:"skip-cert-verify"`
+	TLS            bool  `yaml:"tls"`
+	SkipCertVerify bool  `yaml:"skip-cert-verify"`
 	Sni            string `yaml:"sni"`
 	Fingerprint    string `yaml:"fingerprint"`
 	IpVersion      string `yaml:"ip-version"`

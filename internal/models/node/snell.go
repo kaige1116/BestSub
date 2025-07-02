@@ -6,10 +6,10 @@ type Snell struct {
 }
 
 type SnellConfig struct {
-	BaseConfig
-	Psk      string    `yaml:"psk"`
-	Version  int       `yaml:"version"`
-	ObfsOpts *ObfsOpts `yaml:"obfs-opts"`
+	BaseConfig `yaml:",inline"`
+	Psk        string    `yaml:"psk"`
+	Version    int       `yaml:"version"`
+	ObfsOpts   *ObfsOpts `yaml:"obfs-opts"`
 }
 
 type ObfsOpts struct {

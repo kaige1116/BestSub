@@ -1,13 +1,12 @@
 package node
 
-type VMess struct {
+type Vmess struct {
 	Info   Info
-	Config VMessConfig
+	Config VmessConfig
 }
 
-type VMessConfig struct {
-	BaseConfig
-	Udp                 bool         `yaml:"udp"`
+type VmessConfig struct {
+	BaseConfig          `yaml:",inline"`
 	Uuid                string       `yaml:"uuid"`
 	AlterId             int          `yaml:"alterId"`
 	Cipher              string       `yaml:"cipher"`

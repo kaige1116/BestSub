@@ -1,12 +1,12 @@
 package node
 
-type SSR struct {
+type Ssr struct {
 	Info   Info
-	Config SSRConfig
+	Config SsrConfig
 }
 
-type SSRConfig struct {
-	BaseConfig
+type SsrConfig struct {
+	BaseConfig     `yaml:",inline"`
 	Password       string `yaml:"password"`
 	Protocol       string `yaml:"protocol"`
 	Obfs           string `yaml:"obfs"`
@@ -14,5 +14,4 @@ type SSRConfig struct {
 	ProtocolParams string `yaml:"protocol-params"`
 	ObfsParam      string `yaml:"obfs-param"`
 	ProtocolParam  string `yaml:"protocol-param"`
-	Udp            bool   `yaml:"udp"`
 }
