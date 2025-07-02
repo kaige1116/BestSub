@@ -576,7 +576,7 @@ func (h *subLinkHandler) fetchSubLink(c *gin.Context) {
 	}
 
 	// 使用订阅链接的配置获取内容
-	result, err := subscription.Fetch(context.Background(), dbLink.FetchConfig)
+	result, err := subscription.Fetch(context.Background(), &dbLink.FetchConfig)
 	if err != nil {
 		log.Errorf("Failed to fetch content from %s: %v", dbLink.FetchConfig.URL, err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
