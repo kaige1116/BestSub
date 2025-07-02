@@ -407,6 +407,12 @@ func (h *subLinkHandler) updateSubLinks(c *gin.Context) {
 	if req.CronExpr != "" {
 		dbLink.CronExpr = req.CronExpr
 	}
+	if req.FetchConfig.Timeout != 0 {
+		dbLink.FetchConfig.Timeout = req.FetchConfig.Timeout
+	}
+	if req.FetchConfig.Retries != 0 {
+		dbLink.FetchConfig.Retries = req.FetchConfig.Retries
+	}
 
 	// 更新链接
 	err = subLinkRepo.Update(context.Background(), dbLink)
