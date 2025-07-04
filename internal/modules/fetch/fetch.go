@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/core/system"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/modules/parser"
 	utilshttp "github.com/bestruirui/bestsub/internal/utils/http"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	"github.com/bestruirui/bestsub/internal/utils/system"
 )
 
 // Fetch 使用配置获取订阅内容

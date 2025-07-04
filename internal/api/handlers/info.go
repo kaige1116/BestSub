@@ -7,12 +7,12 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
+	sys "github.com/bestruirui/bestsub/internal/core/system"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	systemutils "github.com/bestruirui/bestsub/internal/utils/system"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/gin-gonic/gin"
 )
@@ -186,7 +186,7 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 // @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/system/info [get]
 func (h *healthHandler) systemInfo(c *gin.Context) {
-	sysInfo := systemutils.GetSystemInfo()
+	sysInfo := sys.GetSystemInfo()
 	log.Debug("System information retrieved successfully")
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
