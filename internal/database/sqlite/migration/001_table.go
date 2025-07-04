@@ -66,10 +66,10 @@ CREATE TABLE IF NOT EXISTS "notify_config" (
 	"description" TEXT,
 	"type" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
-	"teat_result" TEXT,
+	"test_result" TEXT,
 	"last_test" DATETIME,
-	"creat_at" DATETIME NOT NULL,
-	"update_at" DATETIME NOT NULL,
+	"created_at" DATETIME NOT NULL,
+	"updated_at" DATETIME NOT NULL,
 	PRIMARY KEY("id")
 );
 
@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS "tasks" (
 	"last_run_result" TEXT,
 	"last_run_time" DATETIME,
 	"last_run_duration" INTEGER,
+	"success_count" INTEGER NOT NULL DEFAULT 0,
+	"failed_count" INTEGER NOT NULL DEFAULT 0,
 	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
@@ -167,13 +169,13 @@ CREATE TABLE IF NOT EXISTS "sub_share_links" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "save_fitter_relations" (
+CREATE TABLE IF NOT EXISTS "save_filter_relations" (
 	"save_id" INTEGER NOT NULL,
-	"fitter_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "fitter_id"),
+	"filter_id" INTEGER NOT NULL,
+	PRIMARY KEY("save_id", "filter_id"),
 	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("fitter_id") REFERENCES "sub_node_filter_rules"("id")
+	FOREIGN KEY ("filter_id") REFERENCES "sub_node_filter_rules"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
@@ -197,13 +199,13 @@ CREATE TABLE IF NOT EXISTS "share_template_relations" (
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "share_fitter_relations" (
+CREATE TABLE IF NOT EXISTS "share_filter_relations" (
 	"share_id" INTEGER NOT NULL,
-	"fitter_id" INTEGER NOT NULL,
-	PRIMARY KEY("share_id", "fitter_id"),
+	"filter_id" INTEGER NOT NULL,
+	PRIMARY KEY("share_id", "filter_id"),
 	FOREIGN KEY ("share_id") REFERENCES "sub_share_links"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("fitter_id") REFERENCES "sub_node_filter_rules"("id")
+	FOREIGN KEY ("filter_id") REFERENCES "sub_node_filter_rules"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 

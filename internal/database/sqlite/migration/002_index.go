@@ -11,8 +11,8 @@ CREATE INDEX IF NOT EXISTS idx_sub_task_sub_id ON sub_task_relations(sub_id);
 -- 索引：用于通过 share_id 查询对应的 template
 CREATE INDEX IF NOT EXISTS idx_share_template_share_id ON share_template_relations(share_id);
 
--- 索引：用于通过 share_id 查询对应的 fitter
-CREATE INDEX IF NOT EXISTS idx_share_fitter_share_id ON share_fitter_relations(share_id);
+-- 索引：用于通过 share_id 查询对应的 filter
+CREATE INDEX IF NOT EXISTS idx_share_filter_share_id ON share_filter_relations(share_id);
 
 -- 索引：用于通过 share_id 查询对应的 sub
 CREATE INDEX IF NOT EXISTS idx_share_sub_share_id ON share_sub_relations(share_id);
@@ -23,8 +23,8 @@ CREATE INDEX IF NOT EXISTS idx_save_storage_save_id ON save_storage_relations(sa
 -- 索引：用于通过 save_id 查询对应的 template
 CREATE INDEX IF NOT EXISTS idx_save_template_save_id ON save_template_relations(save_id);
 
--- 索引：用于通过 save_id 查询对应的 fitter
-CREATE INDEX IF NOT EXISTS idx_save_fitter_save_id ON save_fitter_relations(save_id);
+-- 索引：用于通过 save_id 查询对应的 filter
+CREATE INDEX IF NOT EXISTS idx_save_filter_save_id ON save_filter_relations(save_id);
 
 -- 索引：用于通过 save_id 查询对应的 sub
 CREATE INDEX IF NOT EXISTS idx_save_sub_save_id ON save_sub_relations(save_id);

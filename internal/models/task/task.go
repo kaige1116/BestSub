@@ -34,6 +34,8 @@ type Data struct {
 	Type            string     `json:"type" example:"link_fetch"`                // 任务类型
 	Config          string     `json:"config" example:"{\"sub_link_id\": 1}"`    // 任务配置（JSON格式）
 	Status          string     `db:"status" json:"status" example:"pending"`     // 任务状态
+	SuccessCount    int        `db:"success_count" json:"success_count"`         // 成功次数
+	FailedCount     int        `db:"failed_count" json:"failed_count"`           // 失败次数
 	LastRunResult   string     `db:"last_run_result" json:"last_run_result"`     // 上次执行结果
 	LastRunTime     *time.Time `db:"last_run_time" json:"last_run_time"`         // 上次执行时间
 	LastRunDuration *int       `db:"last_run_duration" json:"last_run_duration"` // 上次执行耗时（毫秒）

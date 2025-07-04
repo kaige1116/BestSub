@@ -23,15 +23,16 @@ func newNotifyRepository(db *database.Database) interfaces.NotifyRepository {
 
 // Create 创建通知渠道
 func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) error {
-	query := `INSERT INTO notify (name, type, config, enable, test_result, last_test, created_at, updated_at) 
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO notify_config (enable, name, description, type, config, test_result, last_test, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
+		channel.Enable,
 		channel.Name,
+		channel.Description,
 		channel.Type,
 		channel.Config,
-		channel.Enable,
 		channel.TestResult,
 		channel.LastTest,
 		now,
@@ -56,19 +57,19 @@ func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) err
 
 // GetByID 根据ID获取通知渠道
 func (r *NotifyRepository) GetByID(ctx context.Context, id int64) (*notify.Data, error) {
-	query := `SELECT id, name, type, config, enable, test_result, last_test, description, created_at, updated_at
-	          FROM notify WHERE id = ?`
+	query := `SELECT id, enable, name, description, type, config, test_result, last_test, created_at, updated_at
+	          FROM notify_config WHERE id = ?`
 
 	var channel notify.Data
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&channel.ID,
+		&channel.Enable,
 		&channel.Name,
+		&channel.Description,
 		&channel.Type,
 		&channel.Config,
-		&channel.Enable,
 		&channel.TestResult,
 		&channel.LastTest,
-		&channel.Description,
 		&channel.CreatedAt,
 		&channel.UpdatedAt,
 	)
@@ -85,7 +86,7 @@ func (r *NotifyRepository) GetByID(ctx context.Context, id int64) (*notify.Data,
 
 // Update 更新通知渠道
 func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) error {
-	query := `UPDATE notify SET name = ?, type = ?, config = ?, enable = ?,
+	query := `UPDATE notify_config SET name = ?, type = ?, config = ?, enable = ?,
 	          test_result = ?, last_test = ?, description = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -109,7 +110,7 @@ func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) err
 
 // Delete 删除通知渠道
 func (r *NotifyRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM notify WHERE id = ?`
+	query := `DELETE FROM notify_config WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -121,8 +122,8 @@ func (r *NotifyRepository) Delete(ctx context.Context, id int64) error {
 
 // List 获取通知渠道列表
 func (r *NotifyRepository) List(ctx context.Context, offset, limit int) (*[]notify.Data, error) {
-	query := `SELECT id, name, type, config, enable, test_result, last_test, description, created_at, updated_at
-	          FROM notify ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	query := `SELECT id, enable, name, description, type, config, test_result, last_test, created_at, updated_at
+	          FROM notify_config ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
@@ -135,13 +136,13 @@ func (r *NotifyRepository) List(ctx context.Context, offset, limit int) (*[]noti
 		var channel notify.Data
 		err := rows.Scan(
 			&channel.ID,
+			&channel.Enable,
 			&channel.Name,
+			&channel.Description,
 			&channel.Type,
 			&channel.Config,
-			&channel.Enable,
 			&channel.TestResult,
 			&channel.LastTest,
-			&channel.Description,
 			&channel.CreatedAt,
 			&channel.UpdatedAt,
 		)
@@ -160,7 +161,7 @@ func (r *NotifyRepository) List(ctx context.Context, offset, limit int) (*[]noti
 
 // Count 获取通知渠道总数
 func (r *NotifyRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM notify`
+	query := `SELECT COUNT(*) FROM notify_config`
 
 	var count int64
 	err := r.db.QueryRowContext(ctx, query).Scan(&count)
@@ -173,10 +174,10 @@ func (r *NotifyRepository) Count(ctx context.Context) (int64, error) {
 
 // GetByTaskID 根据任务ID获取通知渠道列表
 func (r *NotifyRepository) GetByTaskID(ctx context.Context, taskID int64) (*[]notify.Data, error) {
-	query := `SELECT n.id, n.name, n.type, n.config, n.enable, n.test_result, n.last_test, n.description, n.created_at, n.updated_at
-	          FROM notify n
-	          INNER JOIN task_notify_relations tnr ON n.id = tnr.notify_id
-	          WHERE tnr.task_id = ? ORDER BY n.created_at DESC`
+	query := `SELECT n.id, n.enable, n.name, n.description, n.type, n.config, n.test_result, n.last_test, n.created_at, n.updated_at
+	          FROM notify_config n
+	          INNER JOIN notify_task_relations ntr ON n.id = ntr.notify_id
+	          WHERE ntr.task_id = ? ORDER BY n.created_at DESC`
 
 	rows, err := r.db.QueryContext(ctx, query, taskID)
 	if err != nil {
@@ -189,13 +190,13 @@ func (r *NotifyRepository) GetByTaskID(ctx context.Context, taskID int64) (*[]no
 		var channel notify.Data
 		err := rows.Scan(
 			&channel.ID,
+			&channel.Enable,
 			&channel.Name,
+			&channel.Description,
 			&channel.Type,
 			&channel.Config,
-			&channel.Enable,
 			&channel.TestResult,
 			&channel.LastTest,
-			&channel.Description,
 			&channel.CreatedAt,
 			&channel.UpdatedAt,
 		)
@@ -214,7 +215,7 @@ func (r *NotifyRepository) GetByTaskID(ctx context.Context, taskID int64) (*[]no
 
 // AddTaskRelation 添加通知渠道与任务的关联
 func (r *NotifyRepository) AddTaskRelation(ctx context.Context, notifyID, taskID int64) error {
-	query := `INSERT OR IGNORE INTO task_notify_relations (task_id, notify_id) VALUES (?, ?)`
+	query := `INSERT OR IGNORE INTO notify_task_relations (task_id, notify_id) VALUES (?, ?)`
 
 	_, err := r.db.ExecContext(ctx, query, taskID, notifyID)
 	if err != nil {
