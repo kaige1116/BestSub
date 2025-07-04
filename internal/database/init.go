@@ -5,8 +5,8 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/defaults"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite"
+	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -70,7 +70,7 @@ func initSystemConfig(ctx context.Context, repo *interfaces.RepositoryManager) e
 		existingKeysMap[key] = true
 	}
 
-	defaultKeysMap := make(map[string]models.SystemConfig)
+	defaultKeysMap := make(map[string]system.Data)
 	for _, config := range defaultSystemConfig {
 		defaultKeysMap[config.Key] = config
 	}

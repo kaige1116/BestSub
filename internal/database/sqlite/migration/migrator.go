@@ -59,6 +59,7 @@ func (m *Migrator) createMigrationTable(ctx context.Context) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version TEXT PRIMARY KEY,
+			description TEXT NOT NULL,
 			applied_at DATETIME NOT NULL,
 			success BOOLEAN NOT NULL DEFAULT TRUE,
 			error TEXT
@@ -98,8 +99,9 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 	}
 
 	_, err = tx.Exec(
-		`INSERT INTO schema_migrations (version, applied_at, success) VALUES (?, ?, TRUE)`,
+		`INSERT INTO schema_migrations (version, description, applied_at, success) VALUES (?, ?, ?, TRUE)`,
 		migra.Version,
+		migra.Description,
 		timeutils.Now(),
 	)
 	if err != nil {

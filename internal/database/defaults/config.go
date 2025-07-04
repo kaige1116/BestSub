@@ -1,12 +1,12 @@
 package defaults
 
 import (
-	"github.com/bestruirui/bestsub/internal/database/models"
+	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
 // Configs 获取默认的系统配置
-func Configs() []models.SystemConfig {
-	return []models.SystemConfig{
+func Configs() []system.Data {
+	return []system.Data{
 		{
 			GroupName:   "proxy",
 			Key:         "proxy.enable",

@@ -4,25 +4,25 @@ import "github.com/bestruirui/bestsub/internal/database/migration"
 
 func Migration003Trigger() string {
 	return `
-CREATE TRIGGER IF NOT EXISTS delete_sub_link_tasks
-AFTER DELETE ON sub_links
+CREATE TRIGGER IF NOT EXISTS delete_sub_tasks
+BEFORE DELETE ON subs
 FOR EACH ROW
 BEGIN
-    DELETE FROM tasks 
+    DELETE FROM tasks
     WHERE id IN (
-        SELECT task_id FROM sub_task_relations 
+        SELECT task_id FROM sub_task_relations
         WHERE sub_id = OLD.id
     );
 END;
 
-CREATE TRIGGER IF NOT EXISTS delete_save_config_tasks
-AFTER DELETE ON sub_save_configs
+CREATE TRIGGER IF NOT EXISTS delete_sub_save_tasks
+BEFORE DELETE ON sub_save
 FOR EACH ROW
 BEGIN
     DELETE FROM tasks
     WHERE id IN (
         SELECT task_id FROM save_task_relations
-        WHERE save_config_id = OLD.id
+        WHERE save_id = OLD.id
     );
 END;
 	`
