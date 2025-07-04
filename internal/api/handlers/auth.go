@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/api/models"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database"
-	dbModels "github.com/bestruirui/bestsub/internal/database/models"
+	"github.com/bestruirui/bestsub/internal/models/api"
+	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	"github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/gin-gonic/gin"
 )
 
@@ -82,16 +82,16 @@ func newAuthHandler() *authHandler {
 // @Tags 认证
 // @Accept json
 // @Produce json
-// @Param request body models.LoginRequest true "登录请求"
-// @Success 200 {object} models.SuccessResponse{data=models.LoginResponse} "登录成功"
-// @Failure 400 {object} models.ErrorResponse "请求参数错误"
-// @Failure 401 {object} models.ErrorResponse "用户名或密码错误"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Param request body auth.LoginRequest true "登录请求"
+// @Success 200 {object} api.ResponseSuccess{data=auth.LoginResponse} "登录成功"
+// @Failure 400 {object} api.ResponseError "请求参数错误"
+// @Failure 401 {object} api.ResponseError "用户名或密码错误"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func (h *authHandler) login(c *gin.Context) {
-	var req models.LoginRequest
+	var req auth.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Invalid request format: " + err.Error(),
@@ -104,7 +104,7 @@ func (h *authHandler) login(c *gin.Context) {
 	err := authRepo.VerifyPassword(context.Background(), req.Username, req.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Invalid username or password",
@@ -116,7 +116,7 @@ func (h *authHandler) login(c *gin.Context) {
 	authInfo, err := authRepo.Get(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get auth info: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get user information",
@@ -126,7 +126,7 @@ func (h *authHandler) login(c *gin.Context) {
 
 	// 创建会话记录
 	sessionRepo := database.Session()
-	session := &dbModels.Session{
+	session := &auth.Session{
 		IPAddress: c.ClientIP(),
 		UserAgent: c.GetHeader("User-Agent"),
 		IsActive:  true,
@@ -136,7 +136,7 @@ func (h *authHandler) login(c *gin.Context) {
 	err = sessionRepo.Create(context.Background(), session)
 	if err != nil {
 		log.Errorf("Failed to create session: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to create session",
@@ -148,7 +148,7 @@ func (h *authHandler) login(c *gin.Context) {
 	tokenPair, err := jwt.GenerateTokenPair(session.ID)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to generate tokens",
@@ -163,7 +163,7 @@ func (h *authHandler) login(c *gin.Context) {
 	err = sessionRepo.Update(context.Background(), session)
 	if err != nil {
 		log.Errorf("Failed to update session: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to update session",
@@ -172,12 +172,12 @@ func (h *authHandler) login(c *gin.Context) {
 	}
 
 	// 构建响应
-	response := models.LoginResponse{
+	response := auth.LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
 		ExpiresAt:    tokenPair.ExpiresAt,
-		User: models.UserInfo{
-			Username:  authInfo.UserName,
+		User: auth.Data{
+			UserName:  authInfo.UserName,
 			CreatedAt: authInfo.CreatedAt,
 			UpdatedAt: authInfo.UpdatedAt,
 		},
@@ -185,7 +185,7 @@ func (h *authHandler) login(c *gin.Context) {
 
 	log.Infof("User %s logged in successfully from %s", req.Username, c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Login successful",
 		Data:    response,
@@ -198,16 +198,16 @@ func (h *authHandler) login(c *gin.Context) {
 // @Tags 认证
 // @Accept json
 // @Produce json
-// @Param request body models.RefreshTokenRequest true "刷新令牌请求"
-// @Success 200 {object} models.SuccessResponse{data=models.RefreshTokenResponse} "刷新成功"
-// @Failure 400 {object} models.ErrorResponse "请求参数错误"
-// @Failure 401 {object} models.ErrorResponse "刷新令牌无效"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Param request body auth.RefreshTokenRequest true "刷新令牌请求"
+// @Success 200 {object} api.ResponseSuccess{data=auth.RefreshTokenResponse} "刷新成功"
+// @Failure 400 {object} api.ResponseError "请求参数错误"
+// @Failure 401 {object} api.ResponseError "刷新令牌无效"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
 func (h *authHandler) refreshToken(c *gin.Context) {
-	var req models.RefreshTokenRequest
+	var req auth.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Invalid request format: " + err.Error(),
@@ -219,7 +219,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	claims, err := jwt.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Invalid refresh token",
@@ -232,7 +232,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	session, err := sessionRepo.GetByRefreshToken(context.Background(), req.RefreshToken)
 	if err != nil {
 		log.Errorf("Failed to get session by refresh token: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to validate session",
@@ -241,7 +241,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	}
 
 	if session == nil || !session.IsActive {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Session is invalid or inactive",
@@ -253,7 +253,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	newTokenPair, err := jwt.GenerateTokenPair(session.ID)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to generate new tokens",
@@ -270,7 +270,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	err = sessionRepo.Update(context.Background(), session)
 	if err != nil {
 		log.Errorf("Failed to update session: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to update session",
@@ -279,15 +279,15 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	}
 
 	// 构建响应
-	response := models.RefreshTokenResponse{
+	response := auth.RefreshTokenResponse{
 		AccessToken:  newTokenPair.AccessToken,
 		RefreshToken: newTokenPair.RefreshToken,
 		ExpiresAt:    newTokenPair.ExpiresAt,
 	}
 
-	log.Infof("Token refreshed for session %d", claims.SessionID)
+	log.Infof("Token refreshed for session %d from %s", claims.SessionID, c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Token refreshed successfully",
 		Data:    response,
@@ -301,14 +301,14 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} models.SuccessResponse "登出成功"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Success 200 {object} api.ResponseSuccess "登出成功"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/logout [post]
 func (h *authHandler) logout(c *gin.Context) {
 	sessionID, exists := c.Get("session_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Session not found",
@@ -323,7 +323,7 @@ func (h *authHandler) logout(c *gin.Context) {
 	session, err := sessionRepo.GetByID(context.Background(), sessionID.(int64))
 	if err != nil {
 		log.Errorf("Failed to get session: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get session",
@@ -336,7 +336,7 @@ func (h *authHandler) logout(c *gin.Context) {
 		err = sessionRepo.Update(context.Background(), session)
 		if err != nil {
 			log.Errorf("Failed to deactivate session: %v", err)
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal Server Error",
 				Error:   "Failed to logout",
@@ -345,9 +345,9 @@ func (h *authHandler) logout(c *gin.Context) {
 		}
 	}
 
-	log.Infof("User %s logged out successfully", username)
+	log.Infof("User %s logged out successfully from %s", username, c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Logout successful",
 	})
@@ -360,16 +360,16 @@ func (h *authHandler) logout(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body models.ChangePasswordRequest true "修改密码请求"
-// @Success 200 {object} models.SuccessResponse "密码修改成功"
-// @Failure 400 {object} models.ErrorResponse "请求参数错误"
-// @Failure 401 {object} models.ErrorResponse "未授权或旧密码错误"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Param request body auth.ChangePasswordRequest true "修改密码请求"
+// @Success 200 {object} api.ResponseSuccess "密码修改成功"
+// @Failure 400 {object} api.ResponseError "请求参数错误"
+// @Failure 401 {object} api.ResponseError "未授权或旧密码错误"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
 func (h *authHandler) changePassword(c *gin.Context) {
-	var req models.ChangePasswordRequest
+	var req auth.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Invalid request format: " + err.Error(),
@@ -379,7 +379,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 
 	username, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "User not found in context",
@@ -391,8 +391,8 @@ func (h *authHandler) changePassword(c *gin.Context) {
 	authRepo := database.Auth()
 	err := authRepo.VerifyPassword(context.Background(), username.(string), req.OldPassword)
 	if err != nil {
-		log.Warnf("Change password failed for user %s: old password verification failed", username)
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		log.Warnf("Change password failed for user %s: old password verification failed from %s", username, c.ClientIP())
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Old password is incorrect",
@@ -404,7 +404,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 	authInfo, err := authRepo.Get(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get auth info: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get user information",
@@ -418,7 +418,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 	err = authRepo.Update(context.Background(), authInfo)
 	if err != nil {
 		log.Errorf("Failed to update password: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to update password",
@@ -433,9 +433,9 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		log.Errorf("Failed to delete all sessions: %v", err)
 	}
 
-	log.Infof("Password changed successfully for user %s from %s", username, c.ClientIP())
+	log.Infof("Password changed successfully for user %s from %s", username.(string), c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Password changed successfully. Please login again.",
 	})
@@ -448,14 +448,14 @@ func (h *authHandler) changePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} models.SuccessResponse{data=models.UserInfo} "获取成功"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Success 200 {object} api.ResponseSuccess{data=auth.Data} "获取成功"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/user [get]
 func (h *authHandler) getUserInfo(c *gin.Context) {
 	_, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "User not found in context",
@@ -468,7 +468,7 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 	authInfo, err := authRepo.Get(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get auth info: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get user information",
@@ -477,7 +477,7 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 	}
 
 	if authInfo == nil {
-		c.JSON(http.StatusNotFound, models.ErrorResponse{
+		c.JSON(http.StatusNotFound, api.ResponseError{
 			Code:    http.StatusNotFound,
 			Message: "Not Found",
 			Error:   "User not found",
@@ -485,13 +485,13 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 		return
 	}
 
-	userInfo := models.UserInfo{
-		Username:  authInfo.UserName,
+	userInfo := auth.Data{
+		UserName:  authInfo.UserName,
 		CreatedAt: authInfo.CreatedAt,
 		UpdatedAt: authInfo.UpdatedAt,
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "User information retrieved successfully",
 		Data:    userInfo,
@@ -505,14 +505,14 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} models.SuccessResponse{data=models.SessionListResponse} "获取成功"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Success 200 {object} api.ResponseSuccess{data=auth.SessionListResponse} "获取成功"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func (h *authHandler) getSessions(c *gin.Context) {
 	username, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "User not found in context",
@@ -525,7 +525,7 @@ func (h *authHandler) getSessions(c *gin.Context) {
 	sessions, err := sessionRepo.GetAllActive(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get active sessions: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get sessions",
@@ -534,9 +534,9 @@ func (h *authHandler) getSessions(c *gin.Context) {
 	}
 
 	// 转换为响应模型
-	sessionInfos := make([]models.SessionInfo, 0, len(sessions))
+	sessionInfos := make([]auth.Session, 0, len(sessions))
 	for _, session := range sessions {
-		sessionInfos = append(sessionInfos, models.SessionInfo{
+		sessionInfos = append(sessionInfos, auth.Session{
 			ID:        session.ID,
 			IPAddress: session.IPAddress,
 			UserAgent: session.UserAgent,
@@ -547,14 +547,14 @@ func (h *authHandler) getSessions(c *gin.Context) {
 		})
 	}
 
-	response := models.SessionListResponse{
+	response := auth.SessionListResponse{
 		Sessions: sessionInfos,
 		Total:    len(sessionInfos),
 	}
 
 	log.Debugf("Retrieved %d sessions for user %s", len(sessionInfos), username)
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Sessions retrieved successfully",
 		Data:    response,
@@ -569,16 +569,16 @@ func (h *authHandler) getSessions(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "会话ID"
-// @Success 200 {object} models.SuccessResponse "删除成功"
-// @Failure 400 {object} models.ErrorResponse "请求参数错误"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 404 {object} models.ErrorResponse "会话不存在"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Success 200 {object} api.ResponseSuccess "删除成功"
+// @Failure 400 {object} api.ResponseError "请求参数错误"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 404 {object} api.ResponseError "会话不存在"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/sessions/{id} [delete]
 func (h *authHandler) deleteSession(c *gin.Context) {
 	sessionIDStr := c.Param("id")
 	if sessionIDStr == "" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Session ID is required",
@@ -588,7 +588,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 
 	sessionID := int64(0)
 	if _, err := fmt.Sscanf(sessionIDStr, "%d", &sessionID); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Invalid session ID format",
@@ -598,7 +598,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 
 	username, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "User not found in context",
@@ -611,7 +611,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 	session, err := sessionRepo.GetByID(context.Background(), sessionID)
 	if err != nil {
 		log.Errorf("Failed to get session: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to get session",
@@ -620,7 +620,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 	}
 
 	if session == nil {
-		c.JSON(http.StatusNotFound, models.ErrorResponse{
+		c.JSON(http.StatusNotFound, api.ResponseError{
 			Code:    http.StatusNotFound,
 			Message: "Not Found",
 			Error:   "Session not found",
@@ -632,7 +632,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 	err = sessionRepo.Delete(context.Background(), sessionID)
 	if err != nil {
 		log.Errorf("Failed to delete session: %v", err)
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to delete session",
@@ -640,9 +640,9 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Session %d deleted by user %s", sessionID, username)
+	log.Infof("Session %d deleted by user %s from %s", sessionID, username.(string), c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Session deleted successfully",
 	})
@@ -655,17 +655,17 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body models.UpdateUserInfoRequest true "修改用户名请求"
-// @Success 200 {object} models.SuccessResponse "用户名修改成功"
-// @Failure 400 {object} models.ErrorResponse "请求参数错误"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 409 {object} models.ErrorResponse "用户名已存在"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Param request body auth.UpdateUserInfoRequest true "修改用户名请求"
+// @Success 200 {object} api.ResponseSuccess "用户名修改成功"
+// @Failure 400 {object} api.ResponseError "请求参数错误"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 409 {object} api.ResponseError "用户名已存在"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
 func (h *authHandler) updateUsername(c *gin.Context) {
-	var req models.UpdateUserInfoRequest
+	var req auth.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "Invalid request format: " + err.Error(),
@@ -675,7 +675,7 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 
 	currentUsername, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "User not found in context",
@@ -685,7 +685,7 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 
 	// 检查新用户名是否与当前用户名相同
 	if req.Username == currentUsername.(string) {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
 			Error:   "New username cannot be the same as current username",
@@ -700,7 +700,7 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 		log.Errorf("Failed to update username from %s to %s: %v", currentUsername, req.Username, err)
 		// 根据错误类型返回不同的状态码
 		// 这里假设数据库层会返回适当的错误，如果用户名已存在等
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
 			Error:   "Failed to update username",
@@ -708,9 +708,9 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Username changed successfully from %s to %s", currentUsername, req.Username)
+	log.Infof("Username changed successfully from %s to %s from %s", currentUsername.(string), req.Username, c.ClientIP())
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Username updated successfully.",
 	})

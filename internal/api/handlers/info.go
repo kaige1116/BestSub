@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/api/models"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database"
+	"github.com/bestruirui/bestsub/internal/models/api"
+	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	"github.com/bestruirui/bestsub/internal/utils/system"
+	systemutils "github.com/bestruirui/bestsub/internal/utils/system"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/gin-gonic/gin"
 )
@@ -60,8 +61,8 @@ func newHealthHandler() *healthHandler {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务正常"
-// @Failure 503 {object} models.ErrorResponse "服务不可用"
+// @Success 200 {object} api.ResponseSuccess{data=system.HealthResponse} "服务正常"
+// @Failure 503 {object} api.ResponseError "服务不可用"
 // @Router /api/v1/system/health [get]
 func (h *healthHandler) healthCheck(c *gin.Context) {
 	// 检查数据库连接状态
@@ -78,7 +79,7 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 		databaseStatus = "disconnected"
 	}
 
-	response := models.HealthResponse{
+	response := system.HealthResponse{
 		Status:    "ok",
 		Timestamp: timeutils.Now().Format(time.RFC3339),
 		Version:   info.Version,
@@ -88,7 +89,7 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 	// 如果数据库连接失败，返回503状态码
 	if databaseStatus == "disconnected" {
 		response.Status = "error"
-		c.JSON(http.StatusServiceUnavailable, models.ErrorResponse{
+		c.JSON(http.StatusServiceUnavailable, api.ResponseError{
 			Code:    http.StatusServiceUnavailable,
 			Message: "Service Unavailable",
 			Error:   "Database connection failed",
@@ -96,7 +97,7 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Service is healthy",
 		Data:    response,
@@ -109,8 +110,8 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse{data=models.HealthResponse} "服务就绪"
-// @Failure 503 {object} models.ErrorResponse "服务未就绪"
+// @Success 200 {object} api.ResponseSuccess{data=system.HealthResponse} "服务就绪"
+// @Failure 503 {object} api.ResponseError "服务未就绪"
 // @Router /api/v1/system/ready [get]
 func (h *healthHandler) readinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
@@ -129,7 +130,7 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 		log.Errorf("Readiness check failed: database not initialized, error: %v", err)
 	}
 
-	response := models.HealthResponse{
+	response := system.HealthResponse{
 		Status:    "ready",
 		Timestamp: timeutils.Now().Format(time.RFC3339),
 		Version:   info.Version,
@@ -139,7 +140,7 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 	if !ready {
 		response.Status = "not ready"
 		response.Database = "not initialized"
-		c.JSON(http.StatusServiceUnavailable, models.ErrorResponse{
+		c.JSON(http.StatusServiceUnavailable, api.ResponseError{
 			Code:    http.StatusServiceUnavailable,
 			Message: "Service Not Ready",
 			Error:   errorMsg,
@@ -147,7 +148,7 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Service is ready",
 		Data:    response,
@@ -160,10 +161,10 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse "服务存活"
+// @Success 200 {object} api.ResponseSuccess "服务存活"
 // @Router /api/v1/system/live [get]
 func (h *healthHandler) livenessCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Service is alive",
 		Data: map[string]interface{}{
@@ -180,19 +181,15 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} models.SuccessResponse{data=system.Info} "获取成功"
-// @Failure 401 {object} models.ErrorResponse "未授权"
-// @Failure 500 {object} models.ErrorResponse "服务器内部错误"
+// @Success 200 {object} api.ResponseSuccess{data=systemutils.Info} "获取成功"
+// @Failure 401 {object} api.ResponseError "未授权"
+// @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/system/info [get]
 func (h *healthHandler) systemInfo(c *gin.Context) {
-	// 获取系统监控器实例
-	sysInfo := system.GetSystemInfo()
-
-	// 获取系统信息
-
+	sysInfo := systemutils.GetSystemInfo()
 	log.Debug("System information retrieved successfully")
 
-	c.JSON(http.StatusOK, models.SuccessResponse{
+	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "System information retrieved successfully",
 		Data:    sysInfo,
