@@ -9,11 +9,11 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
-func GetProxyConfig() (*system.ProxyConfig, error) {
+func GetProxyConfig() (*system.Proxy, error) {
 	ctx := context.Background()
 	configRepo := database.SystemConfig()
 
-	config := &system.ProxyConfig{}
+	config := &system.Proxy{}
 
 	enableConfig, err := configRepo.GetByKey(ctx, "proxy.enable")
 	if err != nil {

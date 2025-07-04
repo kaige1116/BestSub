@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/models/sublink"
+	"github.com/bestruirui/bestsub/internal/models/sub"
+	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/modules/parser"
 	utilshttp "github.com/bestruirui/bestsub/internal/utils/http"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -15,7 +16,7 @@ import (
 )
 
 // Fetch 使用配置获取订阅内容
-func Fetch(ctx context.Context, config *sublink.FetchConfig) (*sublink.FetchResult, error) {
+func Fetch(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, error) {
 
 	var lastErr error
 
@@ -49,7 +50,7 @@ func Fetch(ctx context.Context, config *sublink.FetchConfig) (*sublink.FetchResu
 }
 
 // fetchOnce 执行单次获取操作
-func fetchOnce(ctx context.Context, config *sublink.FetchConfig) (*sublink.FetchResult, error) {
+func fetchOnce(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, error) {
 	startTime := time.Now()
 
 	// 选择HTTP客户端
@@ -109,8 +110,8 @@ func fetchOnce(ctx context.Context, config *sublink.FetchConfig) (*sublink.Fetch
 		return nil, fmt.Errorf("failed to parse content: %w", err)
 	}
 	duration := time.Since(startTime).Milliseconds()
-	result := &sublink.FetchResult{
-		SubType:   string(subType),
+	result := &sub.FetchResult{
+		Type:      string(subType),
 		NodeCount: nodeCount,
 		Size:      int64(len(content)),
 		Duration:  fmt.Sprintf("%dms", duration),

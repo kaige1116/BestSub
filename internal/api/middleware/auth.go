@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/models"
 	"github.com/bestruirui/bestsub/internal/database"
+	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
@@ -17,7 +17,7 @@ func Auth() gin.HandlerFunc {
 		// 从请求头中获取Authorization
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Authorization header is required",
@@ -29,7 +29,7 @@ func Auth() gin.HandlerFunc {
 		// 提取JWT令牌
 		token, err := jwt.ExtractTokenFromHeader(authHeader)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Invalid authorization header format",
@@ -42,7 +42,7 @@ func Auth() gin.HandlerFunc {
 		claims, err := jwt.ValidateToken(token)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Invalid or expired token",
@@ -53,7 +53,7 @@ func Auth() gin.HandlerFunc {
 
 		// 检查令牌是否过期
 		if jwt.IsTokenExpired(claims) {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Token has expired",
@@ -67,7 +67,7 @@ func Auth() gin.HandlerFunc {
 		session, err := sessionRepo.GetByID(context.Background(), claims.SessionID)
 		if err != nil {
 			log.Errorf("Failed to get session: %v", err)
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal Server Error",
 				Error:   "Failed to validate session",
@@ -77,7 +77,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		if session == nil || !session.IsActive {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Session is invalid or inactive",
@@ -89,7 +89,7 @@ func Auth() gin.HandlerFunc {
 		// 验证令牌哈希是否匹配
 		tokenHash := jwt.HashToken(token)
 		if session.TokenHash != tokenHash {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Token hash mismatch",
@@ -103,7 +103,7 @@ func Auth() gin.HandlerFunc {
 		authInfo, err := authRepo.Get(context.Background())
 		if err != nil {
 			log.Errorf("Failed to get auth info: %v", err)
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal Server Error",
 				Error:   "Failed to get user information",
@@ -113,7 +113,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		if authInfo == nil {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "User not found",
