@@ -14,15 +14,15 @@ type Data struct {
 // CreateRequest 创建订阅链接请求模型
 type CreateRequest struct {
 	common.BaseRequestModel
-	URL  string      `json:"url"`
-	Task []task.Data `json:"task"`
+	URL  string               `json:"url"`
+	Task []task.CreateRequest `json:"task"`
 }
 
 // UpdateRequest 更新订阅链接请求模型
 type UpdateRequest struct {
-	common.BaseRequestModel
-	URL  string      `json:"url"`
-	Task []task.Data `json:"task"`
+	common.BaseUpdateRequestModel
+	URL  string               `json:"url"`
+	Task []task.UpdateRequest `json:"task"`
 }
 
 // Response 订阅链接响应模型

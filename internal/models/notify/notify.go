@@ -17,3 +17,13 @@ type Data struct {
 	CreatedAt   time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
+
+// 通知模板
+type Template struct {
+	ID          int64     `db:"id" json:"id"`
+	Name        string    `db:"name" json:"name"`               // 模板名称
+	Description string    `db:"description" json:"description"` // 模板描述
+	Template    string    `db:"template" json:"template"`       // 模板内容
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+}

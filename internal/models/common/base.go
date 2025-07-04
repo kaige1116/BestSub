@@ -17,3 +17,9 @@ type BaseRequestModel struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+type BaseUpdateRequestModel struct {
+	ID          int64  `json:"id"`
+	Enable      *bool  `json:"enable"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
