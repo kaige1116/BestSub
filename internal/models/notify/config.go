@@ -2,7 +2,7 @@ package notify
 
 type NotifyConfig struct {
 	NotifyType NotifyType `json:"type"`
-	IsEnabled  *bool      `json:"is_enabled"`
+	Enabled    *bool      `json:"enable"`
 	TemplateId int        `json:"template_id"`
 	Config     *string    `json:"config"`
 }

@@ -1,11 +1,11 @@
-package models
+package notify
 
 import (
 	"time"
 )
 
-// 全局管理通知渠道配置，供链接引用
-type Notify struct {
+// 全局管理通知渠道配置
+type Data struct {
 	ID          int64     `db:"id" json:"id"`
 	Enable      bool      `db:"enable" json:"enable"`           // 是否启用
 	Name        string    `db:"name" json:"name"`               // 通知渠道名称

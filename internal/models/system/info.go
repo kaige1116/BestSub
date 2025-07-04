@@ -1,4 +1,4 @@
-package models
+package system
 
 // HealthResponse 健康检查响应
 type HealthResponse struct {

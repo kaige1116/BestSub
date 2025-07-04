@@ -1,11 +1,8 @@
-package models
+package sub
 
-import (
-	"time"
-)
+import "time"
 
-// 订阅输出系统的保存功能配置
-type SubSaveConfig struct {
+type Save struct {
 	ID          int64     `db:"id" json:"id"`
 	Enable      bool      `db:"enable" json:"enable"`           // 是否启用
 	Name        string    `db:"name" json:"name"`               // 保存配置名称
