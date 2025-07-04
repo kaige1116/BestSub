@@ -42,7 +42,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.LoginRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.LoginRequest"
                         }
                     }
                 ],
@@ -52,13 +52,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.LoginResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.LoginResponse"
                                         }
                                     }
                                 }
@@ -68,19 +68,19 @@ const docTemplate = `{
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "用户名或密码错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -108,19 +108,19 @@ const docTemplate = `{
                     "200": {
                         "description": "登出成功",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -146,7 +146,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.RefreshTokenRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.RefreshTokenRequest"
                         }
                     }
                 ],
@@ -156,13 +156,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.RefreshTokenResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.RefreshTokenResponse"
                                         }
                                     }
                                 }
@@ -172,19 +172,19 @@ const docTemplate = `{
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "刷新令牌无效",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -214,13 +214,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SessionListResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.SessionListResponse"
                                         }
                                     }
                                 }
@@ -230,13 +230,13 @@ const docTemplate = `{
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -273,31 +273,31 @@ const docTemplate = `{
                     "200": {
                         "description": "删除成功",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "404": {
                         "description": "会话不存在",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -327,13 +327,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.UserInfo"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.Data"
                                         }
                                     }
                                 }
@@ -343,13 +343,13 @@ const docTemplate = `{
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -380,7 +380,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.UpdateUserInfoRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.UpdateUserInfoRequest"
                         }
                     }
                 ],
@@ -388,31 +388,31 @@ const docTemplate = `{
                     "200": {
                         "description": "用户名修改成功",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "409": {
                         "description": "用户名已存在",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -443,7 +443,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ChangePasswordRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.ChangePasswordRequest"
                         }
                     }
                 ],
@@ -451,25 +451,25 @@ const docTemplate = `{
                     "200": {
                         "description": "密码修改成功",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "未授权或旧密码错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -513,13 +513,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.ConfigItemsResponse"
                                         }
                                     }
                                 }
@@ -529,13 +529,13 @@ const docTemplate = `{
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -564,7 +564,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.UpdateConfigItemRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.UpdateConfigItemRequest"
                         }
                     }
                 ],
@@ -574,13 +574,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.ConfigItemsResponse"
                                         }
                                     }
                                 }
@@ -590,19 +590,19 @@ const docTemplate = `{
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -641,13 +641,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.Data"
                                         }
                                     }
                                 }
@@ -657,25 +657,308 @@ const docTemplate = `{
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "404": {
                         "description": "配置项不存在",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sub": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅链接管理"
+                ],
+                "summary": "获取订阅链接",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页大小",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "链接ID列表，逗号分隔",
+                        "name": "ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建单个订阅链接",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅链接管理"
+                ],
+                "summary": "创建订阅链接",
+                "parameters": [
+                    {
+                        "description": "创建订阅链接请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据请求体中的ID更新订阅链接信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅链接管理"
+                ],
+                "summary": "更新订阅链接",
+                "parameters": [
+                    {
+                        "description": "更新订阅链接请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "订阅链接不存在",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sub/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据ID删除单个订阅链接",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅链接管理"
+                ],
+                "summary": "删除订阅链接",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订阅链接ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "订阅链接不存在",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -700,13 +983,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.HealthResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.HealthResponse"
                                         }
                                     }
                                 }
@@ -716,7 +999,59 @@ const docTemplate = `{
                     "503": {
                         "description": "服务不可用",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/system/info": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取程序运行相关信息，包括内存使用、运行时长、网络流量、CPU信息等",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统"
+                ],
+                "summary": "系统信息",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_utils_system.Info"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -739,7 +1074,7 @@ const docTemplate = `{
                     "200": {
                         "description": "服务存活",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                         }
                     }
                 }
@@ -764,13 +1099,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SuccessResponse"
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.HealthResponse"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.HealthResponse"
                                         }
                                     }
                                 }
@@ -780,7 +1115,7 @@ const docTemplate = `{
                     "503": {
                         "description": "服务未就绪",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ErrorResponse"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_api.ResponseError"
                         }
                     }
                 }
@@ -788,107 +1123,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_bestruirui_bestsub_internal_api_models.ChangePasswordRequest": {
-            "type": "object",
-            "required": [
-                "new_password",
-                "old_password"
-            ],
-            "properties": {
-                "new_password": {
-                    "description": "新密码",
-                    "type": "string",
-                    "example": "new_password"
-                },
-                "old_password": {
-                    "description": "旧密码",
-                    "type": "string",
-                    "example": "old_password"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.ConfigItemData": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "description": "配置描述",
-                    "type": "string",
-                    "example": "是否启用代理"
-                },
-                "id": {
-                    "description": "配置ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "value": {
-                    "description": "配置值",
-                    "type": "string",
-                    "example": "true"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "description": "创建时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "description": {
-                    "description": "配置描述",
-                    "type": "string",
-                    "example": "是否启用代理"
-                },
-                "group_name": {
-                    "description": "配置分组",
-                    "type": "string",
-                    "example": "proxy"
-                },
-                "id": {
-                    "description": "配置ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "key": {
-                    "description": "配置键",
-                    "type": "string",
-                    "example": "proxy.enable"
-                },
-                "type": {
-                    "description": "配置类型",
-                    "type": "string",
-                    "example": "bool"
-                },
-                "updated_at": {
-                    "description": "更新时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "value": {
-                    "description": "配置值",
-                    "type": "string",
-                    "example": "true"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.ConfigItemsResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "description": "配置项列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemResponse"
-                    }
-                },
-                "total": {
-                    "description": "总数",
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.ErrorResponse": {
+        "github_com_bestruirui_bestsub_internal_models_api.ResponseError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -908,7 +1143,329 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_api_models.HealthResponse": {
+        "github_com_bestruirui_bestsub_internal_models_api.ResponseSuccess": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "状态码",
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "description": "响应数据"
+                },
+                "message": {
+                    "description": "响应消息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "新密码",
+                    "type": "string",
+                    "example": "new_password"
+                },
+                "old_password": {
+                    "description": "旧密码",
+                    "type": "string",
+                    "example": "old_password"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.Data": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "description": "用户名",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "description": "密码",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "username": {
+                    "description": "用户名",
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "description": "JWT访问令牌",
+                    "type": "string",
+                    "example": "access_token_string"
+                },
+                "expires_at": {
+                    "description": "令牌过期时间",
+                    "type": "string",
+                    "example": "2024-01-01T12:00:00Z"
+                },
+                "refresh_token": {
+                    "description": "刷新令牌",
+                    "type": "string",
+                    "example": "refresh_token_string"
+                },
+                "user": {
+                    "description": "用户信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.Data"
+                        }
+                    ]
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "description": "刷新令牌",
+                    "type": "string",
+                    "example": "refresh_token_string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.RefreshTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "description": "新的JWT访问令牌",
+                    "type": "string",
+                    "example": "new_access_token_string"
+                },
+                "expires_at": {
+                    "description": "新令牌过期时间",
+                    "type": "string",
+                    "example": "2024-01-01T12:00:00Z"
+                },
+                "refresh_token": {
+                    "description": "新的刷新令牌",
+                    "type": "string",
+                    "example": "new_refresh_token_string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.Session": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip_address": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.SessionListResponse": {
+            "type": "object",
+            "properties": {
+                "sessions": {
+                    "description": "会话列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_auth.Session"
+                    }
+                },
+                "total": {
+                    "description": "总数",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_auth.UpdateUserInfoRequest": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "username": {
+                    "description": "新用户名",
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_sub.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "task": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_task.CreateRequest"
+                    }
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_sub.Response": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "task": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_task.Data"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_sub.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "task": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_task.UpdateRequest"
+                    }
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_system.ConfigItemsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "配置项列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_system.Data"
+                    }
+                },
+                "total": {
+                    "description": "总数",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_system.Data": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "description": "配置描述",
+                    "type": "string"
+                },
+                "group_name": {
+                    "description": "配置分组：system, nodepool, gc, log, auth, api, proxy, monitor",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key": {
+                    "description": "配置键",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "配置类型：string, int, bool, json",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "description": "配置值（JSON格式）",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_system.HealthResponse": {
             "type": "object",
             "properties": {
                 "database": {
@@ -933,161 +1490,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_api_models.LoginRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "description": "密码",
-                    "type": "string",
-                    "example": "admin"
-                },
-                "username": {
-                    "description": "用户名",
-                    "type": "string",
-                    "example": "admin"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "description": "JWT访问令牌",
-                    "type": "string",
-                    "example": "access_token_string"
-                },
-                "expires_at": {
-                    "description": "令牌过期时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "refresh_token": {
-                    "description": "刷新令牌",
-                    "type": "string",
-                    "example": "refresh_token_string"
-                },
-                "user": {
-                    "description": "用户信息",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.UserInfo"
-                        }
-                    ]
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.RefreshTokenRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "description": "刷新令牌",
-                    "type": "string",
-                    "example": "refresh_token_string"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.RefreshTokenResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "description": "新的JWT访问令牌",
-                    "type": "string",
-                    "example": "new_access_token_string"
-                },
-                "expires_at": {
-                    "description": "新令牌过期时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "refresh_token": {
-                    "description": "新的刷新令牌",
-                    "type": "string",
-                    "example": "new_refresh_token_string"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.SessionInfo": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "description": "创建时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "expires_at": {
-                    "description": "过期时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "id": {
-                    "description": "会话ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "ip_address": {
-                    "description": "IP地址",
-                    "type": "string",
-                    "example": "192.168.1.1"
-                },
-                "is_active": {
-                    "description": "是否活跃",
-                    "type": "boolean",
-                    "example": true
-                },
-                "updated_at": {
-                    "description": "更新时间",
-                    "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
-                },
-                "user_agent": {
-                    "description": "用户代理",
-                    "type": "string",
-                    "example": "Mozilla/5.0..."
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.SessionListResponse": {
-            "type": "object",
-            "properties": {
-                "sessions": {
-                    "description": "会话列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.SessionInfo"
-                    }
-                },
-                "total": {
-                    "description": "总数",
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "description": "状态码",
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "description": "响应数据"
-                },
-                "message": {
-                    "description": "响应消息",
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "github_com_bestruirui_bestsub_internal_api_models.UpdateConfigItemRequest": {
+        "github_com_bestruirui_bestsub_internal_models_system.UpdateConfigItemRequest": {
             "type": "object",
             "required": [
                 "data"
@@ -1097,41 +1500,193 @@ const docTemplate = `{
                     "description": "配置数据",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_api_models.ConfigItemData"
+                        "type": "object",
+                        "properties": {
+                            "description": {
+                                "description": "配置描述",
+                                "type": "string",
+                                "example": "是否启用代理"
+                            },
+                            "id": {
+                                "description": "配置ID",
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "value": {
+                                "description": "配置值",
+                                "type": "string",
+                                "example": "true"
+                            }
+                        }
                     }
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_api_models.UpdateUserInfoRequest": {
+        "github_com_bestruirui_bestsub_internal_models_task.CreateRequest": {
             "type": "object",
-            "required": [
-                "username"
-            ],
             "properties": {
-                "username": {
-                    "description": "新用户名",
+                "config": {
+                    "description": "任务配置（JSON格式）",
                     "type": "string",
-                    "example": "admin"
+                    "example": "{\"sub_link_id\": 1}"
+                },
+                "cron": {
+                    "description": "Cron表达式",
+                    "type": "string",
+                    "example": "0 */6 * * *"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "任务类型",
+                    "type": "string",
+                    "example": "link_fetch"
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_api_models.UserInfo": {
+        "github_com_bestruirui_bestsub_internal_models_task.Data": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "description": "创建时间",
+                "config": {
+                    "description": "任务配置（JSON格式）",
                     "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
+                    "example": "{\"sub_link_id\": 1}"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "cron": {
+                    "description": "Cron表达式",
+                    "type": "string",
+                    "example": "0 */6 * * *"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_run_duration": {
+                    "description": "上次执行耗时（毫秒）",
+                    "type": "integer"
+                },
+                "last_run_result": {
+                    "description": "上次执行结果",
+                    "type": "string"
+                },
+                "last_run_time": {
+                    "description": "上次执行时间",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "任务状态",
+                    "type": "string",
+                    "example": "pending"
+                },
+                "type": {
+                    "description": "任务类型",
+                    "type": "string",
+                    "example": "link_fetch"
                 },
                 "updated_at": {
-                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_task.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "description": "任务配置（JSON格式）",
                     "type": "string",
-                    "example": "2024-01-01T12:00:00Z"
+                    "example": "{\"sub_link_id\": 1}"
                 },
-                "username": {
-                    "description": "用户名",
+                "cron": {
+                    "description": "Cron表达式",
                     "type": "string",
-                    "example": "admin"
+                    "example": "0 */6 * * *"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_utils_system.Info": {
+            "type": "object",
+            "properties": {
+                "cpu_cores": {
+                    "description": "CPU核心数",
+                    "type": "integer"
+                },
+                "download_bytes": {
+                    "description": "下载流量 (bytes)",
+                    "type": "integer"
+                },
+                "gc_count": {
+                    "description": "GC次数",
+                    "type": "integer"
+                },
+                "goroutines": {
+                    "description": "协程数量",
+                    "type": "integer"
+                },
+                "heap_total": {
+                    "description": "堆内存总量 (bytes)",
+                    "type": "integer"
+                },
+                "heap_used": {
+                    "description": "堆内存使用 (bytes)",
+                    "type": "integer"
+                },
+                "last_gc_time": {
+                    "description": "最后GC时间",
+                    "type": "string"
+                },
+                "memory_percent": {
+                    "description": "内存使用百分比",
+                    "type": "number"
+                },
+                "memory_total": {
+                    "description": "总内存 (bytes)",
+                    "type": "integer"
+                },
+                "memory_used": {
+                    "description": "已使用内存 (bytes)",
+                    "type": "integer"
+                },
+                "start_time": {
+                    "description": "启动时间",
+                    "type": "string"
+                },
+                "upload_bytes": {
+                    "description": "上传流量 (bytes)",
+                    "type": "integer"
+                },
+                "uptime_seconds": {
+                    "description": "运行时长(秒)",
+                    "type": "integer"
                 }
             }
         }
