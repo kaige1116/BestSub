@@ -35,6 +35,11 @@ func (r *Repository) Notify() interfaces.NotifyRepository {
 	return newNotifyRepository(r.db)
 }
 
+// NotifyTemplate 获取通知模板仓库
+func (r *Repository) NotifyTemplate() interfaces.NotifyTemplateRepository {
+	return newNotifyTemplateRepository(r.db)
+}
+
 // Task 获取任务仓库
 func (r *Repository) Task() interfaces.TaskRepository {
 	return newTaskRepository(r.db)
@@ -56,17 +61,17 @@ func (r *Repository) SubNodeFilterRule() interfaces.SubNodeFilterRuleRepository 
 }
 
 // SubLink 获取订阅链接仓库
-func (r *Repository) SubLink() interfaces.SubLinkRepository {
-	return newSubLinkRepository(r.db)
+func (r *Repository) SubLink() interfaces.SubRepository {
+	return newSubRepository(r.db)
 }
 
 // SubSaveConfig 获取保存配置仓库
-func (r *Repository) SubSaveConfig() interfaces.SubSaveConfigRepository {
+func (r *Repository) SubSaveConfig() interfaces.SubSaveRepository {
 	return newSubSaveConfigRepository(r.db)
 }
 
 // SubShareLink 获取分享链接仓库
-func (r *Repository) SubShareLink() interfaces.SubShareLinkRepository {
+func (r *Repository) SubShareLink() interfaces.SubShareRepository {
 	return newSubShareLinkRepository(r.db)
 }
 

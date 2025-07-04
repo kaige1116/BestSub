@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/models/sub"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
@@ -17,30 +17,22 @@ type SubSaveConfigRepository struct {
 }
 
 // newSubSaveConfigRepository 创建保存配置仓库
-func newSubSaveConfigRepository(db *database.Database) interfaces.SubSaveConfigRepository {
+func newSubSaveConfigRepository(db *database.Database) interfaces.SubSaveRepository {
 	return &SubSaveConfigRepository{db: db}
 }
 
 // Create 创建保存配置
-func (r *SubSaveConfigRepository) Create(ctx context.Context, config *models.SubSaveConfig) error {
-	query := `INSERT INTO sub_save_configs (name, description, is_enabled, storage_id, output_template_id, 
-	          node_filter_id, file_name, save_interval, last_save, last_status, error_msg, save_count, created_at, updated_at) 
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveConfig) error {
+	query := `INSERT INTO sub_save (enable, name, description, rename, file_name, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
+		config.Enable,
 		config.Name,
 		config.Description,
-		config.IsEnabled,
-		config.StorageID,
-		config.OutputTemplateID,
-		config.NodeFilterID,
+		config.Rename,
 		config.FileName,
-		config.SaveInterval,
-		config.LastSave,
-		config.LastStatus,
-		config.ErrorMsg,
-		config.SaveCount,
 		now,
 		now,
 	)
@@ -62,26 +54,18 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *models.Sub
 }
 
 // GetByID 根据ID获取保存配置
-func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*models.SubSaveConfig, error) {
-	query := `SELECT id, name, description, is_enabled, storage_id, output_template_id, 
-	          node_filter_id, file_name, save_interval, last_save, last_status, error_msg, save_count, created_at, updated_at 
-	          FROM sub_save_configs WHERE id = ?`
+func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*sub.SaveConfig, error) {
+	query := `SELECT id, enable, name, description, rename, file_name, created_at, updated_at
+	          FROM sub_save WHERE id = ?`
 
-	var config models.SubSaveConfig
+	var config sub.SaveConfig
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
+		&config.Enable,
 		&config.Name,
 		&config.Description,
-		&config.IsEnabled,
-		&config.StorageID,
-		&config.OutputTemplateID,
-		&config.NodeFilterID,
+		&config.Rename,
 		&config.FileName,
-		&config.SaveInterval,
-		&config.LastSave,
-		&config.LastStatus,
-		&config.ErrorMsg,
-		&config.SaveCount,
 		&config.CreatedAt,
 		&config.UpdatedAt,
 	)
@@ -97,24 +81,15 @@ func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*model
 }
 
 // Update 更新保存配置
-func (r *SubSaveConfigRepository) Update(ctx context.Context, config *models.SubSaveConfig) error {
-	query := `UPDATE sub_save_configs SET name = ?, description = ?, is_enabled = ?, storage_id = ?, 
-	          output_template_id = ?, node_filter_id = ?, file_name = ?, save_interval = ?, 
-	          last_save = ?, last_status = ?, error_msg = ?, save_count = ?, updated_at = ? WHERE id = ?`
+func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveConfig) error {
+	query := `UPDATE sub_save SET enable = ?, name = ?, description = ?, rename = ?, file_name = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
+		config.Enable,
 		config.Name,
 		config.Description,
-		config.IsEnabled,
-		config.StorageID,
-		config.OutputTemplateID,
-		config.NodeFilterID,
+		config.Rename,
 		config.FileName,
-		config.SaveInterval,
-		config.LastSave,
-		config.LastStatus,
-		config.ErrorMsg,
-		config.SaveCount,
 		timeutils.Now(),
 		config.ID,
 	)
@@ -128,7 +103,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *models.Sub
 
 // Delete 删除保存配置
 func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM sub_save_configs WHERE id = ?`
+	query := `DELETE FROM sub_save WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -138,99 +113,102 @@ func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-// List 获取保存配置列表
-func (r *SubSaveConfigRepository) List(ctx context.Context, offset, limit int) ([]*models.SubSaveConfig, error) {
-	query := `SELECT id, name, description, is_enabled, storage_id, output_template_id, 
-	          node_filter_id, file_name, save_interval, last_save, last_status, error_msg, save_count, created_at, updated_at 
-	          FROM sub_save_configs ORDER BY created_at DESC LIMIT ? OFFSET ?`
+// GetByTaskID 根据任务ID获取保存配置列表
+func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID int64) (*[]sub.SaveConfig, error) {
+	query := `SELECT sc.id, sc.enable, sc.name, sc.description, sc.rename, sc.file_name, sc.created_at, sc.updated_at
+	          FROM sub_save sc
+	          INNER JOIN save_task_relations str ON sc.id = str.save_id
+	          WHERE str.task_id = ?`
 
-	return r.querySaveConfigs(ctx, query, limit, offset)
-}
-
-// ListEnabled 获取启用的保存配置列表
-func (r *SubSaveConfigRepository) ListEnabled(ctx context.Context) ([]*models.SubSaveConfig, error) {
-	query := `SELECT id, name, description, is_enabled, storage_id, output_template_id, 
-	          node_filter_id, file_name, save_interval, last_save, last_status, error_msg, save_count, created_at, updated_at 
-	          FROM sub_save_configs WHERE is_enabled = true ORDER BY created_at DESC`
-
-	return r.querySaveConfigs(ctx, query)
-}
-
-// Count 获取保存配置总数
-func (r *SubSaveConfigRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM sub_save_configs`
-
-	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	rows, err := r.db.QueryContext(ctx, query, taskID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to count save configs: %w", err)
-	}
-
-	return count, nil
-}
-
-// UpdateStatus 更新保存状态
-func (r *SubSaveConfigRepository) UpdateStatus(ctx context.Context, id int64, status, errorMsg string) error {
-	query := `UPDATE sub_save_configs SET last_status = ?, error_msg = ?, last_save = ?, updated_at = ? WHERE id = ?`
-
-	now := timeutils.Now()
-	_, err := r.db.ExecContext(ctx, query, status, errorMsg, now, now, id)
-	if err != nil {
-		return fmt.Errorf("failed to update save config status: %w", err)
-	}
-
-	return nil
-}
-
-// IncrementSaveCount 增加保存次数
-func (r *SubSaveConfigRepository) IncrementSaveCount(ctx context.Context, id int64) error {
-	query := `UPDATE sub_save_configs SET save_count = save_count + 1, updated_at = ? WHERE id = ?`
-
-	_, err := r.db.ExecContext(ctx, query, timeutils.Now(), id)
-	if err != nil {
-		return fmt.Errorf("failed to increment save count: %w", err)
-	}
-
-	return nil
-}
-
-// querySaveConfigs 通用保存配置查询方法
-func (r *SubSaveConfigRepository) querySaveConfigs(ctx context.Context, query string, args ...interface{}) ([]*models.SubSaveConfig, error) {
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query save configs: %w", err)
+		return nil, fmt.Errorf("failed to get save configs by task id: %w", err)
 	}
 	defer rows.Close()
 
-	var configs []*models.SubSaveConfig
+	var configs []sub.SaveConfig
 	for rows.Next() {
-		var config models.SubSaveConfig
+		var config sub.SaveConfig
 		err := rows.Scan(
 			&config.ID,
+			&config.Enable,
 			&config.Name,
 			&config.Description,
-			&config.IsEnabled,
-			&config.StorageID,
-			&config.OutputTemplateID,
-			&config.NodeFilterID,
+			&config.Rename,
 			&config.FileName,
-			&config.SaveInterval,
-			&config.LastSave,
-			&config.LastStatus,
-			&config.ErrorMsg,
-			&config.SaveCount,
 			&config.CreatedAt,
 			&config.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan save config: %w", err)
 		}
-		configs = append(configs, &config)
+		configs = append(configs, config)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to iterate save configs: %w", err)
 	}
 
-	return configs, nil
+	return &configs, nil
 }
+
+// AddTaskRelation 添加保存配置与任务的关联
+func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, taskID int64) error {
+	query := `INSERT OR IGNORE INTO save_task_relations (save_id, task_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, saveID, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to add task relation: %w", err)
+	}
+
+	return nil
+}
+
+// AddOutputTemplateRelation 添加保存配置与输出模板的关联
+func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context, saveID, templateID int64) error {
+	query := `INSERT OR IGNORE INTO save_template_relations (save_id, template_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, saveID, templateID)
+	if err != nil {
+		return fmt.Errorf("failed to add output template relation: %w", err)
+	}
+
+	return nil
+}
+
+// AddFilterConfigRelation 添加保存配置与过滤配置的关联
+func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, saveID, configID int64) error {
+	query := `INSERT OR IGNORE INTO save_fitter_relations (save_id, fitter_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, saveID, configID)
+	if err != nil {
+		return fmt.Errorf("failed to add filter config relation: %w", err)
+	}
+
+	return nil
+}
+
+// AddSubRelation 添加保存配置与订阅的关联
+func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, subID int64) error {
+	query := `INSERT OR IGNORE INTO save_sub_relations (save_id, sub_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, saveID, subID)
+	if err != nil {
+		return fmt.Errorf("failed to add sub relation: %w", err)
+	}
+
+	return nil
+}
+
+// AddStorageConfigRelation 添加保存配置与存储配置的关联
+func (r *SubSaveConfigRepository) AddStorageConfigRelation(ctx context.Context, saveID, configID int64) error {
+	query := `INSERT OR IGNORE INTO save_storage_relations (save_id, storage_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, saveID, configID)
+	if err != nil {
+		return fmt.Errorf("failed to add storage config relation: %w", err)
+	}
+
+	return nil
+}
+

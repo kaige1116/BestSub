@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/models/system"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
@@ -22,8 +22,8 @@ func newSystemConfigRepository(db *database.Database) interfaces.SystemConfigRep
 }
 
 // Create 创建配置
-func (r *SystemConfigRepository) Create(ctx context.Context, config *models.SystemConfig) error {
-	query := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at) 
+func (r *SystemConfigRepository) Create(ctx context.Context, config *system.Data) error {
+	query := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
@@ -54,11 +54,11 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *models.Syst
 }
 
 // GetByKey 根据键获取配置
-func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*models.SystemConfig, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at 
+func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*system.Data, error) {
+	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at
 	          FROM system_config WHERE key = ?`
 
-	var config models.SystemConfig
+	var config system.Data
 	err := r.db.QueryRowContext(ctx, query, key).Scan(
 		&config.ID,
 		&config.Key,
@@ -81,8 +81,8 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*mod
 }
 
 // Update 更新配置
-func (r *SystemConfigRepository) Update(ctx context.Context, config *models.SystemConfig) error {
-	query := `UPDATE system_config SET key = ?, value = ?, type = ?, group_name = ?, 
+func (r *SystemConfigRepository) Update(ctx context.Context, config *system.Data) error {
+	query := `UPDATE system_config SET key = ?, value = ?, type = ?, group_name = ?,
 	          description = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -195,7 +195,7 @@ func (r *SystemConfigRepository) GetAllGroups(ctx context.Context) ([]string, er
 }
 
 // GetConfigsByGroup 获取指定分组下的所有配置
-func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group string) ([]models.SystemConfig, error) {
+func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group string) ([]system.Data, error) {
 	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at
 	          FROM system_config WHERE group_name = ? ORDER BY key`
 
@@ -205,9 +205,9 @@ func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group st
 	}
 	defer rows.Close()
 
-	var configs []models.SystemConfig
+	var configs []system.Data
 	for rows.Next() {
-		var config models.SystemConfig
+		var config system.Data
 		if err := rows.Scan(
 			&config.ID,
 			&config.Key,

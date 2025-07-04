@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/models/sub"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
@@ -22,16 +22,17 @@ func newSubStorageConfigRepository(db *database.Database) interfaces.SubStorageC
 }
 
 // Create 创建存储配置
-func (r *SubStorageConfigRepository) Create(ctx context.Context, config *models.SubStorageConfig) error {
-	query := `INSERT INTO sub_storage_configs (name, type, config, is_active, test_result, last_test, created_at, updated_at) 
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.StorageConfig) error {
+	query := `INSERT INTO storage_configs (enable, name, description, type, config, test_result, last_test, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
+		config.Enable,
 		config.Name,
+		config.Description,
 		config.Type,
 		config.Config,
-		config.IsActive,
 		config.TestResult,
 		config.LastTest,
 		now,
@@ -55,17 +56,18 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *models.
 }
 
 // GetByID 根据ID获取存储配置
-func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*models.SubStorageConfig, error) {
-	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
-	          FROM sub_storage_configs WHERE id = ?`
+func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*sub.StorageConfig, error) {
+	query := `SELECT id, enable, name, description, type, config, test_result, last_test, created_at, updated_at
+	          FROM storage_configs WHERE id = ?`
 
-	var config models.SubStorageConfig
+	var config sub.StorageConfig
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
+		&config.Enable,
 		&config.Name,
+		&config.Description,
 		&config.Type,
 		&config.Config,
-		&config.IsActive,
 		&config.TestResult,
 		&config.LastTest,
 		&config.CreatedAt,
@@ -83,15 +85,16 @@ func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*mo
 }
 
 // Update 更新存储配置
-func (r *SubStorageConfigRepository) Update(ctx context.Context, config *models.SubStorageConfig) error {
-	query := `UPDATE sub_storage_configs SET name = ?, type = ?, config = ?, is_active = ?, 
+func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.StorageConfig) error {
+	query := `UPDATE storage_configs SET enable = ?, name = ?, description = ?, type = ?, config = ?,
 	          test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
+		config.Enable,
 		config.Name,
+		config.Description,
 		config.Type,
 		config.Config,
-		config.IsActive,
 		config.TestResult,
 		config.LastTest,
 		timeutils.Now(),
@@ -107,7 +110,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *models.
 
 // Delete 删除存储配置
 func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM sub_storage_configs WHERE id = ?`
+	query := `DELETE FROM storage_configs WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -117,73 +120,29 @@ func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error
 	return nil
 }
 
-// List 获取存储配置列表
-func (r *SubStorageConfigRepository) List(ctx context.Context, offset, limit int) ([]*models.SubStorageConfig, error) {
-	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
-	          FROM sub_storage_configs ORDER BY created_at DESC LIMIT ? OFFSET ?`
+// GetBySaveID 根据保存ID获取存储配置列表
+func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID int64) (*[]sub.StorageConfig, error) {
+	query := `SELECT sc.id, sc.enable, sc.name, sc.description, sc.type, sc.config, sc.test_result, sc.last_test, sc.created_at, sc.updated_at
+	          FROM storage_configs sc
+	          INNER JOIN save_storage_relations ssr ON sc.id = ssr.storage_id
+	          WHERE ssr.save_id = ?`
 
-	return r.queryStorageConfigs(ctx, query, limit, offset)
-}
-
-// ListActive 获取活跃的存储配置列表
-func (r *SubStorageConfigRepository) ListActive(ctx context.Context) ([]*models.SubStorageConfig, error) {
-	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
-	          FROM sub_storage_configs WHERE is_active = true ORDER BY created_at DESC`
-
-	return r.queryStorageConfigs(ctx, query)
-}
-
-// ListByType 根据类型获取存储配置列表
-func (r *SubStorageConfigRepository) ListByType(ctx context.Context, storageType string) ([]*models.SubStorageConfig, error) {
-	query := `SELECT id, name, type, config, is_active, test_result, last_test, created_at, updated_at 
-	          FROM sub_storage_configs WHERE type = ? ORDER BY created_at DESC`
-
-	return r.queryStorageConfigs(ctx, query, storageType)
-}
-
-// Count 获取存储配置总数
-func (r *SubStorageConfigRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM sub_storage_configs`
-
-	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	rows, err := r.db.QueryContext(ctx, query, saveID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to count storage configs: %w", err)
-	}
-
-	return count, nil
-}
-
-// UpdateTestResult 更新测试结果
-func (r *SubStorageConfigRepository) UpdateTestResult(ctx context.Context, id int64, testResult string) error {
-	query := `UPDATE sub_storage_configs SET test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
-
-	now := timeutils.Now()
-	_, err := r.db.ExecContext(ctx, query, testResult, now, now, id)
-	if err != nil {
-		return fmt.Errorf("failed to update storage config test result: %w", err)
-	}
-
-	return nil
-}
-
-// queryStorageConfigs 通用存储配置查询方法
-func (r *SubStorageConfigRepository) queryStorageConfigs(ctx context.Context, query string, args ...interface{}) ([]*models.SubStorageConfig, error) {
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query storage configs: %w", err)
+		return nil, fmt.Errorf("failed to get storage configs by save id: %w", err)
 	}
 	defer rows.Close()
 
-	var configs []*models.SubStorageConfig
+	var configs []sub.StorageConfig
 	for rows.Next() {
-		var config models.SubStorageConfig
+		var config sub.StorageConfig
 		err := rows.Scan(
 			&config.ID,
+			&config.Enable,
 			&config.Name,
+			&config.Description,
 			&config.Type,
 			&config.Config,
-			&config.IsActive,
 			&config.TestResult,
 			&config.LastTest,
 			&config.CreatedAt,
@@ -192,14 +151,26 @@ func (r *SubStorageConfigRepository) queryStorageConfigs(ctx context.Context, qu
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan storage config: %w", err)
 		}
-		configs = append(configs, &config)
+		configs = append(configs, config)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to iterate storage configs: %w", err)
 	}
 
-	return configs, nil
+	return &configs, nil
+}
+
+// AddSaveRelation 添加存储配置与保存的关联
+func (r *SubStorageConfigRepository) AddSaveRelation(ctx context.Context, configID, saveID int64) error {
+	query := `INSERT OR IGNORE INTO save_storage_relations (storage_id, save_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, configID, saveID)
+	if err != nil {
+		return fmt.Errorf("failed to add save relation: %w", err)
+	}
+
+	return nil
 }
 
 // SubOutputTemplateRepository 输出模板数据访问实现
@@ -213,18 +184,17 @@ func newSubOutputTemplateRepository(db *database.Database) interfaces.SubOutputT
 }
 
 // Create 创建输出模板
-func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *models.SubOutputTemplate) error {
-	query := `INSERT INTO sub_output_templates (format, version, template, description, is_default, is_active, created_at, updated_at) 
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.OutputTemplate) error {
+	query := `INSERT INTO sub_output_templates (enable, name, description, type, template, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
-		template.Format,
-		template.Version,
-		template.Template,
+		template.Enable,
+		template.Name,
 		template.Description,
-		template.IsDefault,
-		template.IsActive,
+		template.Type,
+		template.Template,
 		now,
 		now,
 	)
@@ -246,19 +216,18 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *mode
 }
 
 // GetByID 根据ID获取输出模板
-func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*models.SubOutputTemplate, error) {
-	query := `SELECT id, format, version, template, description, is_default, is_active, created_at, updated_at 
+func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*sub.OutputTemplate, error) {
+	query := `SELECT id, enable, name, description, type, template, created_at, updated_at
 	          FROM sub_output_templates WHERE id = ?`
 
-	var template models.SubOutputTemplate
+	var template sub.OutputTemplate
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&template.ID,
-		&template.Format,
-		&template.Version,
-		&template.Template,
+		&template.Enable,
+		&template.Name,
 		&template.Description,
-		&template.IsDefault,
-		&template.IsActive,
+		&template.Type,
+		&template.Template,
 		&template.CreatedAt,
 		&template.UpdatedAt,
 	)
@@ -274,17 +243,15 @@ func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*m
 }
 
 // Update 更新输出模板
-func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *models.SubOutputTemplate) error {
-	query := `UPDATE sub_output_templates SET format = ?, version = ?, template = ?, description = ?, 
-	          is_default = ?, is_active = ?, updated_at = ? WHERE id = ?`
+func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.OutputTemplate) error {
+	query := `UPDATE sub_output_templates SET enable = ?, name = ?, description = ?, type = ?, template = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
-		template.Format,
-		template.Version,
-		template.Template,
+		template.Enable,
+		template.Name,
 		template.Description,
-		template.IsDefault,
-		template.IsActive,
+		template.Type,
+		template.Template,
 		timeutils.Now(),
 		template.ID,
 	)
@@ -308,44 +275,21 @@ func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id int64) erro
 	return nil
 }
 
-// List 获取输出模板列表
-func (r *SubOutputTemplateRepository) List(ctx context.Context, offset, limit int) ([]*models.SubOutputTemplate, error) {
-	query := `SELECT id, format, version, template, description, is_default, is_active, created_at, updated_at 
-	          FROM sub_output_templates ORDER BY format, version LIMIT ? OFFSET ?`
+// GetBySaveID 根据保存ID获取输出模板
+func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID int64) (*sub.OutputTemplate, error) {
+	query := `SELECT ot.id, ot.enable, ot.name, ot.description, ot.type, ot.template, ot.created_at, ot.updated_at
+	          FROM sub_output_templates ot
+	          INNER JOIN save_template_relations str ON ot.id = str.template_id
+	          WHERE str.save_id = ?`
 
-	return r.queryOutputTemplates(ctx, query, limit, offset)
-}
-
-// ListActive 获取活跃的输出模板列表
-func (r *SubOutputTemplateRepository) ListActive(ctx context.Context) ([]*models.SubOutputTemplate, error) {
-	query := `SELECT id, format, version, template, description, is_default, is_active, created_at, updated_at 
-	          FROM sub_output_templates WHERE is_active = true ORDER BY format, version`
-
-	return r.queryOutputTemplates(ctx, query)
-}
-
-// ListByFormat 根据格式获取输出模板列表
-func (r *SubOutputTemplateRepository) ListByFormat(ctx context.Context, format string) ([]*models.SubOutputTemplate, error) {
-	query := `SELECT id, format, version, template, description, is_default, is_active, created_at, updated_at 
-	          FROM sub_output_templates WHERE format = ? ORDER BY version`
-
-	return r.queryOutputTemplates(ctx, query, format)
-}
-
-// GetDefault 获取默认模板
-func (r *SubOutputTemplateRepository) GetDefault(ctx context.Context, format string) (*models.SubOutputTemplate, error) {
-	query := `SELECT id, format, version, template, description, is_default, is_active, created_at, updated_at 
-	          FROM sub_output_templates WHERE format = ? AND is_default = true LIMIT 1`
-
-	var template models.SubOutputTemplate
-	err := r.db.QueryRowContext(ctx, query, format).Scan(
+	var template sub.OutputTemplate
+	err := r.db.QueryRowContext(ctx, query, saveID).Scan(
 		&template.ID,
-		&template.Format,
-		&template.Version,
-		&template.Template,
+		&template.Enable,
+		&template.Name,
 		&template.Description,
-		&template.IsDefault,
-		&template.IsActive,
+		&template.Type,
+		&template.Template,
 		&template.CreatedAt,
 		&template.UpdatedAt,
 	)
@@ -354,83 +298,63 @@ func (r *SubOutputTemplateRepository) GetDefault(ctx context.Context, format str
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to get default template: %w", err)
+		return nil, fmt.Errorf("failed to get output template by save id: %w", err)
 	}
 
 	return &template, nil
 }
 
-// SetDefault 设置默认模板
-func (r *SubOutputTemplateRepository) SetDefault(ctx context.Context, id int64, format string) error {
-	tx, err := r.db.BeginTransaction(ctx)
+// GetByShareID 根据分享ID获取输出模板
+func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID int64) (*sub.OutputTemplate, error) {
+	query := `SELECT ot.id, ot.enable, ot.name, ot.description, ot.type, ot.template, ot.created_at, ot.updated_at
+	          FROM sub_output_templates ot
+	          INNER JOIN share_template_relations str ON ot.id = str.template_id
+	          WHERE str.share_id = ?`
+
+	var template sub.OutputTemplate
+	err := r.db.QueryRowContext(ctx, query, shareID).Scan(
+		&template.ID,
+		&template.Enable,
+		&template.Name,
+		&template.Description,
+		&template.Type,
+		&template.Template,
+		&template.CreatedAt,
+		&template.UpdatedAt,
+	)
+
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// 清除同格式的其他默认模板
-	clearQuery := `UPDATE sub_output_templates SET is_default = false WHERE format = ?`
-	_, err = tx.Exec(clearQuery, format)
-	if err != nil {
-		return fmt.Errorf("failed to clear default templates: %w", err)
-	}
-
-	// 设置新的默认模板
-	setQuery := `UPDATE sub_output_templates SET is_default = true WHERE id = ?`
-	_, err = tx.Exec(setQuery, id)
-	if err != nil {
-		return fmt.Errorf("failed to set default template: %w", err)
-	}
-
-	return tx.Commit()
-}
-
-// Count 获取输出模板总数
-func (r *SubOutputTemplateRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM sub_output_templates`
-
-	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("failed to count output templates: %w", err)
-	}
-
-	return count, nil
-}
-
-// queryOutputTemplates 通用输出模板查询方法
-func (r *SubOutputTemplateRepository) queryOutputTemplates(ctx context.Context, query string, args ...interface{}) ([]*models.SubOutputTemplate, error) {
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query output templates: %w", err)
-	}
-	defer rows.Close()
-
-	var templates []*models.SubOutputTemplate
-	for rows.Next() {
-		var template models.SubOutputTemplate
-		err := rows.Scan(
-			&template.ID,
-			&template.Format,
-			&template.Version,
-			&template.Template,
-			&template.Description,
-			&template.IsDefault,
-			&template.IsActive,
-			&template.CreatedAt,
-			&template.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan output template: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, nil
 		}
-		templates = append(templates, &template)
+		return nil, fmt.Errorf("failed to get output template by share id: %w", err)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate output templates: %w", err)
+	return &template, nil
+}
+
+// AddShareRelation 添加输出模板与分享的关联
+func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, templateID, shareID int64) error {
+	query := `INSERT OR IGNORE INTO share_template_relations (template_id, share_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, templateID, shareID)
+	if err != nil {
+		return fmt.Errorf("failed to add share relation: %w", err)
 	}
 
-	return templates, nil
+	return nil
+}
+
+// AddSaveRelation 添加输出模板与保存的关联
+func (r *SubOutputTemplateRepository) AddSaveRelation(ctx context.Context, templateID, saveID int64) error {
+	query := `INSERT OR IGNORE INTO save_template_relations (template_id, save_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, templateID, saveID)
+	if err != nil {
+		return fmt.Errorf("failed to add save relation: %w", err)
+	}
+
+	return nil
 }
 
 // SubNodeFilterRuleRepository 节点筛选规则数据访问实现
@@ -444,28 +368,28 @@ func newSubNodeFilterRuleRepository(db *database.Database) interfaces.SubNodeFil
 }
 
 // Create 创建筛选规则
-func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *models.SubNodeFilterRule) error {
-	query := `INSERT INTO sub_node_filter_rules (rule_type, operator, value, is_enabled, priority, created_at, updated_at) 
+func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.NodeFilterRule) error {
+	query := `INSERT INTO sub_node_filter_rules (name, field, operator, value, description, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
-		rule.RuleType,
+		rule.Name,
+		rule.Field,
 		rule.Operator,
 		rule.Value,
-		rule.IsEnabled,
-		rule.Priority,
+		rule.Description,
 		now,
 		now,
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to create filter rule: %w", err)
+		return fmt.Errorf("failed to create node filter rule: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("failed to get filter rule id: %w", err)
+		return fmt.Errorf("failed to get node filter rule id: %w", err)
 	}
 
 	rule.ID = id
@@ -475,19 +399,40 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *models.S
 	return nil
 }
 
+// Update 更新筛选规则
+func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.NodeFilterRule) error {
+	query := `UPDATE sub_node_filter_rules SET name = ?, field = ?, operator = ?, value = ?, description = ?, updated_at = ? WHERE id = ?`
+
+	_, err := r.db.ExecContext(ctx, query,
+		rule.Name,
+		rule.Field,
+		rule.Operator,
+		rule.Value,
+		rule.Description,
+		timeutils.Now(),
+		rule.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update node filter rule: %w", err)
+	}
+
+	return nil
+}
+
 // GetByID 根据ID获取筛选规则
-func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*models.SubNodeFilterRule, error) {
-	query := `SELECT id, rule_type, operator, value, is_enabled, priority, created_at, updated_at 
+func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*sub.NodeFilterRule, error) {
+	query := `SELECT id, name, field, operator, value, description, created_at, updated_at
 	          FROM sub_node_filter_rules WHERE id = ?`
 
-	var rule models.SubNodeFilterRule
+	var rule sub.NodeFilterRule
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&rule.ID,
-		&rule.RuleType,
+		&rule.Name,
+		&rule.Field,
 		&rule.Operator,
 		&rule.Value,
-		&rule.IsEnabled,
-		&rule.Priority,
+		&rule.Description,
 		&rule.CreatedAt,
 		&rule.UpdatedAt,
 	)
@@ -496,32 +441,10 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*m
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to get filter rule by id: %w", err)
+		return nil, fmt.Errorf("failed to get node filter rule by id: %w", err)
 	}
 
 	return &rule, nil
-}
-
-// Update 更新筛选规则
-func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *models.SubNodeFilterRule) error {
-	query := `UPDATE sub_node_filter_rules SET rule_type = ?, operator = ?, value = ?, is_enabled = ?, 
-	          priority = ?, updated_at = ? WHERE id = ?`
-
-	_, err := r.db.ExecContext(ctx, query,
-		rule.RuleType,
-		rule.Operator,
-		rule.Value,
-		rule.IsEnabled,
-		rule.Priority,
-		timeutils.Now(),
-		rule.ID,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to update filter rule: %w", err)
-	}
-
-	return nil
 }
 
 // Delete 删除筛选规则
@@ -530,91 +453,110 @@ func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id int64) erro
 
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete filter rule: %w", err)
+		return fmt.Errorf("failed to delete node filter rule: %w", err)
 	}
 
 	return nil
 }
 
-// List 获取筛选规则列表
-func (r *SubNodeFilterRuleRepository) List(ctx context.Context, offset, limit int) ([]*models.SubNodeFilterRule, error) {
-	query := `SELECT id, rule_type, operator, value, is_enabled, priority, created_at, updated_at 
-	          FROM sub_node_filter_rules ORDER BY priority ASC, created_at ASC LIMIT ? OFFSET ?`
+// GetBySaveID 根据保存ID获取筛选规则
+func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID int64) (*[]sub.NodeFilterRule, error) {
+	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
+	          FROM sub_node_filter_rules nfr
+	          INNER JOIN save_filter_relations sfr ON nfr.id = sfr.filter_id
+	          WHERE sfr.save_id = ?`
 
-	return r.queryFilterRules(ctx, query, limit, offset)
-}
-
-// ListEnabled 获取启用的筛选规则列表
-func (r *SubNodeFilterRuleRepository) ListEnabled(ctx context.Context) ([]*models.SubNodeFilterRule, error) {
-	query := `SELECT id, rule_type, operator, value, is_enabled, priority, created_at, updated_at 
-	          FROM sub_node_filter_rules WHERE is_enabled = true ORDER BY priority ASC, created_at ASC`
-
-	return r.queryFilterRules(ctx, query)
-}
-
-// ListByType 根据类型获取筛选规则列表
-func (r *SubNodeFilterRuleRepository) ListByType(ctx context.Context, ruleType string) ([]*models.SubNodeFilterRule, error) {
-	query := `SELECT id, rule_type, operator, value, is_enabled, priority, created_at, updated_at 
-	          FROM sub_node_filter_rules WHERE rule_type = ? ORDER BY priority ASC, created_at ASC`
-
-	return r.queryFilterRules(ctx, query, ruleType)
-}
-
-// Count 获取筛选规则总数
-func (r *SubNodeFilterRuleRepository) Count(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM sub_node_filter_rules`
-
-	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	rows, err := r.db.QueryContext(ctx, query, saveID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to count filter rules: %w", err)
-	}
-
-	return count, nil
-}
-
-// UpdatePriority 更新优先级
-func (r *SubNodeFilterRuleRepository) UpdatePriority(ctx context.Context, id int64, priority int) error {
-	query := `UPDATE sub_node_filter_rules SET priority = ?, updated_at = ? WHERE id = ?`
-
-	_, err := r.db.ExecContext(ctx, query, priority, timeutils.Now(), id)
-	if err != nil {
-		return fmt.Errorf("failed to update filter rule priority: %w", err)
-	}
-
-	return nil
-}
-
-// queryFilterRules 通用筛选规则查询方法
-func (r *SubNodeFilterRuleRepository) queryFilterRules(ctx context.Context, query string, args ...interface{}) ([]*models.SubNodeFilterRule, error) {
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query filter rules: %w", err)
+		return nil, fmt.Errorf("failed to get node filter rules by save id: %w", err)
 	}
 	defer rows.Close()
 
-	var rules []*models.SubNodeFilterRule
+	var rules []sub.NodeFilterRule
 	for rows.Next() {
-		var rule models.SubNodeFilterRule
+		var rule sub.NodeFilterRule
 		err := rows.Scan(
 			&rule.ID,
-			&rule.RuleType,
+			&rule.Name,
+			&rule.Field,
 			&rule.Operator,
 			&rule.Value,
-			&rule.IsEnabled,
-			&rule.Priority,
+			&rule.Description,
 			&rule.CreatedAt,
 			&rule.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan filter rule: %w", err)
+			return nil, fmt.Errorf("failed to scan node filter rule: %w", err)
 		}
-		rules = append(rules, &rule)
+		rules = append(rules, rule)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate filter rules: %w", err)
+		return nil, fmt.Errorf("failed to iterate node filter rules: %w", err)
 	}
 
-	return rules, nil
+	return &rules, nil
+}
+
+// GetByShareID 根据分享ID获取筛选规则
+func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID int64) (*[]sub.NodeFilterRule, error) {
+	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
+	          FROM sub_node_filter_rules nfr
+	          INNER JOIN share_filter_relations sfr ON nfr.id = sfr.filter_id
+	          WHERE sfr.share_id = ?`
+
+	rows, err := r.db.QueryContext(ctx, query, shareID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node filter rules by share id: %w", err)
+	}
+	defer rows.Close()
+
+	var rules []sub.NodeFilterRule
+	for rows.Next() {
+		var rule sub.NodeFilterRule
+		err := rows.Scan(
+			&rule.ID,
+			&rule.Name,
+			&rule.Field,
+			&rule.Operator,
+			&rule.Value,
+			&rule.Description,
+			&rule.CreatedAt,
+			&rule.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan node filter rule: %w", err)
+		}
+		rules = append(rules, rule)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate node filter rules: %w", err)
+	}
+
+	return &rules, nil
+}
+
+// AddShareRelation 添加筛选规则与分享的关联
+func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, ruleID, shareID int64) error {
+	query := `INSERT OR IGNORE INTO share_filter_relations (filter_id, share_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, ruleID, shareID)
+	if err != nil {
+		return fmt.Errorf("failed to add share relation: %w", err)
+	}
+
+	return nil
+}
+
+// AddSaveRelation 添加筛选规则与保存的关联
+func (r *SubNodeFilterRuleRepository) AddSaveRelation(ctx context.Context, ruleID, saveID int64) error {
+	query := `INSERT OR IGNORE INTO save_filter_relations (filter_id, save_id) VALUES (?, ?)`
+
+	_, err := r.db.ExecContext(ctx, query, ruleID, saveID)
+	if err != nil {
+		return fmt.Errorf("failed to add save relation: %w", err)
+	}
+
+	return nil
 }

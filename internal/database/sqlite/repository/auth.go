@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/models"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
+	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils/passwd"
 	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
@@ -23,15 +23,16 @@ func newAuthRepository(db *database.Database) interfaces.AuthRepository {
 }
 
 // Get 获取认证信息
-func (r *AuthRepository) Get(ctx context.Context) (*models.Auth, error) {
-	query := `SELECT user_name, password, created_at, updated_at FROM auth LIMIT 1`
+func (r *AuthRepository) Get(ctx context.Context) (*auth.Data, error) {
+	query := `SELECT id, user_name, password, created_at, updated_at FROM auth LIMIT 1`
 
-	var auth models.Auth
+	var authData auth.Data
 	err := r.db.QueryRowContext(ctx, query).Scan(
-		&auth.UserName,
-		&auth.Password,
-		&auth.CreatedAt,
-		&auth.UpdatedAt,
+		&authData.ID,
+		&authData.UserName,
+		&authData.Password,
+		&authData.CreatedAt,
+		&authData.UpdatedAt,
 	)
 
 	if err != nil {
@@ -41,13 +42,13 @@ func (r *AuthRepository) Get(ctx context.Context) (*models.Auth, error) {
 		return nil, fmt.Errorf("failed to get auth: %w", err)
 	}
 
-	return &auth, nil
+	return &authData, nil
 }
 
 // Update 更新认证信息
-func (r *AuthRepository) Update(ctx context.Context, auth *models.Auth) error {
+func (r *AuthRepository) Update(ctx context.Context, authData *auth.Data) error {
 
-	hashedPassword, err := passwd.Hash(auth.Password)
+	hashedPassword, err := passwd.Hash(authData.Password)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -98,9 +99,9 @@ func (r *AuthRepository) UpdateUsername(ctx context.Context, username string) er
 }
 
 // Initialize 初始化认证信息
-func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) error {
+func (r *AuthRepository) Initialize(ctx context.Context, authData *auth.Data) error {
 
-	hashedPassword, err := passwd.Hash(auth.Password)
+	hashedPassword, err := passwd.Hash(authData.Password)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -108,7 +109,7 @@ func (r *AuthRepository) Initialize(ctx context.Context, auth *models.Auth) erro
 	query := `INSERT INTO auth (user_name, password, created_at, updated_at) VALUES (?, ?, ?, ?)`
 
 	now := timeutils.Now()
-	_, err = r.db.ExecContext(ctx, query, auth.UserName, hashedPassword, now, now)
+	_, err = r.db.ExecContext(ctx, query, authData.UserName, hashedPassword, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to initialize auth: %w", err)
 	}
@@ -166,8 +167,8 @@ func newSessionRepository(db *database.Database) interfaces.SessionRepository {
 }
 
 // Create 创建会话
-func (r *SessionRepository) Create(ctx context.Context, session *models.Session) error {
-	query := `INSERT INTO sessions (token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at) 
+func (r *SessionRepository) Create(ctx context.Context, session *auth.Session) error {
+	query := `INSERT INTO sessions (token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
@@ -199,11 +200,11 @@ func (r *SessionRepository) Create(ctx context.Context, session *models.Session)
 }
 
 // GetByID 根据ID获取会话
-func (r *SessionRepository) GetByID(ctx context.Context, id int64) (*models.Session, error) {
-	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at 
+func (r *SessionRepository) GetByID(ctx context.Context, id int64) (*auth.Session, error) {
+	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at
 	          FROM sessions WHERE id = ?`
 
-	var session models.Session
+	var session auth.Session
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&session.ID,
 		&session.TokenHash,
@@ -227,11 +228,11 @@ func (r *SessionRepository) GetByID(ctx context.Context, id int64) (*models.Sess
 }
 
 // GetByTokenHash 根据Token哈希获取会话
-func (r *SessionRepository) GetByTokenHash(ctx context.Context, tokenHash string) (*models.Session, error) {
-	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at 
+func (r *SessionRepository) GetByTokenHash(ctx context.Context, tokenHash string) (*auth.Session, error) {
+	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at
 	          FROM sessions WHERE token_hash = ? AND is_active = true`
 
-	var session models.Session
+	var session auth.Session
 	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
 		&session.ID,
 		&session.TokenHash,
@@ -255,11 +256,11 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, tokenHash string
 }
 
 // GetByRefreshToken 根据刷新Token获取会话
-func (r *SessionRepository) GetByRefreshToken(ctx context.Context, refreshToken string) (*models.Session, error) {
-	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at 
+func (r *SessionRepository) GetByRefreshToken(ctx context.Context, refreshToken string) (*auth.Session, error) {
+	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at
 	          FROM sessions WHERE refresh_token = ? AND is_active = true`
 
-	var session models.Session
+	var session auth.Session
 	err := r.db.QueryRowContext(ctx, query, refreshToken).Scan(
 		&session.ID,
 		&session.TokenHash,
@@ -283,8 +284,8 @@ func (r *SessionRepository) GetByRefreshToken(ctx context.Context, refreshToken 
 }
 
 // Update 更新会话
-func (r *SessionRepository) Update(ctx context.Context, session *models.Session) error {
-	query := `UPDATE sessions SET token_hash = ?, expires_at = ?, refresh_token = ?, ip_address = ?, 
+func (r *SessionRepository) Update(ctx context.Context, session *auth.Session) error {
+	query := `UPDATE sessions SET token_hash = ?, expires_at = ?, refresh_token = ?, ip_address = ?,
 	          user_agent = ?, is_active = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -342,8 +343,8 @@ func (r *SessionRepository) DeleteExpired(ctx context.Context) error {
 }
 
 // GetAllActive 获取所有活跃会话
-func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*models.Session, error) {
-	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at 
+func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*auth.Session, error) {
+	query := `SELECT id, token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at
 	          FROM sessions WHERE is_active = true ORDER BY created_at DESC`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -352,9 +353,9 @@ func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*models.Session
 	}
 	defer rows.Close()
 
-	var sessions []*models.Session
+	var sessions []*auth.Session
 	for rows.Next() {
-		var session models.Session
+		var session auth.Session
 		err := rows.Scan(
 			&session.ID,
 			&session.TokenHash,
