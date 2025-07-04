@@ -16,7 +16,7 @@ import (
 )
 
 // Fetch 使用配置获取订阅内容
-func Fetch(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, error) {
+func Fetch(ctx context.Context, config *task.FetchConfig, subId int64) (*sub.FetchResult, error) {
 
 	var lastErr error
 
@@ -34,7 +34,7 @@ func Fetch(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, err
 			}
 		}
 
-		result, err := fetchOnce(ctx, config)
+		result, err := fetchOnce(ctx, config, subId)
 		if err == nil {
 			if attempt > 0 {
 				log.Infof("Successfully fetched %s after %d retries", config.URL, attempt)
@@ -50,7 +50,7 @@ func Fetch(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, err
 }
 
 // fetchOnce 执行单次获取操作
-func fetchOnce(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult, error) {
+func fetchOnce(ctx context.Context, config *task.FetchConfig, subId int64) (*sub.FetchResult, error) {
 	startTime := time.Now()
 
 	// 选择HTTP客户端
@@ -105,7 +105,7 @@ func fetchOnce(ctx context.Context, config *task.FetchConfig) (*sub.FetchResult,
 	if int64(len(content)) >= maxSize {
 		return nil, fmt.Errorf("response size exceeds limit of %d bytes", maxSize)
 	}
-	subType, nodeCount, err := parser.Parse(&content, config.Type, 0)
+	subType, nodeCount, err := parser.Parse(&content, config.Type, subId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content: %w", err)
 	}

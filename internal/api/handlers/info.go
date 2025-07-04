@@ -181,7 +181,7 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} api.ResponseSuccess{data=systemutils.Info} "获取成功"
+// @Success 200 {object} api.ResponseSuccess{data=system.Info} "获取成功"
 // @Failure 401 {object} api.ResponseError "未授权"
 // @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/system/info [get]
