@@ -28,6 +28,11 @@ func Notify() interfaces.NotifyRepository {
 	return GetRepository().Notify()
 }
 
+// NotifyTemplate 获取通知模板仓库
+func NotifyTemplate() interfaces.NotifyTemplateRepository {
+	return GetRepository().NotifyTemplate()
+}
+
 // Task 获取任务仓库
 func Task() interfaces.TaskRepository {
 	return GetRepository().Task()
@@ -49,16 +54,16 @@ func SubNodeFilterRule() interfaces.SubNodeFilterRuleRepository {
 }
 
 // SubLink 获取订阅链接仓库
-func SubLink() interfaces.SubLinkRepository {
+func SubLink() interfaces.SubRepository {
 	return GetRepository().SubLink()
 }
 
 // SubSaveConfig 获取保存配置仓库
-func SubSaveConfig() interfaces.SubSaveConfigRepository {
+func SubSaveConfig() interfaces.SubSaveRepository {
 	return GetRepository().SubSaveConfig()
 }
 
 // SubShareLink 获取分享链接仓库
-func SubShareLink() interfaces.SubShareLinkRepository {
+func SubShareLink() interfaces.SubShareRepository {
 	return GetRepository().SubShareLink()
 }

@@ -3,19 +3,19 @@ package interfaces
 import (
 	"context"
 
-	"github.com/bestruirui/bestsub/internal/database/models"
+	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
 // SystemConfigRepository 系统配置数据访问接口
 type SystemConfigRepository interface {
 	// Create 创建配置
-	Create(ctx context.Context, config *models.SystemConfig) error
+	Create(ctx context.Context, config *system.Data) error
 
 	// GetByKey 根据键获取配置
-	GetByKey(ctx context.Context, key string) (*models.SystemConfig, error)
+	GetByKey(ctx context.Context, key string) (*system.Data, error)
 
 	// Update 更新配置
-	Update(ctx context.Context, config *models.SystemConfig) error
+	Update(ctx context.Context, config *system.Data) error
 
 	// DeleteByKey 根据键删除配置
 	DeleteByKey(ctx context.Context, key string) error
@@ -30,5 +30,5 @@ type SystemConfigRepository interface {
 	GetAllGroups(ctx context.Context) ([]string, error)
 
 	// GetConfigsByGroup 获取指定分组下的所有配置
-	GetConfigsByGroup(ctx context.Context, group string) ([]models.SystemConfig, error)
+	GetConfigsByGroup(ctx context.Context, group string) ([]system.Data, error)
 }

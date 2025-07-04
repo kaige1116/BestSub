@@ -13,6 +13,7 @@ type Repository interface {
 	// 配置相关
 	SystemConfig() SystemConfigRepository
 	Notify() NotifyRepository
+	NotifyTemplate() NotifyTemplateRepository
 
 	// 任务相关
 	Task() TaskRepository
@@ -23,13 +24,13 @@ type Repository interface {
 	SubNodeFilterRule() SubNodeFilterRuleRepository
 
 	// 订阅链接相关
-	SubLink() SubLinkRepository
+	SubLink() SubRepository
 
 	// 订阅保存相关
-	SubSaveConfig() SubSaveConfigRepository
+	SubSaveConfig() SubSaveRepository
 
 	// 订阅分享相关
-	SubShareLink() SubShareLinkRepository
+	SubShareLink() SubShareRepository
 
 	// 数据库管理
 	Close() error
@@ -45,13 +46,14 @@ type RepositoryManager struct {
 	sessionRepo           SessionRepository
 	systemConfigRepo      SystemConfigRepository
 	notifyRepo            NotifyRepository
+	notifyTemplateRepo    NotifyTemplateRepository
 	taskRepo              TaskRepository
 	subStorageConfigRepo  SubStorageConfigRepository
 	subOutputTemplateRepo SubOutputTemplateRepository
 	subNodeFilterRuleRepo SubNodeFilterRuleRepository
-	subLinkRepo           SubLinkRepository
-	subSaveConfigRepo     SubSaveConfigRepository
-	subShareLinkRepo      SubShareLinkRepository
+	subLinkRepo           SubRepository
+	subSaveConfigRepo     SubSaveRepository
+	subShareLinkRepo      SubShareRepository
 }
 
 // NewRepositoryManager 创建仓库管理器
@@ -99,6 +101,16 @@ func (rm *RepositoryManager) Notify() NotifyRepository {
 	return rm.notifyRepo
 }
 
+// NotifyTemplate 获取通知模板仓库
+func (rm *RepositoryManager) NotifyTemplate() NotifyTemplateRepository {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	if rm.notifyTemplateRepo == nil {
+		rm.notifyTemplateRepo = rm.repo.NotifyTemplate()
+	}
+	return rm.notifyTemplateRepo
+}
+
 // Task 获取任务仓库
 func (rm *RepositoryManager) Task() TaskRepository {
 	rm.mu.Lock()
@@ -140,7 +152,7 @@ func (rm *RepositoryManager) SubNodeFilterRule() SubNodeFilterRuleRepository {
 }
 
 // SubLink 获取订阅链接仓库
-func (rm *RepositoryManager) SubLink() SubLinkRepository {
+func (rm *RepositoryManager) SubLink() SubRepository {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rm.subLinkRepo == nil {
@@ -150,7 +162,7 @@ func (rm *RepositoryManager) SubLink() SubLinkRepository {
 }
 
 // SubSaveConfig 获取保存配置仓库
-func (rm *RepositoryManager) SubSaveConfig() SubSaveConfigRepository {
+func (rm *RepositoryManager) SubSaveConfig() SubSaveRepository {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rm.subSaveConfigRepo == nil {
@@ -160,7 +172,7 @@ func (rm *RepositoryManager) SubSaveConfig() SubSaveConfigRepository {
 }
 
 // SubShareLink 获取分享链接仓库
-func (rm *RepositoryManager) SubShareLink() SubShareLinkRepository {
+func (rm *RepositoryManager) SubShareLink() SubShareRepository {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	if rm.subShareLinkRepo == nil {
