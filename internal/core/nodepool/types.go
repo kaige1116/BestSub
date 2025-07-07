@@ -6,104 +6,43 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/node"
 )
 
-type Collection struct {
-	AnyTLS    []node.AnyTLS
-	Http      []node.Http
-	Hysteria  []node.Hysteria
-	Hysteria2 []node.Hysteria2
-	Mieru     []node.Mieru
-	Snell     []node.Snell
-	Socks     []node.Socks
-	Ss        []node.Ss
-	Ssh       []node.Ssh
-	Ssr       []node.Ssr
-	Trojan    []node.Trojan
-	Tuic      []node.Tuic
-	Vless     []node.Vless
-	Vmess     []node.Vmess
-	WireGuard []node.WireGuard
+// FilterCondition 节点筛选条件（内存对齐优化）
+type FilterCondition struct {
+	SpeedUpMore   uint32 // 上传速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	SpeedDownMore uint32 // 下载速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	Country       uint16 // ISO 3166数字国家代码（0表示不筛选，>0表示具体国家，最大65535）
+	DelayLessThan uint16 // 延迟小于指定值（0表示不筛选，>0表示具体值，毫秒，最大65535ms）
+	AliveStatus   uint16 // 存活状态位字段筛选（0表示不筛选，其他值表示必须匹配的位）
+	RiskLessThan  uint8  // 风险等级小于指定值（0表示不筛选，>0表示具体值，百分比，最大255）
 }
 
-// NodePool 内存优化的节点池
-type NodePool struct {
-	collection *Collection
-	indexes    *NodeIndexes
-	mu         sync.RWMutex
-	totalNodes int64
+// PoolStats 节点池统计信息
+type PoolStats struct {
+	TotalNodes     int            // 总节点数
+	NodesByCountry map[uint16]int // 按国家分组的节点数
+	NodesByStatus  map[uint16]int // 按存活状态分组的节点数
+	SubLinkCount   int            // 订阅链接数
 }
 
-// NodeIndexes 多维度索引结构
-type NodeIndexes struct {
-	uniqueKey map[uint64]*NodeInfo   // 唯一键索引，用于去重
-	subLinkID map[int64][]*NodeInfo  // 按订阅链接ID索引
-	nodeType  map[string][]*NodeInfo // 按节点类型索引
+// index 索引结构，支持高效的节点查询（内部使用）
+type index struct {
+	delay     []uint64 // 按延迟排序的唯一键（升序）
+	speedUp   []uint64 // 按上传速度排序的唯一键（降序）
+	speedDown []uint64 // 按下载速度排序的唯一键（降序）
+	risk      []uint64 // 按风险等级排序的唯一键（升序，低风险在前）
+
+	country     map[uint16][]uint64 // 国家索引（使用ISO 3166数字代码）
+	aliveStatus map[uint16][]uint64 // 存活状态位字段索引
 }
 
-// NodeInfo 节点信息
-type NodeInfo struct {
-	ArrayIndex int // 在数组中的索引位置
+// pool 节点池管理器（内部使用）
+type pool struct {
+	mu        sync.RWMutex         // 读写锁
+	nodes     map[uint64]node.Data // 唯一键到节点数据的映射
+	subs      map[int64][]uint64   // 订阅链接ID到唯一键列表的映射
+	iterators map[int64]int        // 订阅链接ID到当前迭代位置的映射
+	index     *index               // 索引系统
 }
 
-// reflectCache 反射缓存结构
-type reflectCache struct {
-	collectionFields map[string]int         // Collection字段名到索引的映射
-	nodeConfigFields map[string][]fieldInfo // 节点类型到Config字段信息的映射
-}
-
-type fieldInfo struct {
-	index         int    // 字段在结构体中的索引
-	name          string // 字段名称
-	isEmbedded    bool   // 是否为内嵌字段
-	embeddedIndex int    // 如果是内嵌字段，这是内嵌字段在父结构体中的索引
-}
-
-// NodeIterator 节点迭代器，用于多线程安全的顺序访问
-type NodeIterator struct {
-	mu           sync.Mutex
-	currentType  int      // 当前节点类型索引
-	currentIndex int      // 当前类型中的节点索引
-	typeNames    []string // 节点类型名称列表
-	finished     bool     // 是否已遍历完成
-	subLinkID    int64    // 关联的订阅链接ID
-}
-
-// IteratorManager 迭代器管理器，管理多个订阅链接的迭代器
-type IteratorManager struct {
-	mu        sync.RWMutex
-	iterators map[int64]*NodeIterator // subLinkID -> NodeIterator
-}
-
-const (
-	// 默认容量配置
-	defaultUniqueKeyCapacity = 10000
-	defaultSubLinkCapacity   = 100
-	defaultNodeTypeCapacity  = 10
-	maxStringSliceCapacity   = 16
-)
-
-var (
-	reflectCacheInstance *reflectCache
-	globalIteratorMgr    *IteratorManager
-	iteratorMgrOnce      sync.Once
-	cachedTypeNames      []string
-
-	// 用于生成唯一键的字段名列表
-	uniqueKeyFields = map[string]bool{
-		"Server":     true,
-		"Port":       true,
-		"Username":   true,
-		"Password":   true,
-		"AuthStr":    true,
-		"Uuid":       true,
-		"Servername": true,
-	}
-)
-
-// createNodeIndexes 创建新的节点索引
-func createNodeIndexes() *NodeIndexes {
-	return &NodeIndexes{
-		uniqueKey: make(map[uint64]*NodeInfo, defaultUniqueKeyCapacity),
-		subLinkID: make(map[int64][]*NodeInfo, defaultSubLinkCapacity),
-		nodeType:  make(map[string][]*NodeInfo, defaultNodeTypeCapacity),
-	}
-}
+// 全局节点池实例
+var globalPool *pool
