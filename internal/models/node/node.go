@@ -25,46 +25,9 @@ type Info struct {
 
 	AddTime     int64  // 入库时间戳
 	UniqueKey   uint64 // 唯一键
+	IP          uint32
 	AliveStatus uint16
 	Country     uint16
 
 	Risk uint8
-}
-
-type BaseConfig struct {
-	Name          string  `yaml:"name"`
-	Type          string  `yaml:"type"`
-	Server        string  `yaml:"server"`
-	Port          any     `yaml:"port"`
-	IpVersion     *string `yaml:"ip-version"`
-	Udp           bool    `yaml:"udp"`
-	InterfaceName *string `yaml:"interface-name"`
-	RoutingMark   *int    `yaml:"routing-mark"`
-	Tfo           bool    `yaml:"tfo"`
-	Mptcp         bool    `yaml:"mptcp"`
-	DialerProxy   *string `yaml:"dialer-proxy"`
-}
-
-type SmuxOpts struct {
-	Enabled        bool        `yaml:"enabled"`
-	Protocol       string      `yaml:"protocol"`
-	MaxConnections int         `yaml:"max-connections"`
-	MinStreams     int         `yaml:"min-streams"`
-	MaxStreams     int         `yaml:"max-streams"`
-	Statistic      bool        `yaml:"statistic"`
-	OnlyTcp        bool        `yaml:"only-tcp"`
-	Padding        bool        `yaml:"padding"`
-	BrutalOpts     *BrutalOpts `yaml:"brutal-opts"`
-}
-
-type BrutalOpts struct {
-	Enabled bool `yaml:"enabled"`
-	Up      int  `yaml:"up"`
-	Down    int  `yaml:"down"`
-}
-
-type RealityOpts struct {
-	PublicKey             string `yaml:"public-key"`
-	ShortId               string `yaml:"short-id"`
-	SupportX25519Mlkem768 bool   `yaml:"support-x25519mlkem768"`
 }
