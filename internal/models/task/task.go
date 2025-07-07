@@ -30,7 +30,9 @@ const (
 // Task 任务基础模型（数据库模型）
 type Data struct {
 	common.BaseDbModel
+	IsSysTask       bool       `db:"is_sys_task" json:"is_sys_task"`             // 是否系统任务
 	Cron            string     `json:"cron" example:"0 */6 * * *"`               // Cron表达式
+	Timeout         int        `db:"timeout" json:"timeout"`                     // 任务超时时间（秒）
 	Type            string     `json:"type" example:"link_fetch"`                // 任务类型
 	Config          string     `json:"config" example:"{\"sub_link_id\": 1}"`    // 任务配置（JSON格式）
 	Status          string     `db:"status" json:"status" example:"pending"`     // 任务状态
