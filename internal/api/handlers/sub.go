@@ -8,6 +8,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
+	taskcore "github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/models/common"
@@ -100,19 +101,10 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 	// 创建关联的任务
 	var createdTasks []task.Data
 	for _, taskReq := range req.Task {
-		taskData := &task.Data{
-			BaseDbModel: common.BaseDbModel{
-				Name:        taskReq.Name,
-				Description: taskReq.Description,
-			},
-			Cron:   taskReq.Cron,
-			Type:   taskReq.Type,
-			Config: taskReq.Config,
-			Status: task.StatusPending,
-		}
 
 		// 创建任务
-		if err := database.Task().Create(c.Request.Context(), taskData); err != nil {
+		taskData, err := taskcore.Create(c.Request.Context(), &taskReq)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "创建任务失败",
@@ -387,74 +379,17 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 	// 处理任务更新
 	var updatedTasks []task.Data
 	for _, taskReq := range req.Task {
-		if taskReq.ID == 0 {
-			// 创建新任务
-			taskData := &task.Data{
-				BaseDbModel: common.BaseDbModel{
-					Name:        taskReq.Name,
-					Description: taskReq.Description,
-				},
-				Cron:   taskReq.Cron,
-				Config: taskReq.Config,
-				Status: task.StatusPending,
-			}
-
-			if err := database.Task().Create(c.Request.Context(), taskData); err != nil {
-				c.JSON(http.StatusInternalServerError, api.ResponseError{
-					Code:    http.StatusInternalServerError,
-					Message: "创建任务失败",
-					Error:   err.Error(),
-				})
-				return
-			}
-
-			// 建立订阅与任务的关联
-			if err := database.SubLink().AddTaskRelation(c.Request.Context(), req.ID, taskData.ID); err != nil {
-				c.JSON(http.StatusInternalServerError, api.ResponseError{
-					Code:    http.StatusInternalServerError,
-					Message: "建立订阅任务关联失败",
-					Error:   err.Error(),
-				})
-				return
-			}
-
-			updatedTasks = append(updatedTasks, *taskData)
-		} else {
-			// 更新现有任务
-			taskData := &task.Data{
-				BaseDbModel: common.BaseDbModel{
-					ID:          taskReq.ID,
-					Name:        taskReq.Name,
-					Description: taskReq.Description,
-				},
-				Cron:   taskReq.Cron,
-				Config: taskReq.Config,
-			}
-
-			if err := database.Task().Update(c.Request.Context(), taskData); err != nil {
-				c.JSON(http.StatusInternalServerError, api.ResponseError{
-					Code:    http.StatusInternalServerError,
-					Message: "更新任务失败",
-					Error:   err.Error(),
-				})
-				return
-			}
-
-			// 获取更新后的任务数据
-			updatedTask, err := database.Task().GetByID(c.Request.Context(), taskReq.ID)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, api.ResponseError{
-					Code:    http.StatusInternalServerError,
-					Message: "获取更新后的任务失败",
-					Error:   err.Error(),
-				})
-				return
-			}
-
-			if updatedTask != nil {
-				updatedTasks = append(updatedTasks, *updatedTask)
-			}
+		taskData, err := taskcore.Update(c.Request.Context(), &taskReq)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
+				Code:    http.StatusInternalServerError,
+				Message: "更新任务失败",
+				Error:   err.Error(),
+			})
+			return
 		}
+
+		updatedTasks = append(updatedTasks, *taskData)
 	}
 
 	// 获取更新后的订阅链接数据
@@ -535,6 +470,27 @@ func (h *subLinkHandler) deleteSub(c *gin.Context) {
 			Message: "订阅链接不存在",
 		})
 		return
+	}
+
+	taskIDs, err := database.Task().GetTaskIDsBySubID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
+			Code:    http.StatusInternalServerError,
+			Message: "获取任务ID列表失败",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	for _, taskID := range taskIDs {
+		if err := taskcore.Delete(c.Request.Context(), taskID); err != nil {
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
+				Code:    http.StatusInternalServerError,
+				Message: "删除任务失败",
+				Error:   err.Error(),
+			})
+			return
+		}
 	}
 
 	// 删除订阅链接（数据库触发器会自动删除关联的任务）
