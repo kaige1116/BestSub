@@ -39,8 +39,8 @@ func main() {
 		panic(err)
 	}
 
-	go server.Start()
-	go task.Start()
+	task.Start()
+	server.Start()
 
 	shutdown.Register("Log", log.Close)
 	shutdown.Register("Database", database.Close)

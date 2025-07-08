@@ -111,9 +111,11 @@ func Start() error {
 
 	log.Infof("启动 HTTP 服务器 %s", server.httpServer.Addr)
 
-	if err := server.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return fmt.Errorf("启动 HTTP 服务器失败: %w", err)
-	}
+	go func() {
+		if err := server.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Errorf("启动 HTTP 服务器失败: %v", err)
+		}
+	}()
 
 	return nil
 }
