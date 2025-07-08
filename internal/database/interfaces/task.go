@@ -29,6 +29,9 @@ type TaskRepository interface {
 	// Count 获取任务总数
 	Count(ctx context.Context) (int64, error)
 
+	// GetSystemTasks 获取所有系统任务
+	GetSystemTasks(ctx context.Context) (*[]task.Data, error)
+
 	// 添加任务与通知的关联
 	AddNotifyRelation(ctx context.Context, taskID, notifyID int64) error
 

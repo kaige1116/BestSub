@@ -200,6 +200,51 @@ func (r *TaskRepository) Count(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
+// GetSystemTasks 获取所有系统任务
+func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, error) {
+	query := `SELECT id, enable, name, description, is_sys_task, cron, type, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	          FROM tasks WHERE is_sys_task = true ORDER BY created_at DESC`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get system tasks: %w", err)
+	}
+	defer rows.Close()
+
+	var tasks []task.Data
+	for rows.Next() {
+		var t task.Data
+		if err := rows.Scan(
+			&t.ID,
+			&t.Enable,
+			&t.Name,
+			&t.Description,
+			&t.IsSysTask,
+			&t.Cron,
+			&t.Type,
+			&t.Timeout,
+			&t.Retry,
+			&t.Config,
+			&t.LastRunResult,
+			&t.LastRunTime,
+			&t.LastRunDuration,
+			&t.SuccessCount,
+			&t.FailedCount,
+			&t.CreatedAt,
+			&t.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan system task: %w", err)
+		}
+		tasks = append(tasks, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate system tasks: %w", err)
+	}
+
+	return &tasks, nil
+}
+
 // GetBySubID 根据订阅ID获取任务列表
 func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.Data, error) {
 	query := `SELECT t.id, t.enable, t.name, t.description, t.is_sys_task, t.cron, t.type, t.timeout, t.retry, t.config, t.last_run_result, t.last_run_time, t.last_run_duration, t.success_count, t.failed_count, t.created_at, t.updated_at
