@@ -7,6 +7,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite"
 	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -39,6 +40,10 @@ func Init(ctx context.Context, sqltype, path string) (repository *interfaces.Rep
 		log.Fatalf("failed to initialize system config: %v", err)
 	}
 	log.Debugf("系统配置初始化成功")
+	if err := initTask(ctx, repository); err != nil {
+		log.Fatalf("failed to initialize tasks: %v", err)
+	}
+	log.Debugf("系统任务初始化成功")
 	return repository, nil
 }
 
@@ -87,6 +92,43 @@ func initSystemConfig(ctx context.Context, repo *interfaces.RepositoryManager) e
 		if _, exists := defaultKeysMap[key]; !exists {
 			if err := systemConfig.DeleteByKey(ctx, key); err != nil {
 				log.Fatalf("failed to delete extra config %s: %v", key, err)
+			}
+		}
+	}
+
+	return nil
+}
+func initTask(ctx context.Context, repo *interfaces.RepositoryManager) error {
+	defaultTasks := defaults.Tasks()
+	taskRepo := repo.Task()
+
+	existingTasks, err := taskRepo.GetSystemTasks(ctx)
+	if err != nil {
+		log.Fatalf("failed to get existing system tasks: %v", err)
+	}
+
+	existingTasksMap := make(map[string]bool)
+	for _, task := range *existingTasks {
+		existingTasksMap[task.Type] = true
+	}
+
+	defaultTasksMap := make(map[string]task.Data)
+	for _, task := range defaultTasks {
+		defaultTasksMap[task.Type] = task
+	}
+
+	for taskType, defaultTask := range defaultTasksMap {
+		if !existingTasksMap[taskType] {
+			if err := taskRepo.Create(ctx, &defaultTask); err != nil {
+				log.Fatalf("failed to create missing system task %s: %v", taskType, err)
+			}
+		}
+	}
+
+	for _, existingTask := range *existingTasks {
+		if _, exists := defaultTasksMap[existingTask.Type]; !exists {
+			if err := taskRepo.Delete(ctx, existingTask.ID); err != nil {
+				log.Fatalf("failed to delete extra system task %s: %v", existingTask.Type, err)
 			}
 		}
 	}
