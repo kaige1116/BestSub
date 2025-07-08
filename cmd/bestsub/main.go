@@ -5,6 +5,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/api/server"
 	"github.com/bestruirui/bestsub/internal/config"
+	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/utils/banner"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -34,11 +35,17 @@ func main() {
 	if err := server.Initialize(); err != nil {
 		panic(err)
 	}
+	if err := task.Initialize(); err != nil {
+		panic(err)
+	}
+
 	go server.Start()
+	go task.Start()
 
 	shutdown.Register("Log", log.Close)
 	shutdown.Register("Database", database.Close)
 	shutdown.Register("HTTP Server", server.Close)
+	shutdown.Register("Task", task.Stop)
 
 	shutdown.Listen()
 }

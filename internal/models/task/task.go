@@ -9,10 +9,11 @@ import (
 // 任务类型枚举
 const (
 	// 系统任务
-	TypeGC = "gc" // 垃圾回收任务
+	TypeGC           = "gc"            // 垃圾回收任务
+	TypeSessionClean = "session_clean" // 会话清理任务
 
 	// 用户任务
-	TypeLinkFetch  = "link_fetch"  // 链接内容获取任务
+	TypeLinkFetch  = "sub_fetch"   // 链接内容获取任务
 	TypeNodeDetect = "node_detect" // 节点检测任务
 	TypeNodeSave   = "node_save"   // 节点保存任务
 )
