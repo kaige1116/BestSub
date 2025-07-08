@@ -168,5 +168,11 @@ func (s *Scheduler) removeTaskFromScheduler(taskID int64) error {
 			log.Debugf("任务 %d 已从调度器移除", taskID)
 		}
 	}
+
+	if _, running := s.runningTasks.Load(taskID); running {
+		s.runningTasks.Delete(taskID)
+		log.Debugf("任务 %d 已从运行任务列表移除", taskID)
+	}
+
 	return nil
 }
