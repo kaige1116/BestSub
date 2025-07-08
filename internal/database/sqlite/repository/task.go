@@ -293,6 +293,33 @@ func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.D
 	return &tasks, nil
 }
 
+// GetTaskIDsBySubID 根据订阅ID获取任务ID列表
+func (r *TaskRepository) GetTaskIDsBySubID(ctx context.Context, subID int64) ([]int64, error) {
+	query := `SELECT task_id FROM sub_task_relations WHERE sub_id = ? ORDER BY task_id`
+
+	rows, err := r.db.QueryContext(ctx, query, subID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task ids by sub id: %w", err)
+	}
+	defer rows.Close()
+
+	var taskIDs []int64
+	for rows.Next() {
+		var taskID int64
+		err := rows.Scan(&taskID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan task id: %w", err)
+		}
+		taskIDs = append(taskIDs, taskID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate task ids: %w", err)
+	}
+
+	return taskIDs, nil
+}
+
 // AddNotifyRelation 添加任务与通知的关联
 func (r *TaskRepository) AddNotifyRelation(ctx context.Context, taskID, notifyID int64) error {
 	query := `INSERT OR IGNORE INTO task_notify_relations (task_id, notify_id) VALUES (?, ?)`

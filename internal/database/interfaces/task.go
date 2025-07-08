@@ -23,6 +23,9 @@ type TaskRepository interface {
 	// 根据订阅ID获取任务列表（一个订阅可以有多个任务）
 	GetBySubID(ctx context.Context, subID int64) (*[]task.Data, error)
 
+	// 根据订阅ID获取任务ID列表
+	GetTaskIDsBySubID(ctx context.Context, subID int64) ([]int64, error)
+
 	// List 获取任务列表
 	List(ctx context.Context, offset, limit int) (*[]task.Data, error)
 
