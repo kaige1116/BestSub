@@ -54,20 +54,20 @@ func (s *Scheduler) createTask(ctx context.Context, req *task.CreateRequest) (*t
 }
 
 // updateTask 更新任务的内部实现
-func (s *Scheduler) updateTask(ctx context.Context, id int64, req *task.UpdateRequest) (*task.Data, error) {
+func (s *Scheduler) updateTask(ctx context.Context, req *task.UpdateRequest) (*task.Data, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// 获取现有任务
-	existingTask, err := s.repo.GetByID(ctx, id)
+	existingTask, err := s.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return nil, fmt.Errorf("task not found: %w", err)
 	}
 
 	// 从调度器移除旧任务
 	if existingTask.Enable && s.isStarted() {
-		if err := s.removeTaskFromScheduler(id); err != nil {
-			log.Errorf("Failed to remove task %d from scheduler: %v", id, err)
+		if err := s.removeTaskFromScheduler(req.ID); err != nil {
+			log.Errorf("Failed to remove task %d from scheduler: %v", req.ID, err)
 		}
 	}
 
@@ -79,7 +79,7 @@ func (s *Scheduler) updateTask(ctx context.Context, id int64, req *task.UpdateRe
 
 	taskData := &task.Data{
 		BaseDbModel: common.BaseDbModel{
-			ID:          id,
+			ID:          req.ID,
 			Name:        req.Name,
 			Description: req.Description,
 			Enable:      enable,
@@ -108,7 +108,7 @@ func (s *Scheduler) updateTask(ctx context.Context, id int64, req *task.UpdateRe
 	// 如果任务启用，重新添加到调度器
 	if taskData.Enable && s.isStarted() {
 		if err := s.addTaskToScheduler(taskData); err != nil {
-			log.Errorf("Failed to reschedule task %d: %v", id, err)
+			log.Errorf("Failed to reschedule task %d: %v", req.ID, err)
 		}
 	}
 

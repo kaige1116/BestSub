@@ -46,8 +46,8 @@ func Start() error {
 	return globalScheduler.start()
 }
 
-// Stop 停止任务调度器
-func Stop() error {
+// Shutdown 停止任务调度器
+func Shutdown() error {
 	if globalScheduler == nil {
 		return nil
 	}
