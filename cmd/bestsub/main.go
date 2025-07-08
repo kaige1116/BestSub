@@ -45,7 +45,7 @@ func main() {
 	shutdown.Register("Log", log.Close)
 	shutdown.Register("Database", database.Close)
 	shutdown.Register("HTTP Server", server.Close)
-	shutdown.Register("Task", task.Stop)
+	shutdown.Register("Task", task.Shutdown)
 
 	shutdown.Listen()
 }
