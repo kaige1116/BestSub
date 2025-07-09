@@ -6,6 +6,7 @@ import (
 	"time"
 
 	_ "github.com/bestruirui/bestsub/internal/core/task/handlers"
+	"github.com/bestruirui/bestsub/internal/core/task/register"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -119,4 +120,27 @@ func Delete(ctx context.Context, id int64) error {
 
 	log.Infof("从调度器删除任务: %d", id)
 	return nil
+}
+
+// 返回所有handler的类型和对应的配置项结构，便于前端处理
+func GetAllHandlers() []register.Response {
+	return register.GetAll()
+}
+
+// GetHandlerTypes 获取所有已注册的任务类型
+func GetHandlerTypes() []string {
+	return register.GetTypes()
+}
+
+// 返回指定类型的完整配置信息，如果类型不存在则返回 nil
+func GetHandlerConfig(taskType string) *register.Response {
+	config := register.GetConfig(taskType)
+	if config == nil {
+		return nil
+	}
+
+	return &register.Response{
+		Type:   taskType,
+		Config: config,
+	}
 }
