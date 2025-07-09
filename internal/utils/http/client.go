@@ -173,7 +173,7 @@ func Transport(configFunc func(*http.Transport)) *Client {
 }
 
 // buildProxyURL 构建代理URL
-func buildProxyURL(config *system.Proxy) *url.URL {
+func buildProxyURL(config *system.ProxyConfig) *url.URL {
 	// 默认代理类型为http
 	proxyType := config.Type
 	if proxyType == "" {
