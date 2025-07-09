@@ -49,5 +49,19 @@ func Configs() []system.Data {
 			Value:       "",
 			Description: "代理密码",
 		},
+		{
+			GroupName:   "task",
+			Key:         "task.max_timeout",
+			Type:        "int",
+			Value:       "600",
+			Description: "任务最大超时时间（秒）",
+		},
+		{
+			GroupName:   "task",
+			Key:         "task.max_retry",
+			Type:        "int",
+			Value:       "10",
+			Description: "任务最大重试次数",
+		},
 	}
 }
