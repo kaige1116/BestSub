@@ -1,4 +1,4 @@
-package register
+package handler
 
 import (
 	"context"
@@ -10,19 +10,28 @@ import (
 
 // 前端数据类型常量
 const (
-	typeBoolean = "boolean"
-	typeNumber  = "number"
-	typeString  = "string"
+	TypeBoolean = "boolean"
+	TypeNumber  = "number"
+	TypeString  = "string"
 )
+
+// TaskInfo 任务执行信息
+type TaskInfo struct {
+	Context context.Context // 执行上下文
+	ID      int64           // 任务ID
+	Name    string          // 任务名称
+	Type    string          // 任务类型
+	Config  string          // 任务配置
+}
 
 // Handler 任务处理器接口
 type Handler interface {
-	Execute(ctx context.Context, config string) error
+	Execute(taskInfo *TaskInfo) error
 	Validate(config string) error
 }
 
-// Info 处理器注册信息
-type Info struct {
+// RegistryInfo 处理器注册信息
+type RegistryInfo struct {
 	Type    string  // 任务类型
 	Handler Handler // 处理器实例
 	Config  any     // 配置项结构示例
@@ -45,12 +54,12 @@ type Response struct {
 
 // 全局处理器注册表
 var (
-	handlers = make(map[string]Info)
+	handlers = make(map[string]RegistryInfo)
 	mu       sync.RWMutex
 )
 
-// Add 注册处理器
-func Add(info *Info) {
+// Register 注册处理器
+func Register(info *RegistryInfo) {
 	if info == nil {
 		return
 	}
@@ -176,15 +185,15 @@ func parseFields(config any) []Field {
 func getFieldType(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.Bool:
-		return typeBoolean
+		return TypeBoolean
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		return typeNumber
+		return TypeNumber
 	case reflect.String:
-		return typeString
+		return TypeString
 	default:
-		return typeString
+		return TypeString
 	}
 }
 
@@ -204,8 +213,8 @@ func getDefaultValueFromTag(field reflect.StructField, fieldValue reflect.Value)
 func parseDefaultValue(defaultStr string, fieldType reflect.Type) any {
 	switch fieldType.Kind() {
 	case reflect.Bool:
-		if val, err := strconv.ParseBool(defaultStr); err == nil {
-			return val
+		if defaultStr == "true" {
+			return true
 		}
 		return false
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

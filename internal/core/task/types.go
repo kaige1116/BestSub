@@ -19,6 +19,7 @@ type Scheduler struct {
 	runningTasks   sync.Map                  // 任务ID -> 运行状态，记录正在运行的任务
 	scheduledTasks sync.Map                  // 任务ID -> gocron.Job，记录已调度的任务
 	mu             sync.RWMutex              // 读写锁，保护调度器状态
+	started        bool                      // 调度器是否已启动
 }
 
 // TaskLog 任务日志结构
