@@ -27,5 +27,15 @@ func Tasks() []task.Data {
 			IsSysTask: true,
 			Type:      task.TypeSessionClean,
 		},
+		{
+			BaseDbModel: common.BaseDbModel{
+				Name:        "日志清理",
+				Description: "清理日志",
+				Enable:      true,
+			},
+			Cron:      "0 0 */1 * *",
+			IsSysTask: true,
+			Type:      task.TypeLogClean,
+		},
 	}
 }

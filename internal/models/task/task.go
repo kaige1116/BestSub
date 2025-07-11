@@ -21,6 +21,7 @@ type Data struct {
 	IsSysTask       bool       `db:"is_sys_task" json:"is_sys_task"`             // 是否系统任务
 	Cron            string     `db:"cron" json:"cron" example:"0 */6 * * *"`     // Cron表达式
 	Type            string     `db:"type" json:"type" example:"sub_fetch"`       // 任务类型
+	LogLevel        string     `db:"log_level" json:"log_level" default:"error"` // 日志级别
 	Timeout         int        `db:"timeout" json:"timeout" example:"60"`        // 任务超时时间（秒）
 	Retry           int        `db:"retry" json:"retry" example:"3"`             // 任务重试次数
 	Config          string     `db:"config" json:"config"`                       // 任务配置（JSON格式）
@@ -34,16 +35,18 @@ type Data struct {
 
 type CreateRequest struct {
 	common.BaseRequestModel
-	Cron    string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
-	Type    string `json:"type" example:"sub_fetch"`                                                                                                                         // 任务类型
-	Config  string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
-	Timeout int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
-	Retry   int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
+	Cron     string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
+	Type     string `json:"type" example:"sub_fetch"`                                                                                                                         // 任务类型
+	LogLevel string `json:"log_level" example:"error"`                                                                                                                        // 日志级别
+	Config   string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
+	Timeout  int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
+	Retry    int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
 }
 type UpdateRequest struct {
 	common.BaseUpdateRequestModel
-	Cron    string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
-	Config  string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
-	Timeout int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
-	Retry   int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
+	Cron     string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
+	LogLevel string `json:"log_level" example:"error"`                                                                                                                        // 日志级别
+	Config   string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
+	Timeout  int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
+	Retry    int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
 }

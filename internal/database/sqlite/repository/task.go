@@ -23,8 +23,8 @@ func newTaskRepository(db *database.Database) interfaces.TaskRepository {
 
 // Create 创建任务
 func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
-	query := `INSERT INTO tasks (enable, name, description, is_sys_task, cron, type, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO tasks (enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := timeutils.Now()
 	result, err := r.db.ExecContext(ctx, query,
@@ -34,6 +34,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
 		t.IsSysTask,
 		t.Cron,
 		t.Type,
+		t.LogLevel,
 		t.Timeout,
 		t.Retry,
 		t.Config,
@@ -64,7 +65,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
 
 // GetByID 根据ID获取任务
 func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
 	          FROM tasks WHERE id = ?`
 
 	var t task.Data
@@ -76,6 +77,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*task.Data, err
 		&t.IsSysTask,
 		&t.Cron,
 		&t.Type,
+		&t.LogLevel,
 		&t.Timeout,
 		&t.Retry,
 		&t.Config,
@@ -100,7 +102,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*task.Data, err
 
 // Update 更新任务
 func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
-	query := `UPDATE tasks SET enable = ?, name = ?, description = ?, is_sys_task = ?, cron = ?, type = ?, timeout = ?, retry = ?, config = ?,
+	query := `UPDATE tasks SET enable = ?, name = ?, description = ?, is_sys_task = ?, cron = ?, type = ?, log_level = ?, timeout = ?, retry = ?, config = ?,
 	          last_run_result = ?, last_run_time = ?, last_run_duration = ?, success_count = ?, failed_count = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -110,6 +112,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
 		t.IsSysTask,
 		t.Cron,
 		t.Type,
+		t.LogLevel,
 		t.Timeout,
 		t.Retry,
 		t.Config,
@@ -143,7 +146,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id int64) error {
 
 // List 获取任务列表
 func (r *TaskRepository) List(ctx context.Context, offset, limit int) (*[]task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
 	          FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -163,6 +166,7 @@ func (r *TaskRepository) List(ctx context.Context, offset, limit int) (*[]task.D
 			&t.IsSysTask,
 			&t.Cron,
 			&t.Type,
+			&t.LogLevel,
 			&t.Timeout,
 			&t.Retry,
 			&t.Config,
@@ -202,7 +206,7 @@ func (r *TaskRepository) Count(ctx context.Context) (int64, error) {
 
 // GetSystemTasks 获取所有系统任务
 func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
 	          FROM tasks WHERE is_sys_task = true ORDER BY created_at DESC`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -222,6 +226,7 @@ func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, erro
 			&t.IsSysTask,
 			&t.Cron,
 			&t.Type,
+			&t.LogLevel,
 			&t.Timeout,
 			&t.Retry,
 			&t.Config,
@@ -247,7 +252,7 @@ func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, erro
 
 // GetBySubID 根据订阅ID获取任务列表
 func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.Data, error) {
-	query := `SELECT t.id, t.enable, t.name, t.description, t.is_sys_task, t.cron, t.type, t.timeout, t.retry, t.config, t.last_run_result, t.last_run_time, t.last_run_duration, t.success_count, t.failed_count, t.created_at, t.updated_at
+	query := `SELECT t.id, t.enable, t.name, t.description, t.is_sys_task, t.cron, t.type, t.log_level, t.timeout, t.retry, t.config, t.last_run_result, t.last_run_time, t.last_run_duration, t.success_count, t.failed_count, t.created_at, t.updated_at
 	          FROM tasks t
 	          INNER JOIN sub_task_relations str ON t.id = str.task_id
 	          WHERE str.sub_id = ? ORDER BY t.created_at DESC`
@@ -269,6 +274,7 @@ func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.D
 			&t.IsSysTask,
 			&t.Cron,
 			&t.Type,
+			&t.LogLevel,
 			&t.Timeout,
 			&t.Retry,
 			&t.Config,

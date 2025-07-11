@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS "tasks" (
 	"cron" TEXT,
 	"timeout" INTEGER NOT NULL,
 	"type" TEXT NOT NULL,
+	"log_level" TEXT,
 	"config" TEXT,
 	"retry" INTEGER,
 	"last_run_result" TEXT,

@@ -63,5 +63,12 @@ func Configs() []system.Data {
 			Value:       "10",
 			Description: "任务最大重试次数",
 		},
+		{
+			GroupName:   "log",
+			Key:         "log.max_days",
+			Type:        "int",
+			Value:       "7",
+			Description: "日志保留天数",
+		},
 	}
 }
