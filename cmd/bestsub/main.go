@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 	if err := database.Initialize(cfg.Database.Type, cfg.Database.Path); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	if err := server.Initialize(); err != nil {
