@@ -2,355 +2,244 @@ package log
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"regexp"
-	"runtime"
-	"strings"
-	"sync"
+	"strconv"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/utils/color"
-	"github.com/sirupsen/logrus"
+	"github.com/bestruirui/bestsub/internal/utils/local"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
+
+type LogEntry struct {
+	Time    time.Time `json:"time"`
+	Level   string    `json:"level"`
+	Message string    `json:"message"`
+	Name    string    `json:"-"`
+}
 
 var (
-	Logger          *logrus.Logger
-	StartupTime     time.Time
-	colorStripRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
-	logFile         *os.File
-	logFileMutex    sync.RWMutex
+	wsChannel chan LogEntry
+
+	encoderConfig zapcore.EncoderConfig
+
+	basePath string
+
+	useConsole bool
+
+	useFile bool
+
+	logger *Logger
 )
 
-// 包装Writer，自动过滤颜色代码
-type ColorStripWriter struct {
-	writer io.Writer
+// Logger 日志记录器
+type Logger struct {
+	*zap.SugaredLogger
+	file *os.File
+}
+type config struct {
+	level      string
+	path       string
+	useConsole bool
+	useFile    bool
+	name       string
 }
 
-// 创建一个新的颜色过滤Writer
-func NewColorStripWriter(w io.Writer) *ColorStripWriter {
-	return &ColorStripWriter{writer: w}
-}
-
-// 实现io.Writer接口，写入时自动过滤颜色代码
-func (csw *ColorStripWriter) Write(p []byte) (n int, err error) {
-	stripped := colorStripRegex.ReplaceAll(p, []byte(""))
-	_, err = csw.writer.Write(stripped)
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
-}
-
-// 自定义格式化器
-type CustomFormatter struct {
-	TimestampFormat string
-	ShowCaller      bool
-	EnableColor     bool
-}
-
-// 根据日志等级获取对应颜色
-func (f *CustomFormatter) getColorByLevel(level logrus.Level) string {
-	if !f.EnableColor {
-		return ""
+// webSocketHook 发送日志到WebSocket通道
+func webSocketHook(entry zapcore.Entry) error {
+	if wsChannel == nil {
+		return nil
 	}
 
-	colorMap := map[logrus.Level]string{
-		logrus.DebugLevel: color.Cyan,
-		logrus.InfoLevel:  color.Green,
-		logrus.WarnLevel:  color.Yellow,
-		logrus.ErrorLevel: color.Red,
-		logrus.FatalLevel: color.Red + color.Bold,
-		logrus.PanicLevel: color.Red + color.Bold,
+	logEntry := LogEntry{
+		Time:    entry.Time,
+		Level:   entry.Level.String(),
+		Message: entry.Message,
+		Name:    entry.LoggerName,
 	}
 
-	return colorMap[level]
-}
-
-// 实现logrus.Formatter接口
-func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := entry.Time.Format(f.TimestampFormat)
-	level := strings.ToUpper(entry.Level.String())[:1]
-
-	var caller string
-	if f.ShowCaller {
-		// 优先使用我们手动设置的调用者信息
-		if file, ok := entry.Data["file"]; ok {
-			if line, ok := entry.Data["line"]; ok {
-				caller = fmt.Sprintf(" [%s:%v]", file, line)
-			}
-		} else if entry.HasCaller() {
-			// 回退到 logrus 自动获取的调用者信息
-			file := filepath.Base(entry.Caller.File)
-			caller = fmt.Sprintf(" [%s:%d]", file, entry.Caller.Line)
-		}
-	}
-
-	logColor := f.getColorByLevel(entry.Level)
-	reset := ""
-	if f.EnableColor {
-		reset = color.Reset
-	}
-
-	// 构建主消息
-	var msg string
-	if f.EnableColor {
-		msg = fmt.Sprintf("[%s] %s[%s]%s%s %s%s%s\n",
-			timestamp, logColor, level, reset, caller, logColor, entry.Message, reset)
-	} else {
-		msg = fmt.Sprintf("[%s] [%s]%s %s\n", timestamp, level, caller, entry.Message)
-	}
-
-	// 添加字段信息（排除我们用于调用者信息的字段）
-	for key, value := range entry.Data {
-		if key == "file" || key == "line" {
-			continue // 跳过调用者信息字段
-		}
-		if f.EnableColor {
-			msg += fmt.Sprintf("  %s%s=%v%s\n", logColor, key, value, reset)
-		} else {
-			msg += fmt.Sprintf("  %s=%v\n", key, value)
-		}
-	}
-
-	return []byte(msg), nil
-}
-
-// 检查输出是否为终端
-func isTerminal(w io.Writer) bool {
-	if f, ok := w.(*os.File); ok {
-		return (f == os.Stdout || f == os.Stderr) && os.Getenv("TERM") != ""
-	}
-	return false
-}
-
-// 初始化日志系统
-func Initialize(setLevel string, setOutput string, setDir string) error {
-	StartupTime = time.Now()
-	Logger = logrus.New()
-
-	// 设置日志等级
-	level, err := logrus.ParseLevel(setLevel)
-	if err != nil {
-		level = logrus.InfoLevel
-	}
-	Logger.SetLevel(level)
-	Logger.SetReportCaller(false) // 我们手动处理调用者信息
-
-	showCaller := level == logrus.DebugLevel
-	enableColor := false
-
-	// 根据输出类型设置输出和颜色
-	switch strings.ToLower(setOutput) {
-	case "console":
-		closeLogFile()
-		Logger.SetOutput(os.Stdout)
-		enableColor = isTerminal(os.Stdout)
-	case "file":
-		if err := setupFileOutput(setDir); err != nil {
-			return fmt.Errorf("设置文件输出失败: %v", err)
-		}
-	case "both":
-		if err := setupBothOutput(setDir); err != nil {
-			return fmt.Errorf("设置双重输出失败: %v", err)
-		}
-		enableColor = isTerminal(os.Stdout)
+	select {
+	case wsChannel <- logEntry:
 	default:
-		closeLogFile()
-		Logger.SetOutput(os.Stdout)
-		enableColor = isTerminal(os.Stdout)
 	}
-
-	Logger.SetFormatter(&CustomFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-		ShowCaller:      showCaller,
-		EnableColor:     enableColor,
-	})
 
 	return nil
 }
 
-func openLogFile(logDir string) (*os.File, error) {
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return nil, fmt.Errorf("创建日志目录失败: %v", err)
+func init() {
+	wsChannel = make(chan LogEntry, 1000)
+
+	encoderConfig = zapcore.EncoderConfig{
+		TimeKey:     "time",
+		LevelKey:    "level",
+		MessageKey:  "msg",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+		EncodeTime:  zapcore.RFC3339TimeEncoder,
 	}
-	logFilePath := filepath.Join(logDir, fmt.Sprintf("bestsub_%s.log", StartupTime.Format("20060102_150405")))
-	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+}
+
+func Initialize(level, path, method string) error {
+	basePath = path
+	mainPath := filepath.Join(basePath, "main", local.Time().Format("20060102150405")+".log")
+	switch method {
+	case "console":
+		useConsole = true
+		useFile = false
+	case "file":
+		useConsole = false
+		useFile = true
+	case "all":
+		useConsole = true
+		useFile = true
+	default:
+		useConsole = true
+		useFile = false
+	}
+	var err error
+	logger, err = NewLogger(config{
+		level:      level,
+		path:       mainPath,
+		useConsole: useConsole,
+		useFile:    useFile,
+		name:       "main",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("打开日志文件失败: %v", err)
+		return err
 	}
-	logFileMutex.Lock()
-	logFile = file
-	logFileMutex.Unlock()
+	return nil
+}
+
+func NewTaskLogger(taskid int64, level string) (*Logger, error) {
+	taskidstr := strconv.FormatInt(taskid, 10)
+	name := "task_" + taskidstr
+	path := filepath.Join(basePath, "task", taskidstr, local.Time().Format("20060102150405")+".log")
+	return NewLogger(config{
+		level:      level,
+		path:       path,
+		useConsole: useConsole,
+		useFile:    useFile,
+		name:       name,
+	})
+}
+
+// GetWSChannel 获取全局WebSocket通道
+func GetWSChannel() <-chan LogEntry {
+	return wsChannel
+}
+
+// NewLogger 创建日志记录器
+func NewLogger(config config) (*Logger, error) {
+	parsedLevel, err := zapcore.ParseLevel(config.level)
+	if err != nil {
+		parsedLevel = zapcore.InfoLevel
+	}
+
+	writers, file, err := setupWriters(config.path)
+	if err != nil {
+		return nil, err
+	}
+
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.NewMultiWriteSyncer(writers...),
+		parsedLevel,
+	)
+
+	logger := zap.New(core, zap.Hooks(webSocketHook))
+	logger = logger.Named(config.name)
+
+	return &Logger{
+		SugaredLogger: logger.Sugar(),
+		file:          file,
+	}, nil
+}
+
+// setupWriters 设置输出writers
+func setupWriters(path string) ([]zapcore.WriteSyncer, *os.File, error) {
+	var writers []zapcore.WriteSyncer
+	var file *os.File
+
+	if useConsole {
+		writers = append(writers, zapcore.AddSync(os.Stdout))
+	}
+
+	if useFile && path != "" {
+		var err error
+		file, err = createLogFile(path)
+		if err != nil {
+			return nil, nil, err
+		}
+		writers = append(writers, zapcore.AddSync(file))
+	}
+	if len(writers) == 0 {
+		writers = append(writers, zapcore.AddSync(os.Stdout))
+	}
+
+	return writers, file, nil
+}
+
+// createLogFile 创建日志文件
+func createLogFile(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
+	}
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file: %w", err)
+	}
 
 	return file, nil
 }
 
-func setupFileOutput(logDir string) error {
-	closeLogFile()
-	file, err := openLogFile(logDir)
-	if err != nil {
+func (l *Logger) Close() error {
+	l.SugaredLogger.Sync()
+
+	if l.file != nil {
+		err := l.file.Close()
+		l.file = nil
 		return err
 	}
-	Logger.SetOutput(file)
 	return nil
-}
-
-func setupBothOutput(logDir string) error {
-	closeLogFile()
-	file, err := openLogFile(logDir)
-	if err != nil {
-		return err
-	}
-
-	fileWriter := NewColorStripWriter(file)
-	multiWriter := io.MultiWriter(os.Stdout, fileWriter)
-	Logger.SetOutput(multiWriter)
-	return nil
-}
-
-func closeLogFile() error {
-	logFileMutex.Lock()
-	defer logFileMutex.Unlock()
-	var err error
-	if logFile != nil {
-		err = logFile.Close()
-		logFile = nil
-	}
-	return err
-}
-
-func Close() error {
-	return closeLogFile()
-}
-
-// logWithCaller 带调用者信息的日志记录
-func logWithCaller(level logrus.Level, skip int, args ...interface{}) {
-	if Logger == nil {
-		return
-	}
-
-	// 获取调用者信息
-	_, file, line, ok := runtime.Caller(skip)
-	if !ok {
-		Logger.Log(level, args...)
-		return
-	}
-
-	// 创建带调用者信息的日志条目
-	entry := Logger.WithFields(logrus.Fields{
-		"file": filepath.Base(file),
-		"line": line,
-	})
-
-	entry.Log(level, args...)
-}
-
-// logfWithCaller 带调用者信息的格式化日志记录
-func logfWithCaller(level logrus.Level, skip int, format string, args ...interface{}) {
-	if Logger == nil {
-		return
-	}
-
-	// 获取调用者信息
-	_, file, line, ok := runtime.Caller(skip)
-	if !ok {
-		Logger.Logf(level, format, args...)
-		return
-	}
-
-	// 创建带调用者信息的日志条目
-	entry := Logger.WithFields(logrus.Fields{
-		"file": filepath.Base(file),
-		"line": line,
-	})
-
-	entry.Logf(level, format, args...)
 }
 
 func Debug(args ...interface{}) {
-	logWithCaller(logrus.DebugLevel, 2, args...)
+	logger.Debug(args...)
 }
-
-func Debugf(format string, args ...interface{}) {
-	logfWithCaller(logrus.DebugLevel, 2, format, args...)
-}
-
 func Info(args ...interface{}) {
-	logWithCaller(logrus.InfoLevel, 2, args...)
+	logger.Info(args...)
 }
-
-func Infof(format string, args ...interface{}) {
-	logfWithCaller(logrus.InfoLevel, 2, format, args...)
-}
-
 func Warn(args ...interface{}) {
-	logWithCaller(logrus.WarnLevel, 2, args...)
+	logger.Warn(args...)
 }
-
-func Warnf(format string, args ...interface{}) {
-	logfWithCaller(logrus.WarnLevel, 2, format, args...)
-}
-
 func Error(args ...interface{}) {
-	logWithCaller(logrus.ErrorLevel, 2, args...)
+	logger.Error(args...)
 }
-
-func Errorf(format string, args ...interface{}) {
-	logfWithCaller(logrus.ErrorLevel, 2, format, args...)
-}
-
 func Fatal(args ...interface{}) {
-	logWithCaller(logrus.FatalLevel, 2, args...)
-	os.Exit(1)
+	logger.Fatal(args...)
 }
 
-func Fatalf(format string, args ...interface{}) {
-	logfWithCaller(logrus.FatalLevel, 2, format, args...)
-	os.Exit(1)
+func Debugf(template string, args ...interface{}) {
+	logger.Debugf(template, args...)
 }
 
-// WithFields 创建带字段的日志条目（带调用者信息）
-func WithFields(fields map[string]interface{}) *logrus.Entry {
-	if Logger == nil {
-		return nil
-	}
-
-	// 获取调用者信息
-	_, file, line, ok := runtime.Caller(1)
-	if ok {
-		// 合并调用者信息和用户字段
-		allFields := make(map[string]interface{})
-		allFields["file"] = filepath.Base(file)
-		allFields["line"] = line
-
-		// 添加用户字段
-		for k, v := range fields {
-			allFields[k] = v
-		}
-
-		return Logger.WithFields(allFields)
-	}
-
-	return Logger.WithFields(fields)
+func Infof(template string, args ...interface{}) {
+	logger.Infof(template, args...)
 }
 
-// WithField 创建带单个字段的日志条目（带调用者信息）
-func WithField(key string, value interface{}) *logrus.Entry {
-	if Logger == nil {
-		return nil
-	}
+func Warnf(template string, args ...interface{}) {
+	logger.Warnf(template, args...)
+}
 
-	// 获取调用者信息
-	_, file, line, ok := runtime.Caller(1)
-	if ok {
-		return Logger.WithFields(logrus.Fields{
-			"file": filepath.Base(file),
-			"line": line,
-			key:    value,
-		})
-	}
+func Errorf(template string, args ...interface{}) {
+	logger.Errorf(template, args...)
+}
 
-	return Logger.WithField(key, value)
+func Fatalf(template string, args ...interface{}) {
+	logger.Fatalf(template, args...)
+}
+func Close() error {
+	return logger.Close()
 }
