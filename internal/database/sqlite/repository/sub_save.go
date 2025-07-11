@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubSaveConfigRepository 保存配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 	query := `INSERT INTO sub_save (enable, name, description, rename, file_name, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
@@ -90,7 +90,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveCo
 		config.Description,
 		config.Rename,
 		config.FileName,
-		timeutils.Now(),
+		local.Time(),
 		config.ID,
 	)
 
@@ -211,4 +211,3 @@ func (r *SubSaveConfigRepository) AddStorageConfigRelation(ctx context.Context, 
 
 	return nil
 }
-

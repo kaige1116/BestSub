@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubStorageConfigRepository 存储配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.Sto
 	query := `INSERT INTO storage_configs (enable, name, description, type, config, test_result, last_test, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
@@ -97,7 +97,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.Sto
 		config.Config,
 		config.TestResult,
 		config.LastTest,
-		timeutils.Now(),
+		local.Time(),
 		config.ID,
 	)
 
@@ -188,7 +188,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.
 	query := `INSERT INTO sub_output_templates (enable, name, description, type, template, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		template.Enable,
 		template.Name,
@@ -252,7 +252,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.
 		template.Description,
 		template.Type,
 		template.Template,
-		timeutils.Now(),
+		local.Time(),
 		template.ID,
 	)
 
@@ -372,7 +372,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.Node
 	query := `INSERT INTO sub_node_filter_rules (name, field, operator, value, description, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		rule.Name,
 		rule.Field,
@@ -409,7 +409,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.Node
 		rule.Operator,
 		rule.Value,
 		rule.Description,
-		timeutils.Now(),
+		local.Time(),
 		rule.ID,
 	)
 

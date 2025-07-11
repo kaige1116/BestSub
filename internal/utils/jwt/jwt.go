@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
-	timeutil "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -30,7 +30,7 @@ func GenerateTokenPair(sessionID int64) (*TokenPair, error) {
 	cfg := config.Get()
 
 	// 生成访问令牌
-	now := timeutil.Now()
+	now := local.Time()
 	expiresAt := now.Add(time.Duration(cfg.JWT.ExpiresIn) * time.Second)
 
 	claims := &Claims{

@@ -8,8 +8,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/passwd"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 )
 
 // AuthRepository 认证数据访问实现
@@ -55,7 +55,7 @@ func (r *AuthRepository) Update(ctx context.Context, authData *auth.Data) error 
 
 	query := `UPDATE auth SET password = ?, updated_at = ?`
 
-	result, err := r.db.ExecContext(ctx, query, hashedPassword, timeutils.Now())
+	result, err := r.db.ExecContext(ctx, query, hashedPassword, local.Time())
 	if err != nil {
 		return fmt.Errorf("failed to update auth: %w", err)
 	}
@@ -81,7 +81,7 @@ func (r *AuthRepository) UpdateUsername(ctx context.Context, username string) er
 	// 单用户系统，直接更新唯一记录
 	query := `UPDATE auth SET user_name = ?, updated_at = ?`
 
-	result, err := r.db.ExecContext(ctx, query, username, timeutils.Now())
+	result, err := r.db.ExecContext(ctx, query, username, local.Time())
 	if err != nil {
 		return fmt.Errorf("failed to update username: %w", err)
 	}
@@ -108,7 +108,7 @@ func (r *AuthRepository) Initialize(ctx context.Context, authData *auth.Data) er
 
 	query := `INSERT INTO auth (user_name, password, created_at, updated_at) VALUES (?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	_, err = r.db.ExecContext(ctx, query, authData.UserName, hashedPassword, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to initialize auth: %w", err)
@@ -171,7 +171,7 @@ func (r *SessionRepository) Create(ctx context.Context, session *auth.Session) e
 	query := `INSERT INTO sessions (token_hash, expires_at, refresh_token, ip_address, user_agent, is_active, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		session.TokenHash,
 		session.ExpiresAt,
@@ -295,7 +295,7 @@ func (r *SessionRepository) Update(ctx context.Context, session *auth.Session) e
 		session.IPAddress,
 		session.UserAgent,
 		session.IsActive,
-		timeutils.Now(),
+		local.Time(),
 		session.ID,
 	)
 
@@ -334,7 +334,7 @@ func (r *SessionRepository) DeleteAll(ctx context.Context) error {
 func (r *SessionRepository) DeleteExpired(ctx context.Context) error {
 	query := `DELETE FROM sessions WHERE expires_at < ?`
 
-	_, err := r.db.ExecContext(ctx, query, timeutils.Now())
+	_, err := r.db.ExecContext(ctx, query, local.Time())
 	if err != nil {
 		return fmt.Errorf("failed to delete expired sessions: %w", err)
 	}
@@ -384,7 +384,7 @@ func (r *SessionRepository) GetAllActive(ctx context.Context) ([]*auth.Session, 
 func (r *SessionRepository) DeactivateAll(ctx context.Context) error {
 	query := `UPDATE sessions SET is_active = false, updated_at = ?`
 
-	_, err := r.db.ExecContext(ctx, query, timeutils.Now())
+	_, err := r.db.ExecContext(ctx, query, local.Time())
 	if err != nil {
 		return fmt.Errorf("failed to deactivate all sessions: %w", err)
 	}

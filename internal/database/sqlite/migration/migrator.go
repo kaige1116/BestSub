@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/migration"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 var migrations = make(map[string]migration.MigrationInfo)
@@ -102,7 +102,7 @@ func (m *Migrator) applyMigration(ctx context.Context, migra *interfaces.Migrati
 		`INSERT INTO schema_migrations (version, description, applied_at, success) VALUES (?, ?, ?, TRUE)`,
 		migra.Version,
 		migra.Description,
-		timeutils.Now(),
+		local.Time(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to record migration: %w", err)

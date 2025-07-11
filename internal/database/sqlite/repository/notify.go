@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/notify"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // NotifyRepository 通知渠道数据访问实现
@@ -26,7 +26,7 @@ func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) err
 	query := `INSERT INTO notify_config (enable, name, description, type, config, test_result, last_test, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		channel.Enable,
 		channel.Name,
@@ -97,7 +97,7 @@ func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) err
 		channel.TestResult,
 		channel.LastTest,
 		channel.Description,
-		timeutils.Now(),
+		local.Time(),
 		channel.ID,
 	)
 
@@ -240,7 +240,7 @@ func (r *NotifyTemplateRepository) Create(ctx context.Context, template *notify.
 	query := `INSERT INTO notify_templates (name, description, templates, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		template.Name,
 		template.Description,
@@ -298,7 +298,7 @@ func (r *NotifyTemplateRepository) Update(ctx context.Context, template *notify.
 		template.Name,
 		template.Description,
 		template.Template,
-		timeutils.Now(),
+		local.Time(),
 		template.ID,
 	)
 

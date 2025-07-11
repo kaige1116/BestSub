@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/system"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SystemConfigRepository 系统配置数据访问实现
@@ -26,7 +26,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *system.Data
 	query := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
@@ -91,7 +91,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *system.Data
 		config.Type,
 		config.GroupName,
 		config.Description,
-		timeutils.Now(),
+		local.Time(),
 		config.ID,
 	)
 
@@ -118,7 +118,7 @@ func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) er
 func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
 	// 首先尝试更新
 	updateQuery := `UPDATE system_config SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, timeutils.Now(), key)
+	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, local.Time(), key)
 	if err != nil {
 		return fmt.Errorf("failed to update system config value: %w", err)
 	}
@@ -132,7 +132,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 	if rowsAffected == 0 {
 		insertQuery := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at) 
 		                VALUES (?, ?, ?, ?, ?, ?, ?)`
-		now := timeutils.Now()
+		now := local.Time()
 		_, err = r.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert system config value: %w", err)

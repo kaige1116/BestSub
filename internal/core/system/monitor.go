@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -27,7 +27,7 @@ var monitor Monitor
 
 func init() {
 	monitor = Monitor{
-		startTime: timeutils.Now(),
+		startTime: local.Time(),
 	}
 	log.Debug("System monitor initialized")
 }
@@ -47,7 +47,7 @@ func GetSystemInfo() *system.Info {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
-	now := timeutils.Now()
+	now := local.Time()
 	uptime := now.Sub(monitor.startTime)
 
 	uploadBytes := atomic.LoadUint64(&monitor.uploadBytes)
@@ -92,7 +92,7 @@ func Reset() {
 
 	atomic.StoreUint64(&monitor.uploadBytes, 0)
 	atomic.StoreUint64(&monitor.downloadBytes, 0)
-	monitor.startTime = timeutils.Now()
+	monitor.startTime = local.Time()
 
 	log.Debug("System monitor data reset")
 }

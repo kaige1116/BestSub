@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubShareRepository 分享链接数据访问实现
@@ -26,7 +26,7 @@ func (r *SubShareRepository) Create(ctx context.Context, shareLink *sub.Share) e
 	query := `INSERT INTO sub_share_links (enable, name, description, rename, access_count, max_access_count, token, expires, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		shareLink.Enable,
 		shareLink.Name,
@@ -99,7 +99,7 @@ func (r *SubShareRepository) Update(ctx context.Context, shareLink *sub.Share) e
 		shareLink.MaxAccessCount,
 		shareLink.Token,
 		shareLink.Expires,
-		timeutils.Now(),
+		local.Time(),
 		shareLink.ID,
 	)
 

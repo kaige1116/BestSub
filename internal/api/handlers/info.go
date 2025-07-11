@@ -12,8 +12,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/info"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
 	"github.com/gin-gonic/gin"
 )
 
@@ -81,7 +81,7 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 
 	response := system.HealthResponse{
 		Status:    "ok",
-		Timestamp: timeutils.Now().Format(time.RFC3339),
+		Timestamp: local.Time().Format(time.RFC3339),
 		Version:   info.Version,
 		Database:  databaseStatus,
 	}
@@ -132,7 +132,7 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 
 	response := system.HealthResponse{
 		Status:    "ready",
-		Timestamp: timeutils.Now().Format(time.RFC3339),
+		Timestamp: local.Time().Format(time.RFC3339),
 		Version:   info.Version,
 		Database:  "initialized",
 	}
@@ -169,7 +169,7 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 		Message: "Service is alive",
 		Data: map[string]interface{}{
 			"status":    "alive",
-			"timestamp": timeutils.Now().Format(time.RFC3339),
+			"timestamp": local.Time().Format(time.RFC3339),
 		},
 	})
 }

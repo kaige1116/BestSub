@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	timeutils "github.com/bestruirui/bestsub/internal/utils/time"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubRepository 订阅链接数据访问实现
@@ -26,7 +26,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	query := `INSERT INTO subs (enable, name, description, url, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?)`
 
-	now := timeutils.Now()
+	now := local.Time()
 	result, err := r.db.ExecContext(ctx, query,
 		true, // enable默认为true
 		link.Name,
@@ -88,7 +88,7 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 		link.Name,
 		link.Description,
 		link.URL,
-		timeutils.Now(),
+		local.Time(),
 		link.ID,
 	)
 
