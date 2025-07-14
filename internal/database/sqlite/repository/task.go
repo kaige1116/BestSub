@@ -22,7 +22,7 @@ func newTaskRepository(db *database.Database) interfaces.TaskRepository {
 }
 
 // Create 创建任务
-func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
+func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (int64, error) {
 	query := `INSERT INTO tasks (enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -48,19 +48,15 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to create task: %w", err)
+		return 0, fmt.Errorf("failed to create task: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("failed to get task id: %w", err)
+		return 0, fmt.Errorf("failed to get task id: %w", err)
 	}
 
-	t.ID = id
-	t.CreatedAt = now
-	t.UpdatedAt = now
-
-	return nil
+	return id, nil
 }
 
 // GetByID 根据ID获取任务

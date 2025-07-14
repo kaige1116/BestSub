@@ -119,7 +119,7 @@ func initTask(ctx context.Context, repo *interfaces.RepositoryManager) error {
 
 	for taskType, defaultTask := range defaultTasksMap {
 		if !existingTasksMap[taskType] {
-			if err := taskRepo.Create(ctx, &defaultTask); err != nil {
+			if _, err := taskRepo.Create(ctx, &defaultTask); err != nil {
 				log.Fatalf("failed to create missing system task %s: %v", taskType, err)
 			}
 		}

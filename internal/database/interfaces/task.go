@@ -9,7 +9,7 @@ import (
 // TaskRepository 任务数据访问接口
 type TaskRepository interface {
 	// Create 创建任务
-	Create(ctx context.Context, task *task.Data) error
+	Create(ctx context.Context, task *task.Data) (id int64, err error)
 
 	// Update 更新任务
 	Update(ctx context.Context, task *task.Data) error
