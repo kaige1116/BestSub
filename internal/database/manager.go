@@ -9,10 +9,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-var (
-	manager *Manager
-	once    sync.Once
-)
+var manager *Manager
 
 // 数据库管理器
 type Manager struct {
@@ -26,13 +23,11 @@ type Manager struct {
 // 初始化数据库管理器
 func Initialize(sqltype, path string) error {
 	var err error
-	once.Do(func() {
-		manager = &Manager{
-			sqltype: sqltype,
-			path:    path,
-		}
-		err = manager.init()
-	})
+	manager = &Manager{
+		sqltype: sqltype,
+		path:    path,
+	}
+	err = manager.init()
 	return err
 }
 
