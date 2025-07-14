@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	_ "github.com/bestruirui/bestsub/internal/core/task/exec"
+	"github.com/bestruirui/bestsub/internal/core/task/exec"
+	_ "github.com/bestruirui/bestsub/internal/core/task/exec/execer"
 	"github.com/bestruirui/bestsub/internal/core/task/scheduler"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/models/common"
@@ -18,7 +19,11 @@ var mu sync.RWMutex
 
 // Initialize 初始化任务调度器
 func Initialize() error {
-	taskScheduler = scheduler.New()
+	var err error
+	taskScheduler, err = scheduler.New()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -48,11 +53,16 @@ func AddTask(req *task.CreateRequest) error {
 		Timeout:  req.Timeout,
 		Retry:    req.Retry,
 	}
-	err := repo.Create(context.Background(), t)
+	id, err := repo.Create(context.Background(), t)
 	if err != nil {
 		return err
 	}
-	return taskScheduler.AddTask(t)
+	taskInfo := &exec.TaskInfo{
+		ID:     id,
+		Type:   req.Type,
+		Config: []byte(req.Config),
+	}
+	return taskScheduler.AddTask(req.Cron, execTask, taskInfo)
 }
 
 func UpdateTask(req *task.UpdateRequest) error {
@@ -81,7 +91,12 @@ func UpdateTask(req *task.UpdateRequest) error {
 		log.Errorf("failed to update task %d: %w", req.ID, err)
 		return err
 	}
-	return taskScheduler.UpdateTask(t)
+	taskInfo := &exec.TaskInfo{
+		ID:     req.ID,
+		Type:   t.Type,
+		Config: []byte(req.Config),
+	}
+	return taskScheduler.UpdateTask(req.Cron, execTask, taskInfo)
 }
 func RunTask(taskID int64) error {
 	mu.Lock()
@@ -119,4 +134,28 @@ func Shutdown() error {
 	mu.Lock()
 	defer mu.Unlock()
 	return taskScheduler.Stop()
+}
+
+func execTask(ctx context.Context, taskInfo exec.TaskInfo) {
+	taskctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	taskScheduler.AddRunTaskMap(taskInfo.ID, cancel)
+	defer taskScheduler.RemoveRunTaskMap(taskInfo.ID)
+
+	for i := 0; i < taskInfo.Retry; i++ {
+		select {
+		case <-taskctx.Done():
+			log.Infof("任务 %d 取消", taskInfo.ID)
+			return
+		default:
+			log.Debugf("task %d running %d/%d", taskInfo.ID, i+1, taskInfo.Retry)
+			err := exec.Run(taskctx, &taskInfo)
+			if err != nil {
+				log.Errorf("任务 %d 执行失败: %v (重试 %d/%d)", taskInfo.ID, err, i+1, taskInfo.Retry)
+				continue
+			}
+			log.Infof("任务 %d 执行成功", taskInfo.ID)
+			return
+		}
+	}
 }

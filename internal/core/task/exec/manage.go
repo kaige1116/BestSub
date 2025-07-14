@@ -49,10 +49,12 @@ type Config struct {
 
 // TaskInfo 任务执行上下文信息
 type TaskInfo struct {
-	Type   string
-	ID     int64
-	Level  string
-	Config []byte
+	Type    string
+	ID      int64
+	Level   string
+	Config  []byte
+	Retry   int
+	Timeout int
 }
 
 type Execer interface {
