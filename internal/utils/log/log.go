@@ -39,12 +39,12 @@ type Logger struct {
 	*zap.SugaredLogger
 	file *os.File
 }
-type config struct {
-	level      string
-	path       string
-	useConsole bool
-	useFile    bool
-	name       string
+type Config struct {
+	Level      string
+	Path       string
+	UseConsole bool
+	UseFile    bool
+	Name       string
 }
 
 // webSocketHook 发送日志到WebSocket通道
@@ -78,6 +78,12 @@ func init() {
 		EncodeLevel: zapcore.LowercaseLevelEncoder,
 		EncodeTime:  zapcore.RFC3339TimeEncoder,
 	}
+	logger, _ = NewLogger(Config{
+		Level:      "debug",
+		UseConsole: true,
+		UseFile:    false,
+	})
+
 }
 
 func Initialize(level, path, method string) error {
@@ -98,12 +104,12 @@ func Initialize(level, path, method string) error {
 		useFile = false
 	}
 	var err error
-	logger, err = NewLogger(config{
-		level:      level,
-		path:       mainPath,
-		useConsole: useConsole,
-		useFile:    useFile,
-		name:       "main",
+	logger, err = NewLogger(Config{
+		Level:      level,
+		Path:       mainPath,
+		UseConsole: useConsole,
+		UseFile:    useFile,
+		Name:       "main",
 	})
 	if err != nil {
 		return err
@@ -115,12 +121,12 @@ func NewTaskLogger(taskid int64, level string) (*Logger, error) {
 	taskidstr := strconv.FormatInt(taskid, 10)
 	name := "task_" + taskidstr
 	path := filepath.Join(basePath, "task", taskidstr, local.Time().Format("20060102150405")+".log")
-	return NewLogger(config{
-		level:      level,
-		path:       path,
-		useConsole: useConsole,
-		useFile:    useFile,
-		name:       name,
+	return NewLogger(Config{
+		Level:      level,
+		Path:       path,
+		UseConsole: useConsole,
+		UseFile:    useFile,
+		Name:       name,
 	})
 }
 
@@ -130,13 +136,13 @@ func GetWSChannel() <-chan LogEntry {
 }
 
 // NewLogger 创建日志记录器
-func NewLogger(config config) (*Logger, error) {
-	parsedLevel, err := zapcore.ParseLevel(config.level)
+func NewLogger(config Config) (*Logger, error) {
+	parsedLevel, err := zapcore.ParseLevel(config.Level)
 	if err != nil {
 		parsedLevel = zapcore.InfoLevel
 	}
 
-	writers, file, err := setupWriters(config.path)
+	writers, file, err := setupWriters(config.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +153,11 @@ func NewLogger(config config) (*Logger, error) {
 		parsedLevel,
 	)
 
-	logger := zap.New(core, zap.Hooks(webSocketHook))
-	logger = logger.Named(config.name)
+	logger := zap.New(
+		core,
+		zap.Hooks(webSocketHook),
+	)
+	logger = logger.Named(config.Name)
 
 	return &Logger{
 		SugaredLogger: logger.Sugar(),
