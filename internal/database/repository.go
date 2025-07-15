@@ -4,18 +4,9 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 )
 
-// =============================================================================
-// 快捷访问方法 - 直接访问仓库实例的便捷函数
-// =============================================================================
-
 // Auth 获取认证仓库
 func Auth() interfaces.AuthRepository {
 	return GetRepository().Auth()
-}
-
-// Session 获取会话仓库
-func Session() interfaces.SessionRepository {
-	return GetRepository().Session()
 }
 
 // SystemConfig 获取系统配置仓库

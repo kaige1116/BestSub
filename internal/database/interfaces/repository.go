@@ -8,7 +8,6 @@ import (
 type Repository interface {
 	// 认证相关
 	Auth() AuthRepository
-	Session() SessionRepository
 
 	// 配置相关
 	SystemConfig() SystemConfigRepository
@@ -43,7 +42,6 @@ type RepositoryManager struct {
 
 	// 缓存的仓库实例
 	authRepo              AuthRepository
-	sessionRepo           SessionRepository
 	systemConfigRepo      SystemConfigRepository
 	notifyRepo            NotifyRepository
 	notifyTemplateRepo    NotifyTemplateRepository
@@ -69,16 +67,6 @@ func (rm *RepositoryManager) Auth() AuthRepository {
 		rm.authRepo = rm.repo.Auth()
 	}
 	return rm.authRepo
-}
-
-// Session 获取会话仓库
-func (rm *RepositoryManager) Session() SessionRepository {
-	rm.mu.Lock()
-	defer rm.mu.Unlock()
-	if rm.sessionRepo == nil {
-		rm.sessionRepo = rm.repo.Session()
-	}
-	return rm.sessionRepo
 }
 
 // SystemConfig 获取系统配置仓库

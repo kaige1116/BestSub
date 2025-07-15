@@ -24,19 +24,6 @@ CREATE TABLE IF NOT EXISTS "auth" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "sessions" (
-	"id" INTEGER,
-	"is_active" BOOLEAN NOT NULL DEFAULT true,
-	"ip_address" TEXT,
-	"user_agent" TEXT,
-	"expires_at" DATETIME NOT NULL,
-	"token_hash" TEXT NOT NULL UNIQUE,
-	"refresh_token" TEXT UNIQUE,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY("id")
-);
-
 CREATE TABLE IF NOT EXISTS "system_config" (
 	"id" INTEGER,
 	"group_name" TEXT NOT NULL,

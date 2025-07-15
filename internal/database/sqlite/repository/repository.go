@@ -20,11 +20,6 @@ func (r *Repository) Auth() interfaces.AuthRepository {
 	return newAuthRepository(r.db)
 }
 
-// Session 获取会话仓库
-func (r *Repository) Session() interfaces.SessionRepository {
-	return newSessionRepository(r.db)
-}
-
 // SystemConfig 获取系统配置仓库
 func (r *Repository) SystemConfig() interfaces.SystemConfigRepository {
 	return newSystemConfigRepository(r.db)
