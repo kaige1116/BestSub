@@ -32,7 +32,7 @@ func Start() {
 	taskScheduler.Start()
 }
 
-func AddTask(req *task.CreateRequest) error {
+func AddTask(req *task.CreateRequest) (*task.Data, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	repo := database.Task()
@@ -55,17 +55,18 @@ func AddTask(req *task.CreateRequest) error {
 	}
 	id, err := repo.Create(context.Background(), t)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	taskInfo := &exec.TaskInfo{
 		ID:     id,
 		Type:   req.Type,
 		Config: []byte(req.Config),
 	}
-	return taskScheduler.AddTask(req.Cron, execTask, taskInfo)
+	err = taskScheduler.AddTask(req.Cron, execTask, taskInfo)
+	return t, err
 }
 
-func UpdateTask(req *task.UpdateRequest) error {
+func UpdateTask(req *task.UpdateRequest) (*task.Data, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	repo := database.Task()
@@ -89,14 +90,15 @@ func UpdateTask(req *task.UpdateRequest) error {
 	err := repo.Update(context.Background(), t)
 	if err != nil {
 		log.Errorf("failed to update task %d: %w", req.ID, err)
-		return err
+		return nil, err
 	}
 	taskInfo := &exec.TaskInfo{
 		ID:     req.ID,
 		Type:   t.Type,
 		Config: []byte(req.Config),
 	}
-	return taskScheduler.UpdateTask(req.Cron, execTask, taskInfo)
+	err = taskScheduler.UpdateTask(req.Cron, execTask, taskInfo)
+	return t, err
 }
 func RunTask(taskID int64) error {
 	mu.Lock()
@@ -112,8 +114,7 @@ func RunTask(taskID int64) error {
 		return fmt.Errorf("task %d is not enabled", taskID)
 	}
 }
-
-func RemoveTask(taskID int64) error {
+func RemoveTaskWithDb(taskID int64) error {
 	mu.Lock()
 	defer mu.Unlock()
 	repo := database.Task()
@@ -124,10 +125,33 @@ func RemoveTask(taskID int64) error {
 	return taskScheduler.RemoveTask(taskID)
 }
 
+func RemoveTask(taskID int64) error {
+	mu.Lock()
+	defer mu.Unlock()
+	return taskScheduler.RemoveTask(taskID)
+}
+
 func StopTask(taskID int64) error {
 	mu.Lock()
 	defer mu.Unlock()
 	return taskScheduler.StopTask(taskID)
+}
+func ListTasks(offset, pageSize int) (*[]task.Data, int64, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+	repo := database.Task()
+	tasks, err := repo.List(context.Background(), offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return tasks, int64(len(*tasks)), nil
+}
+
+func GetTask(taskID int64) (*task.Data, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+	repo := database.Task()
+	return repo.GetByID(context.Background(), taskID)
 }
 
 func Shutdown() error {

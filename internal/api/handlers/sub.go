@@ -103,7 +103,7 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 	for _, taskReq := range req.Task {
 
 		// 创建任务
-		taskData, err := taskcore.Create(c.Request.Context(), &taskReq)
+		taskData, err := taskcore.AddTask(&taskReq)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
@@ -114,6 +114,7 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 		}
 
 		// 建立订阅与任务的关联
+		log.Debugf("建立订阅与任务的关联: %d, %d", subData.ID, taskData.ID)
 		if err := database.SubLink().AddTaskRelation(c.Request.Context(), subData.ID, taskData.ID); err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
@@ -379,7 +380,7 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 	// 处理任务更新
 	var updatedTasks []task.Data
 	for _, taskReq := range req.Task {
-		taskData, err := taskcore.Update(c.Request.Context(), &taskReq)
+		taskData, err := taskcore.UpdateTask(&taskReq)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
@@ -483,7 +484,7 @@ func (h *subLinkHandler) deleteSub(c *gin.Context) {
 	}
 
 	for _, taskID := range taskIDs {
-		if err := taskcore.Delete(c.Request.Context(), taskID); err != nil {
+		if err := taskcore.RemoveTask(taskID); err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "删除任务失败",

@@ -92,7 +92,7 @@ func (h *taskHandler) createTask(c *gin.Context) {
 	}
 
 	// 创建任务
-	taskData, err := task.Create(c.Request.Context(), &req)
+	taskData, err := task.AddTask(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -147,7 +147,7 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 			}
 
 			// 获取任务
-			taskData, err := task.Get(c.Request.Context(), id)
+			taskData, err := task.GetTask(id)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -190,7 +190,7 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 获取任务列表
-	tasks, total, err := task.List(c.Request.Context(), offset, pageSize)
+	tasks, total, err := task.ListTasks(offset, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -253,7 +253,7 @@ func (h *taskHandler) getTask(c *gin.Context) {
 	}
 
 	// 获取任务
-	taskData, err := task.Get(c.Request.Context(), id)
+	taskData, err := task.GetTask(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -315,7 +315,7 @@ func (h *taskHandler) updateTask(c *gin.Context) {
 	}
 
 	// 更新任务
-	taskData, err := task.Update(c.Request.Context(), &req)
+	taskData, err := task.UpdateTask(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -371,7 +371,7 @@ func (h *taskHandler) deleteTask(c *gin.Context) {
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.Get(c.Request.Context(), id)
+	existingTask, err := task.GetTask(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -390,7 +390,7 @@ func (h *taskHandler) deleteTask(c *gin.Context) {
 	}
 
 	// 删除任务
-	if err := task.DeleteWithDb(c.Request.Context(), id); err != nil {
+	if err := task.RemoveTaskWithDb(id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "删除任务失败",
@@ -444,7 +444,7 @@ func (h *taskHandler) runTask(c *gin.Context) {
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.Get(c.Request.Context(), id)
+	existingTask, err := task.GetTask(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -463,7 +463,7 @@ func (h *taskHandler) runTask(c *gin.Context) {
 	}
 
 	// 运行任务
-	if err := task.Run(c.Request.Context(), id); err != nil {
+	if err := task.RunTask(id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "运行任务失败",
@@ -517,7 +517,7 @@ func (h *taskHandler) stopTask(c *gin.Context) {
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.Get(c.Request.Context(), id)
+	existingTask, err := task.GetTask(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -536,7 +536,7 @@ func (h *taskHandler) stopTask(c *gin.Context) {
 	}
 
 	// 停止任务
-	if err := task.Stop(c.Request.Context(), id); err != nil {
+	if err := task.StopTask(id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "停止任务失败",

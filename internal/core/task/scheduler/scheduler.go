@@ -134,8 +134,8 @@ func (s *scheduler) RunTask(taskID int64) error {
 func (s *scheduler) RemoveTask(taskID int64) error {
 	value, ok := s.ScheduledTasks.Load(taskID)
 	if !ok {
-		log.Errorf("task %d not found", taskID)
-		return fmt.Errorf("task %d not found", taskID)
+		log.Errorf("task %d not found at scheduler", taskID)
+		return fmt.Errorf("task %d not found at scheduler", taskID)
 	}
 	job := value.(gocron.Job)
 	cancel, ok := s.RunningTasks.Load(taskID)
