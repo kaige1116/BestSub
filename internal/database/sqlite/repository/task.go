@@ -55,7 +55,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (int64, error
 	if err != nil {
 		return 0, fmt.Errorf("failed to get task id: %w", err)
 	}
-
+	t.ID = id
 	return id, nil
 }
 
