@@ -6,6 +6,7 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Log      LogConfig      `json:"log"`
 	JWT      JWTConfig      `json:"jwt"`
+	Session  SessionConfig  `json:"session"`
 }
 
 // ServerConfig 服务器配置
@@ -29,6 +30,10 @@ type LogConfig struct {
 
 // JWTConfig JWT配置
 type JWTConfig struct {
-	Secret    string `json:"secret"`
-	ExpiresIn int    `json:"expires_in"`
+	Secret string `json:"secret"`
+}
+
+// SessionConfig 会话配置
+type SessionConfig struct {
+	File string `json:"file"`
 }

@@ -86,11 +86,6 @@ func loadFromEnv(config *Config) {
 	if jwtSecret := os.Getenv("BESTSUB_JWT_SECRET"); jwtSecret != "" {
 		config.JWT.Secret = jwtSecret
 	}
-	if jwtExpires := os.Getenv("BESTSUB_JWT_EXPIRES_IN"); jwtExpires != "" {
-		if exp, err := parseInt(jwtExpires); err == nil {
-			config.JWT.ExpiresIn = exp
-		}
-	}
 }
 
 func parsePort(portStr string) (int, error) {

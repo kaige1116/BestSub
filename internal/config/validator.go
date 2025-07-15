@@ -120,18 +120,5 @@ func ValidateJWTConfig(config *JWTConfig) error {
 		return fmt.Errorf("请修改默认的JWT密钥以确保安全性")
 	}
 
-	if config.ExpiresIn <= 0 {
-		return fmt.Errorf("JWT过期时间必须大于0秒，当前值: %d", config.ExpiresIn)
-	}
-
-	// 建议的过期时间范围（5分钟到24小时）
-	if config.ExpiresIn < 300 {
-		return fmt.Errorf("JWT过期时间过短，建议至少5分钟(300秒)，当前值: %d秒", config.ExpiresIn)
-	}
-
-	if config.ExpiresIn > 86400 {
-		return fmt.Errorf("JWT过期时间过长，建议不超过24小时(86400秒)，当前值: %d秒", config.ExpiresIn)
-	}
-
 	return nil
 }

@@ -20,8 +20,6 @@ const (
 	DefaultLogLevel  = "info"
 	DefaultLogOutput = "both"
 	DefaultLogDir    = "./data/log"
-
-	DefaultJWTExpiresIn = 3600 // 1小时
 )
 
 // 创建默认配置文件
@@ -62,8 +60,7 @@ func getDefaultConfig() Config {
 			Dir:    DefaultLogDir,
 		},
 		JWT: JWTConfig{
-			Secret:    generateSecureJWTSecret(),
-			ExpiresIn: DefaultJWTExpiresIn,
+			Secret: generateSecureJWTSecret(),
 		},
 	}
 }
