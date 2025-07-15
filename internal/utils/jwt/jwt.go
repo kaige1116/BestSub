@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -13,7 +12,8 @@ import (
 
 // Claims JWT声明结构
 type Claims struct {
-	SessionID int64 `json:"session_id"`
+	SessionID uint8  `json:"session_id"`
+	Username  string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -22,19 +22,19 @@ type TokenPair struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
 	ExpiresAt    time.Time `json:"expires_at"`
-	TokenHash    string    `json:"token_hash"` // 用于存储到数据库的哈希值
 }
 
 // GenerateTokenPair 生成访问令牌和刷新令牌对
-func GenerateTokenPair(sessionID int64) (*TokenPair, error) {
+func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
 	cfg := config.Get()
 
-	// 生成访问令牌
 	now := local.Time()
-	expiresAt := now.Add(time.Duration(cfg.JWT.ExpiresIn) * time.Second)
+
+	expiresAt := now.Add(15 * time.Minute)
 
 	claims := &Claims{
 		SessionID: sessionID,
+		Username:  username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -51,11 +51,13 @@ func GenerateTokenPair(sessionID int64) (*TokenPair, error) {
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
 
-	// 生成刷新令牌（有效期更长）
+	refreshExpiresAt := now.Add(7 * 24 * time.Hour)
+
 	refreshClaims := &Claims{
 		SessionID: sessionID,
+		Username:  username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(7 * 24 * time.Hour)), // 7天
+			ExpiresAt: jwt.NewNumericDate(refreshExpiresAt),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    "bestsub-refresh",
@@ -64,20 +66,16 @@ func GenerateTokenPair(sessionID int64) (*TokenPair, error) {
 		},
 	}
 
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString([]byte(cfg.JWT.Secret))
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken, err := token.SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign refresh token: %w", err)
 	}
 
-	// 生成访问令牌的哈希值用于数据库存储
-	tokenHash := HashToken(accessToken)
-
 	return &TokenPair{
 		AccessToken:  accessToken,
-		RefreshToken: refreshTokenString,
+		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
-		TokenHash:    tokenHash,
 	}, nil
 }
 
@@ -127,12 +125,6 @@ func ValidateRefreshToken(tokenString string) (*Claims, error) {
 	}
 
 	return nil, fmt.Errorf("invalid refresh token")
-}
-
-// HashToken 生成令牌的哈希值
-func HashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return fmt.Sprintf("%x", hash)
 }
 
 // ExtractTokenFromHeader 从Authorization头中提取令牌

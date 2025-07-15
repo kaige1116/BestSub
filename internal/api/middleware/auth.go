@@ -1,20 +1,19 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/database"
+	"github.com/bestruirui/bestsub/internal/core/session"
 	"github.com/bestruirui/bestsub/internal/models/api"
+	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware JWT认证中间件
+// Auth JWT认证中间件
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从请求头中获取Authorization
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -26,7 +25,6 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 提取JWT令牌
 		token, err := jwt.ExtractTokenFromHeader(authHeader)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -38,7 +36,6 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 验证JWT令牌
 		claims, err := jwt.ValidateToken(token)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
@@ -51,7 +48,6 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 检查令牌是否过期
 		if jwt.IsTokenExpired(claims) {
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
@@ -62,68 +58,110 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 验证会话是否存在且有效
-		sessionRepo := database.Session()
-		session, err := sessionRepo.GetByID(context.Background(), claims.SessionID)
+		sess, err := session.Get(claims.SessionID)
 		if err != nil {
-			log.Errorf("Failed to get session: %v", err)
-			c.JSON(http.StatusInternalServerError, api.ResponseError{
-				Code:    http.StatusInternalServerError,
-				Message: "Internal Server Error",
-				Error:   "Failed to validate session",
-			})
-			c.Abort()
-			return
-		}
-
-		if session == nil || !session.IsActive {
+			log.Warnf("Session not found: %v", err)
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
-				Error:   "Session is invalid or inactive",
+				Error:   "Session not found or expired",
 			})
 			c.Abort()
 			return
 		}
 
-		// 验证令牌哈希是否匹配
-		tokenHash := jwt.HashToken(token)
-		if session.TokenHash != tokenHash {
+		if !sess.IsActive {
+			log.Warnf("Session %d is not active", claims.SessionID)
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
-				Error:   "Token hash mismatch",
+				Error:   "Session is not active",
 			})
 			c.Abort()
 			return
 		}
 
-		// 获取用户信息（单用户系统，直接从Auth表获取）
-		authRepo := database.Auth()
-		authInfo, err := authRepo.Get(context.Background())
+		clientIP := utils.IPToUint32(c.ClientIP())
+		if sess.ClientIP != clientIP {
+			log.Warnf("Client IP mismatch: session=%s, request=%s",
+				utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
+				Code:    http.StatusUnauthorized,
+				Message: "Unauthorized",
+				Error:   "Client IP mismatch",
+			})
+			c.Abort()
+			return
+		}
+		userAgent := c.GetHeader("User-Agent")
+		if sess.UserAgent != userAgent {
+			log.Warnf("User-Agent mismatch for session %d", claims.SessionID)
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
+				Code:    http.StatusUnauthorized,
+				Message: "Unauthorized",
+				Error:   "User-Agent mismatch",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("username", claims.Username)
+		c.Set("session_id", claims.SessionID)
+		c.Set("claims", claims)
+
+		c.Next()
+	}
+}
+
+// WSAuth WebSocket专用认证中间件
+// WebSocket连接的认证处理与普通HTTP请求不同，需要特殊处理
+func WSAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Query("token")
+
+		if token == "" {
+			log.Warnf("WebSocket认证失败: 缺少token, IP=%s", c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := jwt.ValidateToken(token)
 		if err != nil {
-			log.Errorf("Failed to get auth info: %v", err)
-			c.JSON(http.StatusInternalServerError, api.ResponseError{
-				Code:    http.StatusInternalServerError,
-				Message: "Internal Server Error",
-				Error:   "Failed to get user information",
-			})
-			c.Abort()
+			log.Warnf("WebSocket JWT验证失败: %v, IP=%s", err, c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		if authInfo == nil {
-			c.JSON(http.StatusUnauthorized, api.ResponseError{
-				Code:    http.StatusUnauthorized,
-				Message: "Unauthorized",
-				Error:   "User not found",
-			})
-			c.Abort()
+		if jwt.IsTokenExpired(claims) {
+			log.Warnf("WebSocket token已过期, IP=%s", c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		// 将用户信息存储到上下文中
-		c.Set("username", authInfo.UserName)
+		// 从内存中获取会话
+		sess, err := session.Get(claims.SessionID)
+		if err != nil {
+			log.Warnf("WebSocket会话未找到: %v, IP=%s", err, c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		if !sess.IsActive {
+			log.Warnf("WebSocket session is not active, SessionID=%d, IP=%s", claims.SessionID, c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		clientIP := utils.IPToUint32(c.ClientIP())
+
+		if sess.ClientIP != clientIP {
+			log.Warnf("WebSocket client IP mismatch: session=%s, request=%s",
+				utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		c.Set("username", claims.Username)
 		c.Set("session_id", claims.SessionID)
 		c.Set("claims", claims)
 

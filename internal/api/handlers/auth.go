@@ -8,11 +8,15 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
+	"github.com/bestruirui/bestsub/internal/core/session"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
+	"github.com/bestruirui/bestsub/internal/utils/passwd"
 	"github.com/gin-gonic/gin"
 )
 
@@ -99,9 +103,20 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	// 验证用户名和密码
 	authRepo := database.Auth()
-	err := authRepo.VerifyPassword(context.Background(), req.Username, req.Password)
+	authInfo, err := authRepo.Get(context.Background())
+
+	if err != nil {
+		log.Errorf("Failed to get auth info: %v from %s", err, c.ClientIP())
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
+			Code:    http.StatusInternalServerError,
+			Message: "Unauthorized",
+			Error:   "Invalid username or password",
+		})
+		return
+	}
+
+	err = passwd.Verify(req.Password, authInfo.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -112,42 +127,21 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	// 获取用户信息
-	authInfo, err := authRepo.Get(context.Background())
-	if err != nil {
-		log.Errorf("Failed to get auth info: %v from %s", err, c.ClientIP())
+	sessionID, tempSess := session.GetUnActive()
+	if tempSess == nil {
+		log.Errorf("No unused session found from %s", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
-			Error:   "Failed to get user information",
+			Error:   "No unused session found",
 		})
 		return
 	}
 
-	// 创建会话记录
-	sessionRepo := database.Session()
-	session := &auth.Session{
-		IPAddress: c.ClientIP(),
-		UserAgent: c.GetHeader("User-Agent"),
-		IsActive:  true,
-	}
-
-	// 先创建会话以获取ID
-	err = sessionRepo.Create(context.Background(), session)
-	if err != nil {
-		log.Errorf("Failed to create session: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to create session",
-		})
-		return
-	}
-
-	// 生成JWT令牌对
-	tokenPair, err := jwt.GenerateTokenPair(session.ID)
+	tokenPair, err := jwt.GenerateTokenPair(sessionID, authInfo.UserName)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
+		session.Disable(sessionID)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -156,20 +150,15 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	// 更新会话信息
-	session.TokenHash = tokenPair.TokenHash
-	session.RefreshToken = tokenPair.RefreshToken
-	session.ExpiresAt = tokenPair.ExpiresAt
-	err = sessionRepo.Update(context.Background(), session)
-	if err != nil {
-		log.Errorf("Failed to update session: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to update session",
-		})
-		return
-	}
+	now := uint32(local.Time().Unix())
+	clientIP := utils.IPToUint32(c.ClientIP())
+
+	tempSess.IsActive = true
+	tempSess.ClientIP = clientIP
+	tempSess.UserAgent = c.GetHeader("User-Agent")
+	tempSess.CreatedAt = now
+	tempSess.LastAccessAt = now
+	tempSess.ExpiresAt = uint32(tokenPair.ExpiresAt.Unix())
 
 	// 构建响应
 	response := auth.LoginResponse{
@@ -227,30 +216,47 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	// 验证会话是否存在且有效
-	sessionRepo := database.Session()
-	session, err := sessionRepo.GetByRefreshToken(context.Background(), req.RefreshToken)
+	sessionID := claims.SessionID
+
+	sess, err := session.Get(sessionID)
 	if err != nil {
-		log.Errorf("Failed to get session by refresh token: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to validate session",
+		log.Errorf("Failed to get session by ID: %v", err)
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+			Error:   "Session not found or expired",
 		})
 		return
 	}
 
-	if session == nil || !session.IsActive {
+	// 验证客户端IP
+	clientIP := utils.IPToUint32(c.ClientIP())
+
+	// 验证IP和UserAgent
+	if sess.ClientIP != clientIP {
+		log.Warnf("Client IP mismatch during token refresh: session=%s, request=%s",
+			utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
-			Error:   "Session is invalid or inactive",
+			Error:   "Client IP mismatch",
+		})
+		return
+	}
+
+	if sess.UserAgent != c.GetHeader("User-Agent") {
+		log.Warnf("User agent mismatch during token refresh: session=%s, request=%s",
+			sess.UserAgent, c.GetHeader("User-Agent"))
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+			Error:   "User agent mismatch",
 		})
 		return
 	}
 
 	// 生成新的令牌对
-	newTokenPair, err := jwt.GenerateTokenPair(session.ID)
+	newTokenPair, err := jwt.GenerateTokenPair(sessionID, claims.Username)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
@@ -262,21 +268,8 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	}
 
 	// 更新会话信息
-	session.TokenHash = newTokenPair.TokenHash
-	session.RefreshToken = newTokenPair.RefreshToken
-	session.ExpiresAt = newTokenPair.ExpiresAt
-	session.IPAddress = c.ClientIP()
-	session.UserAgent = c.GetHeader("User-Agent")
-	err = sessionRepo.Update(context.Background(), session)
-	if err != nil {
-		log.Errorf("Failed to update session: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to update session",
-		})
-		return
-	}
+	sess.ExpiresAt = uint32(newTokenPair.ExpiresAt.Unix())
+	sess.LastAccessAt = uint32(local.Time().Unix())
 
 	// 构建响应
 	response := auth.RefreshTokenResponse{
@@ -319,30 +312,15 @@ func (h *authHandler) logout(c *gin.Context) {
 	username, _ := c.Get("username")
 
 	// 停用当前会话
-	sessionRepo := database.Session()
-	session, err := sessionRepo.GetByID(context.Background(), sessionID.(int64))
+	err := session.Disable(sessionID.(uint8))
 	if err != nil {
-		log.Errorf("Failed to get session: %v", err)
+		log.Errorf("Failed to disable session: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
-			Error:   "Failed to get session",
+			Error:   "Failed to logout",
 		})
 		return
-	}
-
-	if session != nil {
-		session.IsActive = false
-		err = sessionRepo.Update(context.Background(), session)
-		if err != nil {
-			log.Errorf("Failed to deactivate session: %v", err)
-			c.JSON(http.StatusInternalServerError, api.ResponseError{
-				Code:    http.StatusInternalServerError,
-				Message: "Internal Server Error",
-				Error:   "Failed to logout",
-			})
-			return
-		}
 	}
 
 	log.Infof("User %s logged out successfully from %s", username, c.ClientIP())
@@ -387,20 +365,8 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		return
 	}
 
-	// 验证旧密码
+	// 获取当前用户信息并验证旧密码
 	authRepo := database.Auth()
-	err := authRepo.VerifyPassword(context.Background(), username.(string), req.OldPassword)
-	if err != nil {
-		log.Warnf("Change password failed for user %s: old password verification failed from %s", username, c.ClientIP())
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Old password is incorrect",
-		})
-		return
-	}
-
-	// 获取当前用户信息
 	authInfo, err := authRepo.Get(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get auth info: %v", err)
@@ -412,8 +378,32 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		return
 	}
 
+	// 验证旧密码
+	err = passwd.Verify(req.OldPassword, authInfo.Password)
+	if err != nil {
+		log.Warnf("Change password failed for user %s: old password verification failed from %s", username, c.ClientIP())
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+			Error:   "Old password is incorrect",
+		})
+		return
+	}
+
+	// 加密新密码
+	hashedPassword, err := passwd.Hash(req.NewPassword)
+	if err != nil {
+		log.Errorf("Failed to hash new password: %v", err)
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal Server Error",
+			Error:   "Failed to process new password",
+		})
+		return
+	}
+
 	// 更新密码
-	authInfo.Password = req.NewPassword
+	authInfo.Password = hashedPassword
 	authInfo.UpdatedAt = time.Now()
 	err = authRepo.Update(context.Background(), authInfo)
 	if err != nil {
@@ -427,11 +417,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 	}
 
 	// 删除所有会话（强制重新登录）
-	sessionRepo := database.Session()
-	err = sessionRepo.DeleteAll(context.Background())
-	if err != nil {
-		log.Errorf("Failed to delete all sessions: %v", err)
-	}
+	session.DisableAll()
 
 	log.Infof("Password changed successfully for user %s from %s", username.(string), c.ClientIP())
 
@@ -521,38 +507,14 @@ func (h *authHandler) getSessions(c *gin.Context) {
 	}
 
 	// 获取所有活跃会话
-	sessionRepo := database.Session()
-	sessions, err := sessionRepo.GetAllActive(context.Background())
-	if err != nil {
-		log.Errorf("Failed to get active sessions: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to get sessions",
-		})
-		return
-	}
-
-	// 转换为响应模型
-	sessionInfos := make([]auth.Session, 0, len(sessions))
-	for _, session := range sessions {
-		sessionInfos = append(sessionInfos, auth.Session{
-			ID:        session.ID,
-			IPAddress: session.IPAddress,
-			UserAgent: session.UserAgent,
-			IsActive:  session.IsActive,
-			ExpiresAt: session.ExpiresAt,
-			CreatedAt: session.CreatedAt,
-			UpdatedAt: session.UpdatedAt,
-		})
-	}
+	sessions := session.GetActive()
 
 	response := auth.SessionListResponse{
-		Sessions: sessionInfos,
-		Total:    len(sessionInfos),
+		Sessions: *sessions,
+		Total:    len(*sessions),
 	}
 
-	log.Debugf("Retrieved %d sessions for user %s", len(sessionInfos), username)
+	log.Debugf("Retrieved %d sessions for user %s", len(*sessions), username)
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
@@ -586,7 +548,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	sessionID := int64(0)
+	sessionID := uint8(0)
 	if _, err := fmt.Sscanf(sessionIDStr, "%d", &sessionID); err != nil {
 		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
@@ -606,32 +568,30 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	// 获取会话信息
-	sessionRepo := database.Session()
-	session, err := sessionRepo.GetByID(context.Background(), sessionID)
+	// 检查会话是否存在
+	_, err := session.Get(sessionID)
 	if err != nil {
-		log.Errorf("Failed to get session: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to get session",
-		})
+		if err == session.ErrSessionNotFound {
+			c.JSON(http.StatusNotFound, api.ResponseError{
+				Code:    http.StatusNotFound,
+				Message: "Not Found",
+				Error:   "Session not found",
+			})
+		} else {
+			log.Errorf("Failed to get session: %v", err)
+			c.JSON(http.StatusInternalServerError, api.ResponseError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal Server Error",
+				Error:   "Failed to get session",
+			})
+		}
 		return
 	}
 
-	if session == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "Not Found",
-			Error:   "Session not found",
-		})
-		return
-	}
-
-	// 删除会话
-	err = sessionRepo.Delete(context.Background(), sessionID)
+	// 禁用会话
+	err = session.Disable(sessionID)
 	if err != nil {
-		log.Errorf("Failed to delete session: %v", err)
+		log.Errorf("Failed to disable session: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",

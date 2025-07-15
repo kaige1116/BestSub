@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -45,4 +47,36 @@ func RemoveAllControlCharacters(data *[]byte) {
 func IsDebug() bool {
 	debug := os.Getenv("DEBUG")
 	return strings.ToLower(debug) == "true"
+}
+
+// IPToUint32 将IP地址转换为uint32
+func IPToUint32(ip string) uint32 {
+	ip = strings.TrimSpace(ip)
+	if ip == "" {
+		return 0
+	}
+
+	parts := strings.Split(ip, ".")
+	if len(parts) != 4 {
+		return 0
+	}
+
+	var result uint32
+	for i, part := range parts {
+		partInt, err := strconv.Atoi(part)
+		if err != nil || partInt < 0 || partInt > 255 {
+			return 0
+		}
+		result |= uint32(partInt) << ((3 - i) * 8)
+	}
+	return result
+}
+
+// Uint32ToIP 将uint32转换为IP地址
+func Uint32ToIP(ip uint32) string {
+	return fmt.Sprintf("%d.%d.%d.%d",
+		(ip>>24)&0xFF,
+		(ip>>16)&0xFF,
+		(ip>>8)&0xFF,
+		ip&0xFF)
 }

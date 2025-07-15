@@ -13,15 +13,22 @@ type Data struct {
 
 // 认证会话
 type Session struct {
-	ID           int64     `db:"id" json:"id"`
-	IsActive     bool      `db:"is_active" json:"is_active"`
-	IPAddress    string    `db:"ip_address" json:"ip_address"`
-	UserAgent    string    `db:"user_agent" json:"user_agent"`
-	ExpiresAt    time.Time `db:"expires_at" json:"expires_at"`
-	TokenHash    string    `db:"token_hash" json:"-"`    // JWT Token的哈希值，不在JSON中返回
-	RefreshToken string    `db:"refresh_token" json:"-"` // 刷新Token，不在JSON中返回
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	IsActive     bool   `json:"is_active"`
+	ClientIP     uint32 `json:"client_ip"`
+	UserAgent    string `json:"user_agent"`
+	ExpiresAt    uint32 `json:"expires_at"`
+	CreatedAt    uint32 `json:"created_at"`
+	LastAccessAt uint32 `json:"last_access_at"`
+}
+
+type SessionResponse struct {
+	ID           uint8     `json:"id"`
+	IsActive     bool      `json:"is_active"`
+	ClientIP     string    `json:"client_ip"`
+	UserAgent    string    `json:"user_agent"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastAccessAt time.Time `json:"last_access_at"`
 }
 
 // LoginRequest 登录请求模型
@@ -51,8 +58,8 @@ type UpdateUserInfoRequest struct {
 
 // SessionListResponse 会话列表响应模型
 type SessionListResponse struct {
-	Sessions []Session `json:"sessions"` // 会话列表
-	Total    int       `json:"total"`    // 总数
+	Sessions []SessionResponse `json:"sessions"` // 会话列表
+	Total    int               `json:"total"`    // 总数
 }
 
 // RefreshTokenRequest 刷新令牌请求模型
