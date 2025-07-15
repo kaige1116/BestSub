@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -40,4 +41,8 @@ func RemoveAllControlCharacters(data *[]byte) {
 		original = original[size:]
 	}
 	*data = cleanedData
+}
+func IsDebug() bool {
+	debug := os.Getenv("DEBUG")
+	return strings.ToLower(debug) == "true"
 }
