@@ -29,7 +29,6 @@ func init() {
 	monitor = Monitor{
 		startTime: local.Time(),
 	}
-	log.Debug("System monitor initialized")
 }
 
 // 增加上传流量

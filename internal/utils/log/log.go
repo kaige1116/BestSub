@@ -45,6 +45,7 @@ type Config struct {
 	UseConsole bool
 	UseFile    bool
 	Name       string
+	CallerSkip int
 }
 
 // webSocketHook 发送日志到WebSocket通道
@@ -72,16 +73,20 @@ func init() {
 	wsChannel = make(chan LogEntry, 1000)
 
 	encoderConfig = zapcore.EncoderConfig{
-		TimeKey:     "time",
-		LevelKey:    "level",
-		MessageKey:  "msg",
-		EncodeLevel: zapcore.LowercaseLevelEncoder,
-		EncodeTime:  zapcore.RFC3339TimeEncoder,
+		TimeKey:      "time",
+		LevelKey:     "level",
+		MessageKey:   "msg",
+		CallerKey:    "caller",
+		EncodeLevel:  zapcore.LowercaseLevelEncoder,
+		EncodeTime:   zapcore.RFC3339TimeEncoder,
+		EncodeCaller: zapcore.ShortCallerEncoder,
 	}
 	logger, _ = NewLogger(Config{
 		Level:      "debug",
 		UseConsole: true,
+		CallerSkip: 1,
 		UseFile:    false,
+		Name:       "main",
 	})
 
 }
@@ -110,6 +115,7 @@ func Initialize(level, path, method string) error {
 		UseConsole: useConsole,
 		UseFile:    useFile,
 		Name:       "main",
+		CallerSkip: 1,
 	})
 	if err != nil {
 		return err
@@ -127,6 +133,7 @@ func NewTaskLogger(taskid int64, level string) (*Logger, error) {
 		UseConsole: useConsole,
 		UseFile:    useFile,
 		Name:       name,
+		CallerSkip: 1,
 	})
 }
 
@@ -156,6 +163,9 @@ func NewLogger(config Config) (*Logger, error) {
 	logger := zap.New(
 		core,
 		zap.Hooks(webSocketHook),
+		zap.AddCaller(),
+		zap.AddCallerSkip(config.CallerSkip),
+		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
 	logger = logger.Named(config.Name)
 

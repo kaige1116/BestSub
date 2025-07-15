@@ -1,27 +1,18 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/bestruirui/bestsub/internal/api/server"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database"
-	"github.com/bestruirui/bestsub/internal/utils/banner"
+	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/bestruirui/bestsub/internal/utils/shutdown"
 )
 
 func main() {
 
-	configPath := flag.String("c", config.DefaultConfigPath, "config file path")
-	flag.Parse()
-
-	banner.Print()
-
-	if err := config.Initialize(*configPath); err != nil {
-		panic(err)
-	}
+	info.Banner()
 
 	cfg := config.Get()
 
