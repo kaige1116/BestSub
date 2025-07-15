@@ -78,7 +78,6 @@ func Register(info *RegisterInfo) {
 		Type:   info.Type,
 		Config: parseFields(info.Config),
 	}
-	log.Debugf("注册任务类型处理器: %s", info.Type)
 }
 
 // Get 获取指定类型的处理器
@@ -126,16 +125,20 @@ func GetExecInfo(execType string) Info {
 }
 
 // Run 执行任务
-func Run(ctx context.Context, task *TaskInfo) error {
+func Run(ctx context.Context, task *TaskInfo) (errorCode int, err error) {
 	execer := Get(task.Type)
 	if execer == nil {
-		return fmt.Errorf("未找到任务类型处理器: %s", task.Type)
+		return 3, fmt.Errorf("未找到任务类型处理器: %s", task.Type)
 	}
 	logger, err := log.NewTaskLogger(task.ID, task.Level)
 	if err != nil {
-		return err
+		return 2, err
 	}
-	return execer.Do(ctx, logger, task)
+	err = execer.Do(ctx, logger, task)
+	if err != nil {
+		return 1, err
+	}
+	return 0, nil
 }
 
 // withReadLock 执行需要读锁保护的操作

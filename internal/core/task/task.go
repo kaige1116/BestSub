@@ -2,7 +2,7 @@ package task
 
 import (
 	"context"
-	"fmt"
+	"math"
 	"sync"
 
 	"github.com/bestruirui/bestsub/internal/core/task/exec"
@@ -30,6 +30,28 @@ func Initialize() error {
 // Start 启动任务调度器
 func Start() {
 	taskScheduler.Start()
+	repo := database.Task()
+	tasks, err := repo.List(context.Background(), 0, math.MaxInt)
+	if err != nil {
+		log.Errorf("failed to get tasks: %v", err)
+		return
+	}
+	for _, task := range *tasks {
+		if !task.Enable {
+			continue
+		}
+		taskInfo := &exec.TaskInfo{
+			ID:      task.ID,
+			Type:    task.Type,
+			Retry:   task.Retry,
+			Timeout: task.Timeout,
+			Config:  []byte(task.Config),
+		}
+		err = taskScheduler.AddTask(task.Cron, execTask, taskInfo)
+		if err != nil {
+			log.Errorf("failed to add task %d to scheduler: %v", task.ID, err)
+		}
+	}
 }
 
 func AddTask(req *task.CreateRequest) (*task.Data, error) {
@@ -103,16 +125,7 @@ func UpdateTask(req *task.UpdateRequest) (*task.Data, error) {
 func RunTask(taskID int64) error {
 	mu.Lock()
 	defer mu.Unlock()
-	repo := database.Task()
-	task, err := repo.GetByID(context.Background(), taskID)
-	if err != nil {
-		return err
-	}
-	if task.Enable {
-		return taskScheduler.RunTask(taskID)
-	} else {
-		return fmt.Errorf("task %d is not enabled", taskID)
-	}
+	return taskScheduler.RunTask(taskID)
 }
 func RemoveTaskWithDb(taskID int64) error {
 	mu.Lock()
@@ -163,8 +176,7 @@ func Shutdown() error {
 func execTask(ctx context.Context, taskInfo exec.TaskInfo) {
 	taskctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	taskScheduler.AddRunTaskMap(taskInfo.ID, cancel)
-	defer taskScheduler.RemoveRunTaskMap(taskInfo.ID)
+	log.Debugf("task %d running", taskInfo.ID)
 
 	for i := 0; i < taskInfo.Retry; i++ {
 		select {
@@ -172,8 +184,11 @@ func execTask(ctx context.Context, taskInfo exec.TaskInfo) {
 			log.Infof("任务 %d 取消", taskInfo.ID)
 			return
 		default:
-			log.Debugf("task %d running %d/%d", taskInfo.ID, i+1, taskInfo.Retry)
-			err := exec.Run(taskctx, &taskInfo)
+			errorCode, err := exec.Run(taskctx, &taskInfo)
+			if errorCode == 3 {
+				log.Errorf("任务 %d 未找到任务类型处理器: %s", taskInfo.ID, taskInfo.Type)
+				return
+			}
 			if err != nil {
 				log.Errorf("任务 %d 执行失败: %v (重试 %d/%d)", taskInfo.ID, err, i+1, taskInfo.Retry)
 				continue
@@ -182,4 +197,5 @@ func execTask(ctx context.Context, taskInfo exec.TaskInfo) {
 			return
 		}
 	}
+	log.Errorf("任务 %d 执行失败", taskInfo.ID)
 }

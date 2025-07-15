@@ -14,8 +14,6 @@ import (
 type Scheduler interface {
 	Start()
 	AddTask(cron string, function any, taskInfo *exec.TaskInfo) error
-	AddRunTaskMap(taskID int64, cancel context.CancelFunc)
-	RemoveRunTaskMap(taskID int64)
 	UpdateTask(cron string, function any, taskInfo *exec.TaskInfo) error
 	RunTask(taskID int64) error
 	RemoveTask(taskID int64) error
@@ -63,9 +61,21 @@ func (s *scheduler) Stop() error {
 }
 
 func (s *scheduler) AddTask(cron string, function any, taskInfo *exec.TaskInfo) error {
+	log.Debugf("add task %d to scheduler, cron: %s, function: %v", taskInfo.ID, cron, function)
+	newTask := func() {
+		ctx, cancel := context.WithCancel(s.Ctx)
+		s.RunningTasks.Store(taskInfo.ID, cancel)
+		defer s.RunningTasks.Delete(taskInfo.ID)
+		fn, ok := function.(func(context.Context, exec.TaskInfo))
+		if !ok {
+			log.Errorf("function is not a func(context.Context, exec.TaskInfo)")
+			return
+		}
+		fn(ctx, *taskInfo)
+	}
 	job, err := s.Cron.NewJob(
 		gocron.CronJob(cron, false),
-		gocron.NewTask(function, s.Ctx, *taskInfo),
+		gocron.NewTask(newTask),
 	)
 	if err != nil {
 		log.Errorf("failed to create cron job for task %d: %v", taskInfo.ID, err)
@@ -79,14 +89,6 @@ func (s *scheduler) AddTask(cron string, function any, taskInfo *exec.TaskInfo) 
 	}
 	log.Debugf("task %d added next run at %s", taskInfo.ID, nextRun.Format(time.RFC3339))
 	return nil
-}
-
-func (s *scheduler) AddRunTaskMap(taskID int64, cancel context.CancelFunc) {
-	s.RunningTasks.Store(taskID, cancel)
-}
-
-func (s *scheduler) RemoveRunTaskMap(taskID int64) {
-	s.RunningTasks.Delete(taskID)
 }
 
 func (s *scheduler) UpdateTask(cron string, function any, taskInfo *exec.TaskInfo) error {
@@ -118,8 +120,8 @@ func (s *scheduler) UpdateTask(cron string, function any, taskInfo *exec.TaskInf
 func (s *scheduler) RunTask(taskID int64) error {
 	value, ok := s.ScheduledTasks.Load(taskID)
 	if !ok {
-		log.Errorf("task %d not found", taskID)
-		return fmt.Errorf("task %d not found", taskID)
+		log.Errorf("task %d not found at scheduler", taskID)
+		return fmt.Errorf("task %d not found at scheduler", taskID)
 	}
 	job := value.(gocron.Job)
 	err := job.RunNow()
@@ -155,8 +157,8 @@ func (s *scheduler) RemoveTask(taskID int64) error {
 func (s *scheduler) StopTask(taskID int64) error {
 	value, ok := s.RunningTasks.Load(taskID)
 	if !ok {
-		log.Errorf("task %d not found", taskID)
-		return fmt.Errorf("task %d not found", taskID)
+		log.Errorf("task %d not found at scheduler", taskID)
+		return fmt.Errorf("task %d not found at scheduler", taskID)
 	}
 	cancel := value.(context.CancelFunc)
 	cancel()
