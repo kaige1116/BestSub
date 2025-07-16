@@ -73,7 +73,7 @@ func GenerateTokenPair(sessionID uint8, username, secret string) (*TokenPair, er
 	return &TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresAt:    expiresAt,
+		ExpiresAt:    refreshExpiresAt,
 	}, nil
 }
 

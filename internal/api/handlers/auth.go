@@ -18,6 +18,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/bestruirui/bestsub/internal/utils/passwd"
+	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -160,7 +161,8 @@ func (h *authHandler) login(c *gin.Context) {
 	tempSess.CreatedAt = now
 	tempSess.LastAccessAt = now
 	tempSess.ExpiresAt = uint32(tokenPair.ExpiresAt.Unix())
-
+	tempSess.HashRToken = xxhash.Sum64String(tokenPair.RefreshToken)
+	tempSess.HashAToken = xxhash.Sum64String(tokenPair.AccessToken)
 	// 构建响应
 	response := auth.LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
@@ -221,11 +223,21 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 
 	sess, err := session.Get(sessionID)
 	if err != nil {
-		log.Errorf("Failed to get session by ID: %v", err)
+		log.Warnf("Failed to get session by ID: %v", err)
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Session not found or expired",
+		})
+		return
+	}
+
+	if sess.HashRToken != xxhash.Sum64String(req.RefreshToken) {
+		log.Warnf("Refresh token hash mismatch: session=%d, request=%d", sess.HashRToken, xxhash.Sum64String(req.RefreshToken))
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+			Error:   "Refresh token hash mismatch",
 		})
 		return
 	}
@@ -271,6 +283,8 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	// 更新会话信息
 	sess.ExpiresAt = uint32(newTokenPair.ExpiresAt.Unix())
 	sess.LastAccessAt = uint32(local.Time().Unix())
+	sess.HashRToken = xxhash.Sum64String(newTokenPair.RefreshToken)
+	sess.HashAToken = xxhash.Sum64String(newTokenPair.AccessToken)
 
 	// 构建响应
 	response := auth.RefreshTokenResponse{

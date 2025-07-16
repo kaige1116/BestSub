@@ -3,11 +3,13 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/session"
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/log"
+	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,7 +38,7 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := jwt.ValidateToken(token)
+		claims, err := jwt.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -76,6 +78,17 @@ func Auth() gin.HandlerFunc {
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Session is not active",
+			})
+			c.Abort()
+			return
+		}
+
+		if sess.HashAToken != xxhash.Sum64String(token) {
+			log.Warnf("Token hash mismatch: session=%d, request=%d", sess.HashAToken, xxhash.Sum64String(token))
+			c.JSON(http.StatusUnauthorized, api.ResponseError{
+				Code:    http.StatusUnauthorized,
+				Message: "Unauthorized",
+				Error:   "Token hash mismatch",
 			})
 			c.Abort()
 			return
@@ -125,7 +138,7 @@ func WSAuth() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := jwt.ValidateToken(token)
+		claims, err := jwt.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("WebSocket JWT验证失败: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)

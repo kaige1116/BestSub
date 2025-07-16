@@ -4,7 +4,7 @@ import "time"
 
 // 用户认证信息
 type Data struct {
-	ID        int64     `db:"id" json:"id"`               // 主键ID
+	ID        int64     `db:"id" json:"-"`                // 主键ID
 	UserName  string    `db:"user_name" json:"user_name"` // 用户名
 	Password  string    `db:"password" json:"-"`          // 密码加密存储（bcrypt），不在JSON中返回
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -19,6 +19,8 @@ type Session struct {
 	ExpiresAt    uint32 `json:"expires_at"`
 	CreatedAt    uint32 `json:"created_at"`
 	LastAccessAt uint32 `json:"last_access_at"`
+	HashRToken   uint64 `json:"-"`
+	HashAToken   uint64 `json:"-"`
 }
 
 type SessionResponse struct {
