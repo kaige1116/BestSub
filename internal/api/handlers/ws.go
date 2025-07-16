@@ -4,46 +4,100 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
+	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/utils"
+	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
+// 日志等级优先级常量
+var logLevelPriority = map[string]int{
+	"debug": 0,
+	"info":  1,
+	"warn":  2,
+	"error": 3,
+	"fatal": 4,
+}
+
+// 默认配置
+const (
+	WriteTimeout      = 5  // 10秒
+	PingInterval      = 5  // 5秒
+	MaxConnections    = 20 // 20个连接
+	WriteBufferSize   = 1024
+	ChannelBufferSize = 256
+)
+
+// LogFilter 日志过滤器
+type LogFilter struct {
+	nameFilter  string
+	levelFilter string
+}
+
+// ShouldSend 检查是否应该发送日志
+func (f *LogFilter) ShouldSend(logEntry log.LogEntry) bool {
+	if f.nameFilter != "" && !strings.Contains(logEntry.Name, f.nameFilter) {
+		return false
+	}
+
+	if f.levelFilter != "" && !shouldSendLogLevel(f.levelFilter, logEntry.Level) {
+		return false
+	}
+
+	return true
+}
+
+// shouldSendLogLevel 检查日志等级是否应该发送
+func shouldSendLogLevel(filterLevel, logLevel string) bool {
+	filterPriority, filterExists := logLevelPriority[filterLevel]
+	logPriority, logExists := logLevelPriority[logLevel]
+
+	if !filterExists || !logExists {
+		return true
+	}
+
+	return logPriority >= filterPriority
+}
+
 // wsHandler WebSocket处理器
 type wsHandler struct {
-	upgrader websocket.Upgrader
-	clients  map[*websocket.Conn]*Client
-	mu       sync.RWMutex
+	upgrader    websocket.Upgrader
+	clients     map[*websocket.Conn]*Client
+	mu          sync.RWMutex
+	clientCount int32
 }
 
 // Client WebSocket客户端信息
 type Client struct {
-	conn       *websocket.Conn
-	nameFilter string
-	send       chan log.LogEntry
-	mu         sync.RWMutex
+	conn   *websocket.Conn
+	filter LogFilter
+	send   chan log.LogEntry
+	mu     sync.RWMutex
 }
 
 // init 函数用于自动注册路由
 func init() {
-	h := newWSHandler()
+	wsHandler := newWSHandler()
 
 	router.NewGroupRouter("/api/v1/ws").
 		Use(middleware.WSAuth()).
 		AddRoute(
 			router.NewRoute("/logs", router.GET).
-				Handle(h.handleLogWebSocket).
+				Handle(wsHandler.handleLogWebSocket).
 				WithDescription("WebSocket logs streaming"),
 		)
 }
 
 // newWSHandler 创建WebSocket处理器
 func newWSHandler() *wsHandler {
+
 	h := &wsHandler{
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -63,8 +117,7 @@ func newWSHandler() *wsHandler {
 
 				return true
 			},
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
+			WriteBufferSize: WriteBufferSize,
 		},
 		clients: make(map[*websocket.Conn]*Client),
 	}
@@ -73,6 +126,15 @@ func newWSHandler() *wsHandler {
 }
 
 func (h *wsHandler) handleLogWebSocket(c *gin.Context) {
+	if atomic.LoadInt32(&h.clientCount) >= MaxConnections {
+		c.JSON(http.StatusTooManyRequests, api.ResponseError{
+			Code:    http.StatusTooManyRequests,
+			Message: "Too Many Requests",
+			Error:   "连接数已达上限",
+		})
+		return
+	}
+
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Errorf("WebSocket升级失败: %v", err)
@@ -80,41 +142,65 @@ func (h *wsHandler) handleLogWebSocket(c *gin.Context) {
 	}
 
 	nameFilter := c.Query("name")
+	levelFilter := c.Query("level")
 
 	client := &Client{
-		conn:       conn,
-		nameFilter: nameFilter,
-		send:       make(chan log.LogEntry, 256),
+		conn: conn,
+		filter: LogFilter{
+			nameFilter:  nameFilter,
+			levelFilter: levelFilter,
+		},
+		send: make(chan log.LogEntry, ChannelBufferSize),
 	}
 
 	h.mu.Lock()
 	h.clients[conn] = client
+	atomic.AddInt32(&h.clientCount, 1)
 	h.mu.Unlock()
 
 	username, _ := c.Get("username")
 	clientIP := c.ClientIP()
-	log.Infof("WebSocket客户端连接: 用户=%s, IP=%s, 过滤器=%s", username, clientIP, nameFilter)
+	log.Infof("WebSocket客户端连接: 用户=%s, IP=%s, 当前连接数=%d", username, clientIP, atomic.LoadInt32(&h.clientCount))
 
 	go h.handleClient(client)
-	go h.readPump(client)
 }
 
 func (h *wsHandler) broadcastLogs() {
 	logChannel := log.GetWSChannel()
 
 	for logEntry := range logChannel {
-		h.mu.RLock()
-		for _, client := range h.clients {
-			if h.shouldSendLog(client, logEntry) {
-				select {
-				case client.send <- logEntry:
-				default:
-					close(client.send)
-					delete(h.clients, client.conn)
-				}
+		h.broadcastToClients(logEntry)
+	}
+}
+
+func (h *wsHandler) broadcastToClients(logEntry log.LogEntry) {
+	var clientsToRemove []*websocket.Conn
+
+	for conn, client := range h.clients {
+		if h.shouldSendLog(client, logEntry) {
+			select {
+			case client.send <- logEntry:
+			default:
+				clientsToRemove = append(clientsToRemove, conn)
+				log.Warnf("WebSocket客户端发送缓冲区满，移除客户端: %v", conn.RemoteAddr())
 			}
 		}
-		h.mu.RUnlock()
+	}
+
+	if len(clientsToRemove) > 0 {
+		h.mu.Lock()
+		for _, conn := range clientsToRemove {
+			if client, exists := h.clients[conn]; exists {
+				close(client.send)
+				delete(h.clients, conn)
+				atomic.AddInt32(&h.clientCount, -1)
+			}
+		}
+		h.mu.Unlock()
+
+		if len(clientsToRemove) > 0 {
+			log.Warnf("移除了 %d 个缓冲区满的WebSocket客户端", len(clientsToRemove))
+		}
 	}
 }
 
@@ -122,11 +208,7 @@ func (h *wsHandler) shouldSendLog(client *Client, logEntry log.LogEntry) bool {
 	client.mu.RLock()
 	defer client.mu.RUnlock()
 
-	if client.nameFilter == "" {
-		return true
-	}
-
-	return strings.Contains(logEntry.Name, client.nameFilter)
+	return client.filter.ShouldSend(logEntry)
 }
 
 func (h *wsHandler) handleClient(client *Client) {
@@ -135,39 +217,23 @@ func (h *wsHandler) handleClient(client *Client) {
 		client.conn.Close()
 	}()
 
-	client.conn.SetWriteDeadline(time.Now().Add(60 * time.Second))
-
-	for logEntry := range client.send {
-		client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-
-		if err := client.conn.WriteJSON(logEntry); err != nil {
-			log.Errorf("WebSocket发送消息失败: %v", err)
-			return
-		}
-	}
-
-	client.conn.WriteMessage(websocket.CloseMessage, []byte{})
-}
-
-func (h *wsHandler) readPump(client *Client) {
-	defer func() {
-		h.removeClient(client)
-		client.conn.Close()
-	}()
-
-	client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	client.conn.SetPongHandler(func(string) error {
-		client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
+	ticker := time.NewTicker(time.Duration(PingInterval) * time.Second)
+	defer ticker.Stop()
 
 	for {
-		_, _, err := client.conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Errorf("WebSocket连接异常关闭: %v", err)
+		select {
+		case logEntry := <-client.send:
+			client.conn.SetWriteDeadline(local.Time().Add(time.Duration(WriteTimeout) * time.Second))
+			if err := client.conn.WriteJSON(logEntry); err != nil {
+				log.Errorf("WebSocket发送消息失败: %v", err)
+				return
 			}
-			break
+		case <-ticker.C:
+			client.conn.SetWriteDeadline(local.Time().Add(time.Duration(WriteTimeout) * time.Second))
+			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Debugf("WebSocket ping失败，断开连接: %v", err)
+				return
+			}
 		}
 	}
 }
@@ -179,6 +245,7 @@ func (h *wsHandler) removeClient(client *Client) {
 	if _, exists := h.clients[client.conn]; exists {
 		delete(h.clients, client.conn)
 		close(client.send)
-		log.Debugf("WebSocket客户端断开连接")
+		atomic.AddInt32(&h.clientCount, -1)
+		log.Debugf("WebSocket客户端断开连接, 当前连接数=%d", atomic.LoadInt32(&h.clientCount))
 	}
 }
