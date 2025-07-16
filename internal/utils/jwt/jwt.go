@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -25,8 +24,7 @@ type TokenPair struct {
 }
 
 // GenerateTokenPair 生成访问令牌和刷新令牌对
-func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
-	cfg := config.Base()
+func GenerateTokenPair(sessionID uint8, username, secret string) (*TokenPair, error) {
 
 	now := local.Time()
 
@@ -46,7 +44,7 @@ func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := token.SignedString([]byte(cfg.JWT.Secret))
+	accessToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
@@ -67,7 +65,7 @@ func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
 	}
 
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshToken, err := token.SignedString([]byte(cfg.JWT.Secret))
+	refreshToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign refresh token: %w", err)
 	}
@@ -80,14 +78,13 @@ func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
 }
 
 // ValidateToken 验证JWT令牌
-func ValidateToken(tokenString string) (*Claims, error) {
-	cfg := config.Base()
+func ValidateToken(tokenString, secret string) (*Claims, error) {
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(cfg.JWT.Secret), nil
+		return []byte(secret), nil
 	})
 
 	if err != nil {
@@ -102,14 +99,13 @@ func ValidateToken(tokenString string) (*Claims, error) {
 }
 
 // ValidateRefreshToken 验证刷新令牌
-func ValidateRefreshToken(tokenString string) (*Claims, error) {
-	cfg := config.Base()
+func ValidateRefreshToken(tokenString, secret string) (*Claims, error) {
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(cfg.JWT.Secret), nil
+		return []byte(secret), nil
 	})
 
 	if err != nil {

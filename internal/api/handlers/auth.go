@@ -8,6 +8,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
+	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/session"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/models/api"
@@ -138,7 +139,7 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(sessionID, authInfo.UserName)
+	tokenPair, err := jwt.GenerateTokenPair(sessionID, authInfo.UserName, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
 		session.Disable(sessionID)
@@ -205,7 +206,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	}
 
 	// 验证刷新令牌
-	claims, err := jwt.ValidateRefreshToken(req.RefreshToken)
+	claims, err := jwt.ValidateRefreshToken(req.RefreshToken, config.Base().JWT.Secret)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -256,7 +257,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 	}
 
 	// 生成新的令牌对
-	newTokenPair, err := jwt.GenerateTokenPair(sessionID, claims.Username)
+	newTokenPair, err := jwt.GenerateTokenPair(sessionID, claims.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
