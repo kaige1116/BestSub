@@ -9,7 +9,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
-func GetProxyConfig() (*system.ProxyConfig, error) {
+func Proxy() (*system.ProxyConfig, error) {
 	ctx := context.Background()
 	configRepo := database.SystemConfig()
 

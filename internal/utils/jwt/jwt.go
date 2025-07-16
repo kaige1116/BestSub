@@ -26,7 +26,7 @@ type TokenPair struct {
 
 // GenerateTokenPair 生成访问令牌和刷新令牌对
 func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
-	cfg := config.Get()
+	cfg := config.Base()
 
 	now := local.Time()
 
@@ -81,7 +81,7 @@ func GenerateTokenPair(sessionID uint8, username string) (*TokenPair, error) {
 
 // ValidateToken 验证JWT令牌
 func ValidateToken(tokenString string) (*Claims, error) {
-	cfg := config.Get()
+	cfg := config.Base()
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -103,7 +103,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 
 // ValidateRefreshToken 验证刷新令牌
 func ValidateRefreshToken(tokenString string) (*Claims, error) {
-	cfg := config.Get()
+	cfg := config.Base()
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

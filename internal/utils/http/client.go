@@ -113,7 +113,7 @@ func Direct() *Client {
 // Proxy 从池中获取一个使用代理的HTTP客户端
 func Proxy() *Client {
 	// 获取代理配置
-	proxyConfig, err := config.GetProxyConfig()
+	proxyConfig, err := config.Proxy()
 	if err != nil {
 		log.Errorf("Failed to get proxy config: %v", err)
 		// 返回直连客户端作为降级方案

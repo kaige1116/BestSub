@@ -8,7 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
-func GetTaskConfig() *system.TaskConfig {
+func Task() *system.TaskConfig {
 	ctx := context.Background()
 	configRepo := database.SystemConfig()
 

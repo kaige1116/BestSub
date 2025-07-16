@@ -48,6 +48,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"
+	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
@@ -69,14 +70,14 @@ var (
 type Server struct {
 	httpServer *http.Server
 	router     *gin.Engine
-	config     config.Config
+	config     system.Config
 }
 
 // 初始化HTTP服务器
 func Initialize() error {
 	var err error
 	once.Do(func() {
-		cfg := config.Get()
+		cfg := config.Base()
 
 		r, routerErr := setRouter()
 		if routerErr != nil {

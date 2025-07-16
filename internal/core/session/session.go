@@ -29,7 +29,7 @@ var (
 func init() {
 	mu.Lock()
 	defer mu.Unlock()
-	sessionFile := config.Get().Session.File
+	sessionFile := config.Base().Session.Path
 	if _, err := os.Stat(sessionFile); os.IsNotExist(err) {
 		return
 	}
@@ -68,7 +68,7 @@ func Close() error {
 	if err := encoder.Encode(sessions); err != nil {
 		return err
 	}
-	sessionFile := config.Get().Session.File
+	sessionFile := config.Base().Session.Path
 
 	dir := path.Dir(sessionFile)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
