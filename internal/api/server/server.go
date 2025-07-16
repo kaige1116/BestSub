@@ -41,7 +41,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	_ "github.com/bestruirui/bestsub/internal/api/handlers"
@@ -61,10 +60,7 @@ const (
 	defaultMaxHeaderBytes  = 1 << 20 // 1MB
 )
 
-var (
-	server *Server
-	once   sync.Once
-)
+var server *Server
 
 // Server HTTP服务器
 type Server struct {
@@ -75,33 +71,28 @@ type Server struct {
 
 // 初始化HTTP服务器
 func Initialize() error {
-	var err error
-	once.Do(func() {
-		cfg := config.Base()
+	cfg := config.Base()
 
-		r, routerErr := setRouter()
-		if routerErr != nil {
-			err = fmt.Errorf("设置路由失败: %w", routerErr)
-			return
-		}
+	r, routerErr := setRouter()
+	if routerErr != nil {
+		return fmt.Errorf("设置路由失败: %w", routerErr)
+	}
 
-		server = &Server{
-			httpServer: &http.Server{
-				Addr:           fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-				Handler:        r,
-				ReadTimeout:    defaultReadTimeout,
-				WriteTimeout:   defaultWriteTimeout,
-				IdleTimeout:    defaultIdleTimeout,
-				MaxHeaderBytes: defaultMaxHeaderBytes,
-			},
-			router: r,
-			config: cfg,
-		}
+	server = &Server{
+		httpServer: &http.Server{
+			Addr:           fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+			Handler:        r,
+			ReadTimeout:    defaultReadTimeout,
+			WriteTimeout:   defaultWriteTimeout,
+			IdleTimeout:    defaultIdleTimeout,
+			MaxHeaderBytes: defaultMaxHeaderBytes,
+		},
+		router: r,
+		config: cfg,
+	}
 
-		log.Debugf("HTTP 服务器初始化成功 %s", server.httpServer.Addr)
-	})
-
-	return err
+	log.Debugf("HTTP 服务器初始化成功 %s", server.httpServer.Addr)
+	return nil
 }
 
 // 启动HTTP服务器
