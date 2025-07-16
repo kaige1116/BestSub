@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/utils/local"
 
@@ -31,20 +32,24 @@ var (
 	logger *Logger
 )
 var consoleEncoder = zapcore.EncoderConfig{
-	TimeKey:      "time",
-	LevelKey:     "level",
-	MessageKey:   "msg",
-	CallerKey:    "caller",
-	EncodeLevel:  zapcore.CapitalColorLevelEncoder,
-	EncodeTime:   zapcore.RFC3339TimeEncoder,
-	EncodeCaller: zapcore.ShortCallerEncoder,
+	TimeKey:       "time",
+	LevelKey:      "level",
+	MessageKey:    "msg",
+	CallerKey:     "caller",
+	StacktraceKey: "stacktrace",
+	EncodeLevel:   zapcore.CapitalColorLevelEncoder,
+	EncodeTime:    zapcore.RFC3339TimeEncoder,
+	EncodeCaller:  zapcore.ShortCallerEncoder,
 }
 var fileEncoder = zapcore.EncoderConfig{
-	TimeKey:     "time",
-	LevelKey:    "level",
-	MessageKey:  "msg",
-	EncodeLevel: zapcore.LowercaseLevelEncoder,
-	EncodeTime:  zapcore.RFC3339TimeEncoder,
+	TimeKey:       "time",
+	LevelKey:      "level",
+	MessageKey:    "msg",
+	CallerKey:     "caller",
+	StacktraceKey: "stacktrace",
+	EncodeLevel:   zapcore.LowercaseLevelEncoder,
+	EncodeTime:    zapcore.RFC3339TimeEncoder,
+	EncodeCaller:  zapcore.ShortCallerEncoder,
 }
 
 // Logger 日志记录器
@@ -59,6 +64,14 @@ type Config struct {
 	UseFile    bool
 	Name       string
 	CallerSkip int
+}
+type localClock struct{}
+
+func (localClock) Now() time.Time {
+	return local.Time()
+}
+func (localClock) NewTicker(duration time.Duration) *time.Ticker {
+	return time.NewTicker(duration)
 }
 
 // webSocketHook 发送日志到WebSocket通道
@@ -96,6 +109,7 @@ func init() {
 func Initialize(level, path, method string) error {
 	// 关闭旧的日志记录器
 	logger.Close()
+
 	basePath = path
 	mainPath := filepath.Join(basePath, "main", local.Time().Format("20060102150405")+".log")
 
@@ -113,8 +127,6 @@ func Initialize(level, path, method string) error {
 		useConsole = true
 		useFile = false
 	}
-	fmt.Println("useConsole", useConsole)
-	fmt.Println("useFile", useFile)
 
 	var err error
 	logger, err = NewLogger(Config{
@@ -203,11 +215,10 @@ func NewLogger(config Config) (*Logger, error) {
 	logger := zap.New(
 		core,
 		zap.Hooks(webSocketHook),
-		zap.AddCaller(),
-		zap.AddCallerSkip(config.CallerSkip),
 		zap.AddStacktrace(zapcore.ErrorLevel),
+		zap.WithClock(localClock{}),
 	)
-	logger = logger.Named(config.Name)
+	logger.Named(config.Name)
 
 	return &Logger{
 		SugaredLogger: logger.Sugar(),
@@ -241,7 +252,7 @@ func (l *Logger) Close() error {
 }
 
 func Debug(args ...interface{}) {
-	logger.Debug(args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Debug(args...)
 }
 func Info(args ...interface{}) {
 	logger.Info(args...)
@@ -250,14 +261,14 @@ func Warn(args ...interface{}) {
 	logger.Warn(args...)
 }
 func Error(args ...interface{}) {
-	logger.Error(args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Error(args...)
 }
 func Fatal(args ...interface{}) {
-	logger.Fatal(args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Fatal(args...)
 }
 
 func Debugf(template string, args ...interface{}) {
-	logger.Debugf(template, args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Debugf(template, args...)
 }
 
 func Infof(template string, args ...interface{}) {
@@ -269,11 +280,11 @@ func Warnf(template string, args ...interface{}) {
 }
 
 func Errorf(template string, args ...interface{}) {
-	logger.Errorf(template, args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Errorf(template, args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
-	logger.Fatalf(template, args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.FatalLevel), zap.AddCaller()).Fatalf(template, args...)
 }
 func Close() error {
 	return logger.Close()
