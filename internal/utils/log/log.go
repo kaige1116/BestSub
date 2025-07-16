@@ -2,10 +2,10 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/utils/local"
 
@@ -14,16 +14,13 @@ import (
 )
 
 type LogEntry struct {
-	Time    time.Time `json:"time"`
-	Level   string    `json:"level"`
-	Message string    `json:"message"`
-	Name    string    `json:"-"`
+	Level   string `json:"level"`
+	Message string `json:"message"`
+	Name    string `json:"-"`
 }
 
 var (
 	wsChannel chan LogEntry
-
-	encoderConfig zapcore.EncoderConfig
 
 	basePath string
 
@@ -33,6 +30,22 @@ var (
 
 	logger *Logger
 )
+var consoleEncoder = zapcore.EncoderConfig{
+	TimeKey:      "time",
+	LevelKey:     "level",
+	MessageKey:   "msg",
+	CallerKey:    "caller",
+	EncodeLevel:  zapcore.CapitalColorLevelEncoder,
+	EncodeTime:   zapcore.RFC3339TimeEncoder,
+	EncodeCaller: zapcore.ShortCallerEncoder,
+}
+var fileEncoder = zapcore.EncoderConfig{
+	TimeKey:     "time",
+	LevelKey:    "level",
+	MessageKey:  "msg",
+	EncodeLevel: zapcore.LowercaseLevelEncoder,
+	EncodeTime:  zapcore.RFC3339TimeEncoder,
+}
 
 // Logger 日志记录器
 type Logger struct {
@@ -55,7 +68,6 @@ func webSocketHook(entry zapcore.Entry) error {
 	}
 
 	logEntry := LogEntry{
-		Time:    entry.Time,
 		Level:   entry.Level.String(),
 		Message: entry.Message,
 		Name:    entry.LoggerName,
@@ -72,15 +84,6 @@ func webSocketHook(entry zapcore.Entry) error {
 func init() {
 	wsChannel = make(chan LogEntry, 1000)
 
-	encoderConfig = zapcore.EncoderConfig{
-		TimeKey:      "time",
-		LevelKey:     "level",
-		MessageKey:   "msg",
-		CallerKey:    "caller",
-		EncodeLevel:  zapcore.LowercaseLevelEncoder,
-		EncodeTime:   zapcore.RFC3339TimeEncoder,
-		EncodeCaller: zapcore.ShortCallerEncoder,
-	}
 	logger, _ = NewLogger(Config{
 		Level:      "debug",
 		UseConsole: true,
@@ -88,12 +91,14 @@ func init() {
 		UseFile:    false,
 		Name:       "main",
 	})
-
 }
 
 func Initialize(level, path, method string) error {
+	// 关闭旧的日志记录器
+	logger.Close()
 	basePath = path
 	mainPath := filepath.Join(basePath, "main", local.Time().Format("20060102150405")+".log")
+
 	switch method {
 	case "console":
 		useConsole = true
@@ -101,13 +106,16 @@ func Initialize(level, path, method string) error {
 	case "file":
 		useConsole = false
 		useFile = true
-	case "all":
+	case "both":
 		useConsole = true
 		useFile = true
 	default:
 		useConsole = true
 		useFile = false
 	}
+	fmt.Println("useConsole", useConsole)
+	fmt.Println("useFile", useFile)
+
 	var err error
 	logger, err = NewLogger(Config{
 		Level:      level,
@@ -130,7 +138,7 @@ func NewTaskLogger(taskid int64, level string) (*Logger, error) {
 	return NewLogger(Config{
 		Level:      level,
 		Path:       path,
-		UseConsole: useConsole,
+		UseConsole: false,
 		UseFile:    useFile,
 		Name:       name,
 		CallerSkip: 1,
@@ -149,17 +157,49 @@ func NewLogger(config Config) (*Logger, error) {
 		parsedLevel = zapcore.InfoLevel
 	}
 
-	writers, file, err := setupWriters(config.Path)
-	if err != nil {
-		return nil, err
+	var cores []zapcore.Core
+	var file *os.File
+
+	// 创建终端core
+	if config.UseConsole {
+		consoleCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(consoleEncoder),
+			zapcore.AddSync(os.Stdout),
+			parsedLevel,
+		)
+		cores = append(cores, consoleCore)
 	}
 
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.NewMultiWriteSyncer(writers...),
-		parsedLevel,
-	)
+	// 创建文件core
+	if config.UseFile && config.Path != "" {
+		logger.Error("createLogFile", config.Path)
+		file, err = createLogFile(config.Path)
+		if err != nil {
+			return nil, err
+		}
+		fileCore := zapcore.NewCore(
+			zapcore.NewJSONEncoder(fileEncoder),
+			zapcore.AddSync(file),
+			parsedLevel,
+		)
+		cores = append(cores, fileCore)
+	}
 
+	// WebSocket core 默认创建
+	wsEncoderConfig := zapcore.EncoderConfig{
+		LevelKey:    "level",
+		MessageKey:  "msg",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+	}
+
+	wsCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(wsEncoderConfig),
+		zapcore.AddSync(io.Discard),
+		zapcore.DebugLevel,
+	)
+	cores = append(cores, wsCore)
+
+	core := zapcore.NewTee(cores...)
 	logger := zap.New(
 		core,
 		zap.Hooks(webSocketHook),
@@ -173,30 +213,6 @@ func NewLogger(config Config) (*Logger, error) {
 		SugaredLogger: logger.Sugar(),
 		file:          file,
 	}, nil
-}
-
-// setupWriters 设置输出writers
-func setupWriters(path string) ([]zapcore.WriteSyncer, *os.File, error) {
-	var writers []zapcore.WriteSyncer
-	var file *os.File
-
-	if useConsole {
-		writers = append(writers, zapcore.AddSync(os.Stdout))
-	}
-
-	if useFile && path != "" {
-		var err error
-		file, err = createLogFile(path)
-		if err != nil {
-			return nil, nil, err
-		}
-		writers = append(writers, zapcore.AddSync(file))
-	}
-	if len(writers) == 0 {
-		writers = append(writers, zapcore.AddSync(os.Stdout))
-	}
-
-	return writers, file, nil
 }
 
 // createLogFile 创建日志文件
