@@ -22,15 +22,11 @@ CREATE TABLE IF NOT EXISTS "auth" (
 );
 
 CREATE TABLE IF NOT EXISTS "system_config" (
-	"id" INTEGER,
+	"key" TEXT NOT NULL UNIQUE,
 	"group_name" TEXT NOT NULL,
-	"type" TEXT NOT NULL,
-	"key" TEXT NOT NULL,
 	"value" TEXT,
 	"description" TEXT,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY("id")
+	PRIMARY KEY("key")
 );
 
 CREATE TABLE IF NOT EXISTS "notify_templates" (
@@ -256,7 +252,13 @@ CREATE TABLE IF NOT EXISTS "task_notify_template_relations" (
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
-
+CREATE TABLE IF NOT EXISTS "migrations" (
+	"date" INTEGER NOT NULL UNIQUE,
+	"version" TEXT NOT NULL,
+	"description" TEXT NOT NULL,
+	"applied_at" DATETIME NOT NULL,
+	PRIMARY KEY("date")
+);
 `
 
 // init 自动注册所有迁移

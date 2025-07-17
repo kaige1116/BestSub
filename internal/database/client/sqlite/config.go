@@ -7,7 +7,6 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/system"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 func (db *DB) Config() interfaces.ConfigRepository {
@@ -19,53 +18,61 @@ type SystemConfigRepository struct {
 	db *DB
 }
 
-// Create 创建配置
-func (r *SystemConfigRepository) Create(ctx context.Context, config *system.Data) error {
-	query := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?)`
-
-	now := local.Time()
-	result, err := r.db.db.ExecContext(ctx, query,
-		config.Key,
-		config.Value,
-		config.Type,
-		config.GroupName,
-		config.Description,
-		now,
-		now,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to create system config: %w", err)
+// Create 批量创建配置
+func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]system.Data) error {
+	if configs == nil || len(*configs) == 0 {
+		return nil
 	}
 
-	id, err := result.LastInsertId()
+	// 开始事务
+	tx, err := r.db.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to get system config id: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := `INSERT INTO system_config (key, group_name, value, description)
+	          VALUES (?, ?, ?, ?)`
+
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	// 批量执行插入
+	for i := range *configs {
+		config := &(*configs)[i]
+		_, err := stmt.ExecContext(ctx,
+			config.Key,
+			config.GroupName,
+			config.Value,
+			config.Description,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create system config key '%s': %w", config.Key, err)
+		}
 	}
 
-	config.ID = id
-	config.CreatedAt = now
-	config.UpdatedAt = now
+	// 提交事务
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
 
 	return nil
 }
 
 // GetByKey 根据键获取配置
 func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*system.Data, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at
+	query := `SELECT key, group_name, value, description
 	          FROM system_config WHERE key = ?`
 
 	var config system.Data
 	err := r.db.db.QueryRowContext(ctx, query, key).Scan(
-		&config.ID,
 		&config.Key,
-		&config.Value,
-		&config.Type,
 		&config.GroupName,
+		&config.Value,
 		&config.Description,
-		&config.CreatedAt,
-		&config.UpdatedAt,
 	)
 
 	if err != nil {
@@ -78,123 +85,59 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*sys
 	return &config, nil
 }
 
-// Update 更新配置
-func (r *SystemConfigRepository) Update(ctx context.Context, config *system.Data) error {
-	query := `UPDATE system_config SET key = ?, value = ?, type = ?, group_name = ?,
-	          description = ?, updated_at = ? WHERE id = ?`
-
-	_, err := r.db.db.ExecContext(ctx, query,
-		config.Key,
-		config.Value,
-		config.Type,
-		config.GroupName,
-		config.Description,
-		local.Time(),
-		config.ID,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to update system config: %w", err)
+// Update 批量更新配置（根据key更新value）
+func (r *SystemConfigRepository) Update(ctx context.Context, configs *[]system.Data) error {
+	if configs == nil || len(*configs) == 0 {
+		return nil
 	}
 
-	return nil
-}
-
-// DeleteByKey 根据键删除配置
-func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) error {
-	query := `DELETE FROM system_config WHERE key = ?`
-
-	_, err := r.db.db.ExecContext(ctx, query, key)
+	// 开始事务
+	tx, err := r.db.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to delete system config by key: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer tx.Rollback()
 
-	return nil
-}
+	query := `UPDATE system_config SET value = ? WHERE key = ?`
 
-// SetValue 设置配置值
-func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
-	// 首先尝试更新
-	updateQuery := `UPDATE system_config SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.db.ExecContext(ctx, updateQuery, value, configType, group, description, local.Time(), key)
+	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("failed to update system config value: %w", err)
+		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
+	defer stmt.Close()
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-
-	// 如果没有更新到记录，则插入新记录
-	if rowsAffected == 0 {
-		insertQuery := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at) 
-		                VALUES (?, ?, ?, ?, ?, ?, ?)`
-		now := local.Time()
-		_, err = r.db.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
+	// 批量执行更新
+	for _, config := range *configs {
+		result, err := stmt.ExecContext(ctx,
+			config.Value,
+			config.Key,
+		)
 		if err != nil {
-			return fmt.Errorf("failed to insert system config value: %w", err)
+			return fmt.Errorf("failed to update system config key '%s': %w", config.Key, err)
 		}
+
+		// 检查是否有记录被更新
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get rows affected for key '%s': %w", config.Key, err)
+		}
+
+		if rowsAffected == 0 {
+			return fmt.Errorf("no config found with key '%s'", config.Key)
+		}
+	}
+
+	// 提交事务
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
-}
-
-// GetAllKeys 获取所有配置键
-func (r *SystemConfigRepository) GetAllKeys(ctx context.Context) ([]string, error) {
-	query := `SELECT DISTINCT key FROM system_config ORDER BY key`
-
-	rows, err := r.db.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query all config keys: %w", err)
-	}
-	defer rows.Close()
-
-	var keys []string
-	for rows.Next() {
-		var key string
-		if err := rows.Scan(&key); err != nil {
-			return nil, fmt.Errorf("failed to scan config key: %w", err)
-		}
-		keys = append(keys, key)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate config keys: %w", err)
-	}
-
-	return keys, nil
-}
-
-// GetAllGroups 获取所有配置分组
-func (r *SystemConfigRepository) GetAllGroups(ctx context.Context) ([]string, error) {
-	query := `SELECT DISTINCT group_name FROM system_config ORDER BY group_name`
-
-	rows, err := r.db.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query all config groups: %w", err)
-	}
-	defer rows.Close()
-
-	var groups []string
-	for rows.Next() {
-		var group string
-		if err := rows.Scan(&group); err != nil {
-			return nil, fmt.Errorf("failed to scan config group: %w", err)
-		}
-		groups = append(groups, group)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate config groups: %w", err)
-	}
-
-	return groups, nil
 }
 
 // GetConfigsByGroup 获取指定分组下的所有配置
 func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group string) ([]system.Data, error) {
-	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at
+	query := `SELECT key, group_name, value, description
 	          FROM system_config WHERE group_name = ? ORDER BY key`
 
 	rows, err := r.db.db.QueryContext(ctx, query, group)
@@ -207,14 +150,10 @@ func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group st
 	for rows.Next() {
 		var config system.Data
 		if err := rows.Scan(
-			&config.ID,
 			&config.Key,
-			&config.Value,
-			&config.Type,
 			&config.GroupName,
+			&config.Value,
 			&config.Description,
-			&config.CreatedAt,
-			&config.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan config: %w", err)
 		}
