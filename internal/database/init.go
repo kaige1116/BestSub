@@ -5,65 +5,33 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/defaults"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func Init(ctx context.Context, sqltype, path string) (repository *interfaces.RepositoryManager, err error) {
-	var repo interfaces.Repository
-	var migrator interfaces.Migrator
-
-	switch sqltype {
-	case "sqlite":
-		db, err := sqlite.New(path)
-		if err != nil {
-			log.Fatalf("failed to create sqlite database: %v", err)
-		}
-		repo = sqlite.NewRepo(db)
-		migrator = sqlite.NewMigrator(db)
-	default:
-		log.Fatalf("unsupported database type: %s", sqltype)
-	}
-	repository = interfaces.NewRepositoryManager(repo)
-	log.Debugf("数据库初始化开始")
-	if err := migrator.Apply(ctx); err != nil {
-		log.Fatalf("failed to apply migrations: %v", err)
-	}
-	log.Debugf("数据库迁移成功")
-	if err := initAuth(ctx, repository); err != nil {
-		log.Fatalf("failed to initialize auth: %v", err)
-	}
-	log.Debugf("数据库初始化成功")
-	if err := initSystemConfig(ctx, repository); err != nil {
-		log.Fatalf("failed to initialize system config: %v", err)
-	}
-	log.Debugf("系统配置初始化成功")
-	if err := initTask(ctx, repository); err != nil {
-		log.Fatalf("failed to initialize tasks: %v", err)
-	}
-	log.Debugf("系统任务初始化成功")
-	return repository, nil
-}
-
-func initAuth(ctx context.Context, repo *interfaces.RepositoryManager) error {
-	auth := repo.Auth()
+func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 	isInitialized, err := auth.IsInitialized(ctx)
 	if err != nil {
 		log.Fatalf("failed to check if database is initialized: %v", err)
 	}
 	if !isInitialized {
-		if err := auth.Initialize(ctx, defaults.Auth()); err != nil {
+		authData := defaults.Auth()
+		hashedBytes, err := bcrypt.GenerateFromPassword([]byte(authData.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("failed to hash password: %v", err)
+		}
+		authData.Password = string(hashedBytes)
+		if err := auth.Initialize(ctx, authData); err != nil {
 			log.Fatalf("failed to initialize auth: %v", err)
 		}
 		log.Info("初始化默认管理员账号 用户名: admin 密码: admin")
 	}
 	return nil
 }
-func initSystemConfig(ctx context.Context, repo *interfaces.RepositoryManager) error {
+func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigRepository) error {
 	defaultSystemConfig := defaults.Configs()
-	systemConfig := repo.SystemConfig()
 
 	existingKeys, err := systemConfig.GetAllKeys(ctx)
 	if err != nil {
@@ -98,9 +66,8 @@ func initSystemConfig(ctx context.Context, repo *interfaces.RepositoryManager) e
 
 	return nil
 }
-func initTask(ctx context.Context, repo *interfaces.RepositoryManager) error {
+func initTask(ctx context.Context, taskRepo interfaces.TaskRepository) error {
 	defaultTasks := defaults.Tasks()
-	taskRepo := repo.Task()
 
 	existingTasks, err := taskRepo.GetSystemTasks(ctx)
 	if err != nil {

@@ -1,10 +1,7 @@
 package migration
 
-import "github.com/bestruirui/bestsub/internal/database/migration"
-
 // Migration002Indexes 添加数据库索引
-func Migration002Indexes() string {
-	return `
+const Migration002Indexes = `
 -- 索引：用于通过 sub_id 查询对应的 task
 CREATE INDEX IF NOT EXISTS idx_sub_task_sub_id ON sub_task_relations(sub_id);
 
@@ -41,9 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_notify_task_task_id ON notify_task_relations(task
 -- 索引：用于通过 task_id 查询对应的 notify_template
 CREATE INDEX IF NOT EXISTS idx_task_notify_template_task_id ON task_notify_template_relations(task_id);
 `
-}
 
 // init 自动注册所有迁移
 func init() {
-	migration.Register(migrations, "002", "Indexes", Migration002Indexes)
+	migrations.Register(202507171101, "dev", "Indexes", Migration002Indexes)
 }

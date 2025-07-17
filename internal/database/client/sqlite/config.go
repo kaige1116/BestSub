@@ -1,4 +1,4 @@
-package repository
+package sqlite
 
 import (
 	"context"
@@ -6,19 +6,17 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
-// SystemConfigRepository 系统配置数据访问实现
-type SystemConfigRepository struct {
-	db *database.Database
+func (db *DB) Config() interfaces.ConfigRepository {
+	return &SystemConfigRepository{db: db}
 }
 
-// NewSystemConfigRepository 创建系统配置仓库
-func newSystemConfigRepository(db *database.Database) interfaces.SystemConfigRepository {
-	return &SystemConfigRepository{db: db}
+// SystemConfigRepository 系统配置数据访问实现
+type SystemConfigRepository struct {
+	db *DB
 }
 
 // Create 创建配置
@@ -27,7 +25,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, config *system.Data
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
 		config.Type,
@@ -59,7 +57,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, key string) (*sys
 	          FROM system_config WHERE key = ?`
 
 	var config system.Data
-	err := r.db.QueryRowContext(ctx, query, key).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, key).Scan(
 		&config.ID,
 		&config.Key,
 		&config.Value,
@@ -85,7 +83,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *system.Data
 	query := `UPDATE system_config SET key = ?, value = ?, type = ?, group_name = ?,
 	          description = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		config.Key,
 		config.Value,
 		config.Type,
@@ -106,7 +104,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, config *system.Data
 func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) error {
 	query := `DELETE FROM system_config WHERE key = ?`
 
-	_, err := r.db.ExecContext(ctx, query, key)
+	_, err := r.db.db.ExecContext(ctx, query, key)
 	if err != nil {
 		return fmt.Errorf("failed to delete system config by key: %w", err)
 	}
@@ -118,7 +116,7 @@ func (r *SystemConfigRepository) DeleteByKey(ctx context.Context, key string) er
 func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, configType, group, description string) error {
 	// 首先尝试更新
 	updateQuery := `UPDATE system_config SET value = ?, type = ?, group_name = ?, description = ?, updated_at = ? WHERE key = ?`
-	result, err := r.db.ExecContext(ctx, updateQuery, value, configType, group, description, local.Time(), key)
+	result, err := r.db.db.ExecContext(ctx, updateQuery, value, configType, group, description, local.Time(), key)
 	if err != nil {
 		return fmt.Errorf("failed to update system config value: %w", err)
 	}
@@ -133,7 +131,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 		insertQuery := `INSERT INTO system_config (key, value, type, group_name, description, created_at, updated_at) 
 		                VALUES (?, ?, ?, ?, ?, ?, ?)`
 		now := local.Time()
-		_, err = r.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
+		_, err = r.db.db.ExecContext(ctx, insertQuery, key, value, configType, group, description, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert system config value: %w", err)
 		}
@@ -146,7 +144,7 @@ func (r *SystemConfigRepository) SetValue(ctx context.Context, key, value, confi
 func (r *SystemConfigRepository) GetAllKeys(ctx context.Context) ([]string, error) {
 	query := `SELECT DISTINCT key FROM system_config ORDER BY key`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query all config keys: %w", err)
 	}
@@ -172,7 +170,7 @@ func (r *SystemConfigRepository) GetAllKeys(ctx context.Context) ([]string, erro
 func (r *SystemConfigRepository) GetAllGroups(ctx context.Context) ([]string, error) {
 	query := `SELECT DISTINCT group_name FROM system_config ORDER BY group_name`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query all config groups: %w", err)
 	}
@@ -199,7 +197,7 @@ func (r *SystemConfigRepository) GetConfigsByGroup(ctx context.Context, group st
 	query := `SELECT id, key, value, type, group_name, description, created_at, updated_at
 	          FROM system_config WHERE group_name = ? ORDER BY key`
 
-	rows, err := r.db.QueryContext(ctx, query, group)
+	rows, err := r.db.db.QueryContext(ctx, query, group)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query configs by group: %w", err)
 	}

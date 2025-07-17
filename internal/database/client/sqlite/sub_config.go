@@ -1,4 +1,4 @@
-package repository
+package sqlite
 
 import (
 	"context"
@@ -6,18 +6,17 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubStorageConfigRepository 存储配置数据访问实现
 type SubStorageConfigRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newSubStorageConfigRepository 创建存储配置仓库
-func newSubStorageConfigRepository(db *database.Database) interfaces.SubStorageConfigRepository {
+func (db *DB) SubStorageConfig() interfaces.SubStorageConfigRepository {
 	return &SubStorageConfigRepository{db: db}
 }
 
@@ -27,7 +26,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.Sto
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
 		config.Description,
@@ -61,7 +60,7 @@ func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*su
 	          FROM storage_configs WHERE id = ?`
 
 	var config sub.StorageConfig
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.Enable,
 		&config.Name,
@@ -89,7 +88,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.Sto
 	query := `UPDATE storage_configs SET enable = ?, name = ?, description = ?, type = ?, config = ?,
 	          test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
 		config.Description,
@@ -112,7 +111,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.Sto
 func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM storage_configs WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete storage config: %w", err)
 	}
@@ -127,7 +126,7 @@ func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID int
 	          INNER JOIN save_storage_relations ssr ON sc.id = ssr.storage_id
 	          WHERE ssr.save_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, saveID)
+	rows, err := r.db.db.QueryContext(ctx, query, saveID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage configs by save id: %w", err)
 	}
@@ -165,7 +164,7 @@ func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID int
 func (r *SubStorageConfigRepository) AddSaveRelation(ctx context.Context, configID, saveID int64) error {
 	query := `INSERT OR IGNORE INTO save_storage_relations (storage_id, save_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, configID, saveID)
+	_, err := r.db.db.ExecContext(ctx, query, configID, saveID)
 	if err != nil {
 		return fmt.Errorf("failed to add save relation: %w", err)
 	}
@@ -175,11 +174,11 @@ func (r *SubStorageConfigRepository) AddSaveRelation(ctx context.Context, config
 
 // SubOutputTemplateRepository 输出模板数据访问实现
 type SubOutputTemplateRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newSubOutputTemplateRepository 创建输出模板仓库
-func newSubOutputTemplateRepository(db *database.Database) interfaces.SubOutputTemplateRepository {
+func (db *DB) SubOutputTemplate() interfaces.SubOutputTemplateRepository {
 	return &SubOutputTemplateRepository{db: db}
 }
 
@@ -189,7 +188,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		template.Enable,
 		template.Name,
 		template.Description,
@@ -221,7 +220,7 @@ func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*s
 	          FROM sub_output_templates WHERE id = ?`
 
 	var template sub.OutputTemplate
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&template.ID,
 		&template.Enable,
 		&template.Name,
@@ -246,7 +245,7 @@ func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*s
 func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.OutputTemplate) error {
 	query := `UPDATE sub_output_templates SET enable = ?, name = ?, description = ?, type = ?, template = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		template.Enable,
 		template.Name,
 		template.Description,
@@ -267,7 +266,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.
 func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_output_templates WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete output template: %w", err)
 	}
@@ -283,7 +282,7 @@ func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID in
 	          WHERE str.save_id = ?`
 
 	var template sub.OutputTemplate
-	err := r.db.QueryRowContext(ctx, query, saveID).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, saveID).Scan(
 		&template.ID,
 		&template.Enable,
 		&template.Name,
@@ -312,7 +311,7 @@ func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID 
 	          WHERE str.share_id = ?`
 
 	var template sub.OutputTemplate
-	err := r.db.QueryRowContext(ctx, query, shareID).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, shareID).Scan(
 		&template.ID,
 		&template.Enable,
 		&template.Name,
@@ -337,7 +336,7 @@ func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID 
 func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, templateID, shareID int64) error {
 	query := `INSERT OR IGNORE INTO share_template_relations (template_id, share_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, templateID, shareID)
+	_, err := r.db.db.ExecContext(ctx, query, templateID, shareID)
 	if err != nil {
 		return fmt.Errorf("failed to add share relation: %w", err)
 	}
@@ -349,7 +348,7 @@ func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, temp
 func (r *SubOutputTemplateRepository) AddSaveRelation(ctx context.Context, templateID, saveID int64) error {
 	query := `INSERT OR IGNORE INTO save_template_relations (template_id, save_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, templateID, saveID)
+	_, err := r.db.db.ExecContext(ctx, query, templateID, saveID)
 	if err != nil {
 		return fmt.Errorf("failed to add save relation: %w", err)
 	}
@@ -359,11 +358,11 @@ func (r *SubOutputTemplateRepository) AddSaveRelation(ctx context.Context, templ
 
 // SubNodeFilterRuleRepository 节点筛选规则数据访问实现
 type SubNodeFilterRuleRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newSubNodeFilterRuleRepository 创建节点筛选规则仓库
-func newSubNodeFilterRuleRepository(db *database.Database) interfaces.SubNodeFilterRuleRepository {
+func (db *DB) SubNodeFilterRule() interfaces.SubNodeFilterRuleRepository {
 	return &SubNodeFilterRuleRepository{db: db}
 }
 
@@ -373,7 +372,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.Node
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		rule.Name,
 		rule.Field,
 		rule.Operator,
@@ -403,7 +402,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.Node
 func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.NodeFilterRule) error {
 	query := `UPDATE sub_node_filter_rules SET name = ?, field = ?, operator = ?, value = ?, description = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		rule.Name,
 		rule.Field,
 		rule.Operator,
@@ -426,7 +425,7 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*s
 	          FROM sub_node_filter_rules WHERE id = ?`
 
 	var rule sub.NodeFilterRule
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&rule.ID,
 		&rule.Name,
 		&rule.Field,
@@ -451,7 +450,7 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*s
 func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_node_filter_rules WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete node filter rule: %w", err)
 	}
@@ -466,7 +465,7 @@ func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID in
 	          INNER JOIN save_filter_relations sfr ON nfr.id = sfr.filter_id
 	          WHERE sfr.save_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, saveID)
+	rows, err := r.db.db.QueryContext(ctx, query, saveID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node filter rules by save id: %w", err)
 	}
@@ -505,7 +504,7 @@ func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID 
 	          INNER JOIN share_filter_relations sfr ON nfr.id = sfr.filter_id
 	          WHERE sfr.share_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, shareID)
+	rows, err := r.db.db.QueryContext(ctx, query, shareID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node filter rules by share id: %w", err)
 	}
@@ -541,7 +540,7 @@ func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID 
 func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, ruleID, shareID int64) error {
 	query := `INSERT OR IGNORE INTO share_filter_relations (filter_id, share_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, ruleID, shareID)
+	_, err := r.db.db.ExecContext(ctx, query, ruleID, shareID)
 	if err != nil {
 		return fmt.Errorf("failed to add share relation: %w", err)
 	}
@@ -553,7 +552,7 @@ func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, rule
 func (r *SubNodeFilterRuleRepository) AddSaveRelation(ctx context.Context, ruleID, saveID int64) error {
 	query := `INSERT OR IGNORE INTO save_filter_relations (filter_id, save_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, ruleID, saveID)
+	_, err := r.db.db.ExecContext(ctx, query, ruleID, saveID)
 	if err != nil {
 		return fmt.Errorf("failed to add save relation: %w", err)
 	}

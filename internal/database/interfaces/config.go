@@ -6,8 +6,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/system"
 )
 
-// SystemConfigRepository 系统配置数据访问接口
-type SystemConfigRepository interface {
+// ConfigRepository 系统配置数据访问接口
+type ConfigRepository interface {
 	// Create 创建配置
 	Create(ctx context.Context, config *system.Data) error
 

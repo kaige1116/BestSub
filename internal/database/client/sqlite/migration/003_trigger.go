@@ -1,9 +1,6 @@
 package migration
 
-import "github.com/bestruirui/bestsub/internal/database/migration"
-
-func Migration003Trigger() string {
-	return `
+const Migration003Trigger = `
 CREATE TRIGGER IF NOT EXISTS delete_sub_tasks
 BEFORE DELETE ON subs
 FOR EACH ROW
@@ -25,9 +22,8 @@ BEGIN
         WHERE save_id = OLD.id
     );
 END;
-	`
-}
+`
 
 func init() {
-	migration.Register(migrations, "003", "Triggers", Migration003Trigger)
+	migrations.Register(202507171102, "dev", "Triggers", Migration003Trigger)
 }

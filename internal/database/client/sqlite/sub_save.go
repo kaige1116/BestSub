@@ -1,4 +1,4 @@
-package repository
+package sqlite
 
 import (
 	"context"
@@ -6,18 +6,17 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubSaveConfigRepository 保存配置数据访问实现
 type SubSaveConfigRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newSubSaveConfigRepository 创建保存配置仓库
-func newSubSaveConfigRepository(db *database.Database) interfaces.SubSaveRepository {
+func (db *DB) SubSaveConfig() interfaces.SubSaveRepository {
 	return &SubSaveConfigRepository{db: db}
 }
 
@@ -27,7 +26,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
 		config.Description,
@@ -59,7 +58,7 @@ func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*sub.S
 	          FROM sub_save WHERE id = ?`
 
 	var config sub.SaveConfig
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&config.ID,
 		&config.Enable,
 		&config.Name,
@@ -84,7 +83,7 @@ func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*sub.S
 func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveConfig) error {
 	query := `UPDATE sub_save SET enable = ?, name = ?, description = ?, rename = ?, file_name = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
 		config.Description,
@@ -105,7 +104,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveCo
 func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM sub_save WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete save config: %w", err)
 	}
@@ -120,7 +119,7 @@ func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID int64)
 	          INNER JOIN save_task_relations str ON sc.id = str.save_id
 	          WHERE str.task_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, taskID)
+	rows, err := r.db.db.QueryContext(ctx, query, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get save configs by task id: %w", err)
 	}
@@ -156,7 +155,7 @@ func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID int64)
 func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, taskID int64) error {
 	query := `INSERT OR IGNORE INTO save_task_relations (save_id, task_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID, taskID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID, taskID)
 	if err != nil {
 		return fmt.Errorf("failed to add task relation: %w", err)
 	}
@@ -168,7 +167,7 @@ func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, t
 func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context, saveID, templateID int64) error {
 	query := `INSERT OR IGNORE INTO save_template_relations (save_id, template_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID, templateID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID, templateID)
 	if err != nil {
 		return fmt.Errorf("failed to add output template relation: %w", err)
 	}
@@ -180,7 +179,7 @@ func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context,
 func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, saveID, configID int64) error {
 	query := `INSERT OR IGNORE INTO save_fitter_relations (save_id, fitter_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID, configID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID, configID)
 	if err != nil {
 		return fmt.Errorf("failed to add filter config relation: %w", err)
 	}
@@ -192,7 +191,7 @@ func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, s
 func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, subID int64) error {
 	query := `INSERT OR IGNORE INTO save_sub_relations (save_id, sub_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID, subID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID, subID)
 	if err != nil {
 		return fmt.Errorf("failed to add sub relation: %w", err)
 	}
@@ -204,7 +203,7 @@ func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, su
 func (r *SubSaveConfigRepository) AddStorageConfigRelation(ctx context.Context, saveID, configID int64) error {
 	query := `INSERT OR IGNORE INTO save_storage_relations (save_id, storage_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID, configID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID, configID)
 	if err != nil {
 		return fmt.Errorf("failed to add storage config relation: %w", err)
 	}

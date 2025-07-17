@@ -6,7 +6,7 @@ import "time"
 type Data struct {
 	ID        int64     `db:"id" json:"-"`                // 主键ID
 	UserName  string    `db:"user_name" json:"user_name"` // 用户名
-	Password  string    `db:"password" json:"-"`          // 密码加密存储（bcrypt），不在JSON中返回
+	Password  string    `db:"password" json:"-"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -41,14 +41,15 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应模型
 type LoginResponse struct {
-	AccessToken  string    `json:"access_token" example:"access_token_string"`   // JWT访问令牌
-	RefreshToken string    `json:"refresh_token" example:"refresh_token_string"` // 刷新令牌
-	ExpiresAt    time.Time `json:"expires_at" example:"2024-01-01T12:00:00Z"`    // 令牌过期时间
-	User         Data      `json:"user"`                                         // 用户信息
+	AccessToken      string    `json:"access_token" example:"access_token_string"`        // JWT访问令牌
+	RefreshToken     string    `json:"refresh_token" example:"refresh_token_string"`      // 刷新令牌
+	AccessExpiresAt  time.Time `json:"access_expires_at" example:"2024-01-01T12:00:00Z"`  // 令牌过期时间
+	RefreshExpiresAt time.Time `json:"refresh_expires_at" example:"2024-01-01T12:00:00Z"` // 刷新令牌过期时间
 }
 
 // ChangePasswordRequest 修改密码请求模型
 type ChangePasswordRequest struct {
+	Username    string `json:"username" binding:"required" example:"admin"`            // 用户名
 	OldPassword string `json:"old_password" binding:"required" example:"old_password"` // 旧密码
 	NewPassword string `json:"new_password" binding:"required" example:"new_password"` // 新密码
 }
@@ -67,11 +68,4 @@ type SessionListResponse struct {
 // RefreshTokenRequest 刷新令牌请求模型
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required" example:"refresh_token_string"` // 刷新令牌
-}
-
-// RefreshTokenResponse 刷新令牌响应模型
-type RefreshTokenResponse struct {
-	AccessToken  string    `json:"access_token" example:"new_access_token_string"`   // 新的JWT访问令牌
-	RefreshToken string    `json:"refresh_token" example:"new_refresh_token_string"` // 新的刷新令牌
-	ExpiresAt    time.Time `json:"expires_at" example:"2024-01-01T12:00:00Z"`        // 新令牌过期时间
 }

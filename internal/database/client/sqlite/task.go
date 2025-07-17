@@ -1,4 +1,4 @@
-package repository
+package sqlite
 
 import (
 	"context"
@@ -6,18 +6,17 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // TaskRepository 任务数据访问实现
 type TaskRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newTaskRepository 创建任务仓库
-func newTaskRepository(db *database.Database) interfaces.TaskRepository {
+func (db *DB) Task() interfaces.TaskRepository {
 	return &TaskRepository{db: db}
 }
 
@@ -27,7 +26,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (int64, error
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
 		t.Description,
@@ -65,7 +64,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id int64) (*task.Data, err
 	          FROM tasks WHERE id = ?`
 
 	var t task.Data
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&t.ID,
 		&t.Enable,
 		&t.Name,
@@ -101,7 +100,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
 	query := `UPDATE tasks SET enable = ?, name = ?, description = ?, is_sys_task = ?, cron = ?, type = ?, log_level = ?, timeout = ?, retry = ?, config = ?,
 	          last_run_result = ?, last_run_time = ?, last_run_duration = ?, success_count = ?, failed_count = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
 		t.Description,
@@ -132,7 +131,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
 func (r *TaskRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM tasks WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
 	}
@@ -145,7 +144,7 @@ func (r *TaskRepository) List(ctx context.Context, offset, limit int) (*[]task.D
 	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
 	          FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tasks: %w", err)
 	}
@@ -192,7 +191,7 @@ func (r *TaskRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM tasks`
 
 	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count tasks: %w", err)
 	}
@@ -205,7 +204,7 @@ func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, erro
 	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
 	          FROM tasks WHERE is_sys_task = true ORDER BY created_at DESC`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system tasks: %w", err)
 	}
@@ -253,7 +252,7 @@ func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.D
 	          INNER JOIN sub_task_relations str ON t.id = str.task_id
 	          WHERE str.sub_id = ? ORDER BY t.created_at DESC`
 
-	rows, err := r.db.QueryContext(ctx, query, subID)
+	rows, err := r.db.db.QueryContext(ctx, query, subID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tasks by sub id: %w", err)
 	}
@@ -299,7 +298,7 @@ func (r *TaskRepository) GetBySubID(ctx context.Context, subID int64) (*[]task.D
 func (r *TaskRepository) GetTaskIDsBySubID(ctx context.Context, subID int64) ([]int64, error) {
 	query := `SELECT task_id FROM sub_task_relations WHERE sub_id = ? ORDER BY task_id`
 
-	rows, err := r.db.QueryContext(ctx, query, subID)
+	rows, err := r.db.db.QueryContext(ctx, query, subID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task ids by sub id: %w", err)
 	}
@@ -326,7 +325,7 @@ func (r *TaskRepository) GetTaskIDsBySubID(ctx context.Context, subID int64) ([]
 func (r *TaskRepository) AddNotifyRelation(ctx context.Context, taskID, notifyID int64) error {
 	query := `INSERT OR IGNORE INTO task_notify_relations (task_id, notify_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, taskID, notifyID)
+	_, err := r.db.db.ExecContext(ctx, query, taskID, notifyID)
 	if err != nil {
 		return fmt.Errorf("failed to add notify relation: %w", err)
 	}
@@ -338,7 +337,7 @@ func (r *TaskRepository) AddNotifyRelation(ctx context.Context, taskID, notifyID
 func (r *TaskRepository) AddNotifyTemplateRelation(ctx context.Context, taskID, notifyTemplateID int64) error {
 	query := `INSERT OR IGNORE INTO task_notify_template_relations (task_id, notify_template_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, taskID, notifyTemplateID)
+	_, err := r.db.db.ExecContext(ctx, query, taskID, notifyTemplateID)
 	if err != nil {
 		return fmt.Errorf("failed to add notify template relation: %w", err)
 	}
@@ -350,7 +349,7 @@ func (r *TaskRepository) AddNotifyTemplateRelation(ctx context.Context, taskID, 
 func (r *TaskRepository) DeleteBySubID(ctx context.Context, subID int64) error {
 	query := `DELETE FROM tasks WHERE id IN (SELECT task_id FROM sub_task_relations WHERE sub_id = ?)`
 
-	_, err := r.db.ExecContext(ctx, query, subID)
+	_, err := r.db.db.ExecContext(ctx, query, subID)
 	if err != nil {
 		return fmt.Errorf("failed to delete tasks by sub id: %w", err)
 	}
@@ -362,7 +361,7 @@ func (r *TaskRepository) DeleteBySubID(ctx context.Context, subID int64) error {
 func (r *TaskRepository) DeleteBySaveID(ctx context.Context, saveID int64) error {
 	query := `DELETE FROM tasks WHERE id IN (SELECT task_id FROM save_task_relations WHERE save_id = ?)`
 
-	_, err := r.db.ExecContext(ctx, query, saveID)
+	_, err := r.db.db.ExecContext(ctx, query, saveID)
 	if err != nil {
 		return fmt.Errorf("failed to delete tasks by save id: %w", err)
 	}

@@ -1,4 +1,4 @@
-package repository
+package sqlite
 
 import (
 	"context"
@@ -6,18 +6,17 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/sqlite/database"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubRepository 订阅链接数据访问实现
 type SubRepository struct {
-	db *database.Database
+	db *DB
 }
 
 // newSubRepository 创建订阅链接仓库
-func newSubRepository(db *database.Database) interfaces.SubRepository {
+func (db *DB) Sub() interfaces.SubRepository {
 	return &SubRepository{db: db}
 }
 
@@ -27,7 +26,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	          VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := local.Time()
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.db.ExecContext(ctx, query,
 		true, // enable默认为true
 		link.Name,
 		link.Description,
@@ -59,7 +58,7 @@ func (r *SubRepository) GetByID(ctx context.Context, id int64) (*sub.Data, error
 
 	var s sub.Data
 	var enable bool
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&s.ID,
 		&enable,
 		&s.Name,
@@ -83,7 +82,7 @@ func (r *SubRepository) GetByID(ctx context.Context, id int64) (*sub.Data, error
 func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 	query := `UPDATE subs SET enable = ?, name = ?, description = ?, url = ?, updated_at = ? WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.db.db.ExecContext(ctx, query,
 		true, // enable默认为true
 		link.Name,
 		link.Description,
@@ -103,7 +102,7 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 func (r *SubRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM subs WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete sub: %w", err)
 	}
@@ -116,7 +115,7 @@ func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Dat
 	query := `SELECT id, enable, name, description, url, created_at, updated_at
 	          FROM subs ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list subs: %w", err)
 	}
@@ -153,7 +152,7 @@ func (r *SubRepository) Count(ctx context.Context) (int64, error) {
 	query := `SELECT COUNT(*) FROM subs`
 
 	var count int64
-	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count subs: %w", err)
 	}
@@ -166,7 +165,7 @@ func (r *SubRepository) GetByTaskID(ctx context.Context, taskID int64) (int64, e
 	query := `SELECT sub_id FROM sub_task_relations WHERE task_id = ?`
 
 	var subID int64
-	err := r.db.QueryRowContext(ctx, query, taskID).Scan(&subID)
+	err := r.db.db.QueryRowContext(ctx, query, taskID).Scan(&subID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, fmt.Errorf("no sub found for task id %d", taskID)
@@ -181,7 +180,7 @@ func (r *SubRepository) GetByTaskID(ctx context.Context, taskID int64) (int64, e
 func (r *SubRepository) GetByShareID(ctx context.Context, shareID int64) ([]int64, error) {
 	query := `SELECT sub_id FROM share_sub_relations WHERE share_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, shareID)
+	rows, err := r.db.db.QueryContext(ctx, query, shareID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subs by share id: %w", err)
 	}
@@ -208,7 +207,7 @@ func (r *SubRepository) GetByShareID(ctx context.Context, shareID int64) ([]int6
 func (r *SubRepository) GetBySaveID(ctx context.Context, saveID int64) ([]int64, error) {
 	query := `SELECT sub_id FROM save_sub_relations WHERE save_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, saveID)
+	rows, err := r.db.db.QueryContext(ctx, query, saveID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subs by save id: %w", err)
 	}
@@ -235,7 +234,7 @@ func (r *SubRepository) GetBySaveID(ctx context.Context, saveID int64) ([]int64,
 func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID int64) error {
 	query := `INSERT OR IGNORE INTO sub_task_relations (sub_id, task_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, subID, taskID)
+	_, err := r.db.db.ExecContext(ctx, query, subID, taskID)
 	if err != nil {
 		return fmt.Errorf("failed to add task relation: %w", err)
 	}
@@ -247,7 +246,7 @@ func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID int64
 func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID int64) error {
 	query := `INSERT OR IGNORE INTO save_sub_relations (sub_id, save_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, subID, saveID)
+	_, err := r.db.db.ExecContext(ctx, query, subID, saveID)
 	if err != nil {
 		return fmt.Errorf("failed to add save relation: %w", err)
 	}
@@ -259,7 +258,7 @@ func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID int64
 func (r *SubRepository) AddShareRelation(ctx context.Context, subID, shareID int64) error {
 	query := `INSERT OR IGNORE INTO share_sub_relations (sub_id, share_id) VALUES (?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query, subID, shareID)
+	_, err := r.db.db.ExecContext(ctx, query, subID, shareID)
 	if err != nil {
 		return fmt.Errorf("failed to add share relation: %w", err)
 	}
