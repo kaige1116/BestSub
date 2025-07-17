@@ -2,8 +2,8 @@ package migration
 
 import "github.com/bestruirui/bestsub/internal/database/migration"
 
-var migrations = migration.NewMigration(3)
+const ClientName = "sqlite"
 
-func Get() *[]migration.Info {
-	return migrations.Get()
+func Get() []*migration.Info {
+	return migration.Get(ClientName)
 }

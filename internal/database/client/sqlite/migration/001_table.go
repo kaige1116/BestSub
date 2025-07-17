@@ -1,7 +1,10 @@
 package migration
 
+import "github.com/bestruirui/bestsub/internal/database/migration"
+
 // Migration001Table 初始数据库架构
-const Migration001Table = `
+func Migration001Table() string {
+	return `
 CREATE TABLE IF NOT EXISTS "save_template_relations" (
 	"save_id" INTEGER NOT NULL,
 	"template_id" INTEGER NOT NULL,
@@ -260,8 +263,9 @@ CREATE TABLE IF NOT EXISTS "migrations" (
 	PRIMARY KEY("date")
 );
 `
+}
 
-// init 自动注册所有迁移
+// init 自动注册迁移
 func init() {
-	migrations.Register(202507171100, "dev", "Tables", Migration001Table)
+	migration.Register(ClientName, 202507171100, "dev", "Tables", Migration001Table)
 }

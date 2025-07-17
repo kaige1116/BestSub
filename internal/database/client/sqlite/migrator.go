@@ -8,79 +8,51 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
-const MigrationTable = `
-CREATE TABLE IF NOT EXISTS "migrations" (
-	"date" INTEGER NOT NULL UNIQUE,
-	"version" TEXT NOT NULL,
-	"description" TEXT NOT NULL,
-	"applied_at" DATETIME NOT NULL,
-	PRIMARY KEY("date")
-);
-`
-
 func (db *DB) Migrate() error {
 	migrations := migration.Get()
-	if len(*migrations) == 0 {
+	if len(migrations) == 0 {
 		return nil
 	}
-	// 检查 migrations 表是否存在
-	exists, err := db.migrationsTableExists()
+	if err := db.ensureMigrationsTable(); err != nil {
+		return fmt.Errorf("failed to ensure migrations table: %w", err)
+	}
+
+	appliedDates, err := db.getAppliedMigrations()
 	if err != nil {
-		return fmt.Errorf("failed to check migrations table existence: %w", err)
+		return fmt.Errorf("failed to get applied migrations: %w", err)
 	}
 
-	if !exists {
-		if err := db.ensureMigrationsTable(); err != nil {
-			return fmt.Errorf("failed to create migrations table: %w", err)
-		}
-
-		for _, migration := range *migrations {
-			if err := db.applyMigration(migration); err != nil {
-				return fmt.Errorf("failed to apply migration %d: %w", migration.Date, err)
-			}
-		}
-	} else {
-		appliedDates, err := db.getAppliedMigrations()
-		if err != nil {
-			return fmt.Errorf("failed to get applied migrations: %w", err)
-		}
-
-		for _, migration := range *migrations {
-			if !appliedDates[migration.Date] {
-				if err := db.applyMigration(migration); err != nil {
-					return fmt.Errorf("failed to apply migration %d: %w", migration.Date, err)
-				}
-			}
+	var pendingMigrations []*migModel.Info
+	for _, migration := range migrations {
+		if !appliedDates[migration.Date] {
+			pendingMigrations = append(pendingMigrations, migration)
 		}
 	}
 
-	return nil
+	if len(pendingMigrations) == 0 {
+		return nil
+	}
+
+	return db.applyMigrations(pendingMigrations)
 }
 
-// migrationsTableExists 检查 migrations 表是否存在
-func (db *DB) migrationsTableExists() (bool, error) {
-	query := `SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'`
-	var name string
-	err := db.db.QueryRow(query).Scan(&name)
-	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to check migrations table: %w", err)
-	}
-	return true, nil
-}
-
-// ensureMigrationsTable 确保 migrations 表存在
 func (db *DB) ensureMigrationsTable() error {
-	_, err := db.db.Exec(MigrationTable)
+	migrationTable := `
+	CREATE TABLE IF NOT EXISTS "migrations" (
+		"date" INTEGER NOT NULL UNIQUE,
+		"version" TEXT NOT NULL,
+		"description" TEXT NOT NULL,
+		"applied_at" DATETIME NOT NULL,
+		PRIMARY KEY("date")
+	);`
+
+	_, err := db.db.Exec(migrationTable)
 	if err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 	return nil
 }
 
-// getAppliedMigrations 一次性获取所有已应用的迁移日期
 func (db *DB) getAppliedMigrations() (map[int64]bool, error) {
 	appliedDates := make(map[int64]bool)
 
@@ -105,27 +77,33 @@ func (db *DB) getAppliedMigrations() (map[int64]bool, error) {
 	return appliedDates, nil
 }
 
-// applyMigration 应用迁移
-func (db *DB) applyMigration(migration migModel.Info) error {
+func (db *DB) applyMigrations(migrations []*migModel.Info) error {
 	tx, err := db.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(migration.Content)
+	insertStmt, err := tx.Prepare("INSERT INTO migrations (date, version, description, applied_at) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return fmt.Errorf("failed to execute migration SQL: %w", err)
+		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
+	defer insertStmt.Close()
 
-	_, err = tx.Exec("INSERT INTO migrations (date, version, description, applied_at) VALUES (?, ?, ?, ?)",
-		migration.Date, migration.Version, migration.Description, local.Time())
-	if err != nil {
-		return fmt.Errorf("failed to record migration: %w", err)
+	for _, migration := range migrations {
+		_, err = tx.Exec(migration.Content())
+		if err != nil {
+			return fmt.Errorf("failed to execute migration %d SQL: %w", migration.Date, err)
+		}
+
+		_, err = insertStmt.Exec(migration.Date, migration.Version, migration.Description, local.Time())
+		if err != nil {
+			return fmt.Errorf("failed to record migration %d: %w", migration.Date, err)
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("failed to commit migrations transaction: %w", err)
 	}
 
 	return nil
