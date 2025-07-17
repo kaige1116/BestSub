@@ -7,7 +7,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/session"
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
@@ -26,35 +25,15 @@ func Auth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		token := authHeader[7:]
 
-		token, err := jwt.ExtractTokenFromHeader(authHeader)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, api.ResponseError{
-				Code:    http.StatusUnauthorized,
-				Message: "Unauthorized",
-				Error:   "Invalid authorization header format",
-			})
-			c.Abort()
-			return
-		}
-
-		claims, err := jwt.ValidateToken(token, config.Base().JWT.Secret)
+		claims, err := ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
 			c.JSON(http.StatusUnauthorized, api.ResponseError{
 				Code:    http.StatusUnauthorized,
 				Message: "Unauthorized",
 				Error:   "Invalid or expired token",
-			})
-			c.Abort()
-			return
-		}
-
-		if jwt.IsTokenExpired(claims) {
-			c.JSON(http.StatusUnauthorized, api.ResponseError{
-				Code:    http.StatusUnauthorized,
-				Message: "Unauthorized",
-				Error:   "Token has expired",
 			})
 			c.Abort()
 			return
@@ -118,10 +97,7 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("username", claims.Username)
 		c.Set("session_id", claims.SessionID)
-		c.Set("claims", claims)
-
 		c.Next()
 	}
 }
@@ -138,20 +114,13 @@ func WSAuth() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := jwt.ValidateToken(token, config.Base().JWT.Secret)
+		claims, err := ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("WebSocket JWT验证失败: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		if jwt.IsTokenExpired(claims) {
-			log.Warnf("WebSocket token已过期, IP=%s", c.ClientIP())
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		// 从内存中获取会话
 		sess, err := session.Get(claims.SessionID)
 		if err != nil {
 			log.Warnf("WebSocket会话未找到: %v, IP=%s", err, c.ClientIP())
@@ -174,10 +143,7 @@ func WSAuth() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("username", claims.Username)
 		c.Set("session_id", claims.SessionID)
-		c.Set("claims", claims)
-
 		c.Next()
 	}
 }

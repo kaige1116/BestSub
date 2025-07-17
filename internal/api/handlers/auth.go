@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"context"
-	"fmt"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
@@ -14,10 +12,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/jwt"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
-	"github.com/bestruirui/bestsub/internal/utils/passwd"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
 )
@@ -105,20 +101,7 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	authRepo := database.Auth()
-	authInfo, err := authRepo.Get(context.Background())
-
-	if err != nil {
-		log.Errorf("Failed to get auth info: %v from %s", err, c.ClientIP())
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Unauthorized",
-			Error:   "Invalid username or password",
-		})
-		return
-	}
-
-	err = passwd.Verify(req.Password, authInfo.Password)
+	err := database.AuthVerify(req.Username, req.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -129,18 +112,18 @@ func (h *authHandler) login(c *gin.Context) {
 		return
 	}
 
-	sessionID, tempSess := session.GetUnActive()
+	sessionID, tempSess := session.GetOne()
 	if tempSess == nil {
-		log.Errorf("No unused session found from %s", c.ClientIP())
+		log.Warnf("No unused session found from %s", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
-			Error:   "No unused session found",
+			Error:   "Too many devices, please log out of other devices",
 		})
 		return
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(sessionID, authInfo.UserName, config.Base().JWT.Secret)
+	tokenPair, err := middleware.GenerateTokenPair(sessionID, req.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
 		session.Disable(sessionID)
@@ -153,34 +136,22 @@ func (h *authHandler) login(c *gin.Context) {
 	}
 
 	now := uint32(local.Time().Unix())
-	clientIP := utils.IPToUint32(c.ClientIP())
 
 	tempSess.IsActive = true
-	tempSess.ClientIP = clientIP
+	tempSess.ClientIP = utils.IPToUint32(c.ClientIP())
 	tempSess.UserAgent = c.GetHeader("User-Agent")
 	tempSess.CreatedAt = now
 	tempSess.LastAccessAt = now
-	tempSess.ExpiresAt = uint32(tokenPair.ExpiresAt.Unix())
+	tempSess.ExpiresAt = uint32(tokenPair.AccessExpiresAt.Unix())
 	tempSess.HashRToken = xxhash.Sum64String(tokenPair.RefreshToken)
 	tempSess.HashAToken = xxhash.Sum64String(tokenPair.AccessToken)
-	// 构建响应
-	response := auth.LoginResponse{
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-		ExpiresAt:    tokenPair.ExpiresAt,
-		User: auth.Data{
-			UserName:  authInfo.UserName,
-			CreatedAt: authInfo.CreatedAt,
-			UpdatedAt: authInfo.UpdatedAt,
-		},
-	}
 
 	log.Infof("User %s logged in successfully from %s", req.Username, c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Login successful",
-		Data:    response,
+		Data:    tokenPair,
 	})
 }
 
@@ -207,8 +178,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	// 验证刷新令牌
-	claims, err := jwt.ValidateRefreshToken(req.RefreshToken, config.Base().JWT.Secret)
+	claims, err := middleware.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
@@ -219,15 +189,23 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	sessionID := claims.SessionID
-
-	sess, err := session.Get(sessionID)
+	sess, err := session.Get(claims.SessionID)
 	if err != nil {
 		log.Warnf("Failed to get session by ID: %v", err)
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
 			Error:   "Session not found or expired",
+		})
+		return
+	}
+
+	if !sess.IsActive {
+		log.Warnf("Session %d is not active", claims.SessionID)
+		c.JSON(http.StatusUnauthorized, api.ResponseError{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+			Error:   "Session is not active",
 		})
 		return
 	}
@@ -242,13 +220,10 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	// 验证客户端IP
 	clientIP := utils.IPToUint32(c.ClientIP())
 
-	// 验证IP和UserAgent
 	if sess.ClientIP != clientIP {
-		log.Warnf("Client IP mismatch during token refresh: session=%s, request=%s",
-			utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
+		log.Warnf("Client IP mismatch during token refresh: session=%s, request=%s", utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
@@ -268,8 +243,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	// 生成新的令牌对
-	newTokenPair, err := jwt.GenerateTokenPair(sessionID, claims.Username, config.Base().JWT.Secret)
+	newTokenPair, err := middleware.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
@@ -280,25 +254,17 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 		return
 	}
 
-	// 更新会话信息
-	sess.ExpiresAt = uint32(newTokenPair.ExpiresAt.Unix())
+	sess.ExpiresAt = uint32(newTokenPair.AccessExpiresAt.Unix())
 	sess.LastAccessAt = uint32(local.Time().Unix())
 	sess.HashRToken = xxhash.Sum64String(newTokenPair.RefreshToken)
 	sess.HashAToken = xxhash.Sum64String(newTokenPair.AccessToken)
-
-	// 构建响应
-	response := auth.RefreshTokenResponse{
-		AccessToken:  newTokenPair.AccessToken,
-		RefreshToken: newTokenPair.RefreshToken,
-		ExpiresAt:    newTokenPair.ExpiresAt,
-	}
 
 	log.Infof("Token refreshed for session %d from %s", claims.SessionID, c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Token refreshed successfully",
-		Data:    response,
+		Data:    newTokenPair,
 	})
 }
 
@@ -324,9 +290,6 @@ func (h *authHandler) logout(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-
-	// 停用当前会话
 	err := session.Disable(sessionID.(uint8))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
@@ -338,7 +301,7 @@ func (h *authHandler) logout(c *gin.Context) {
 		return
 	}
 
-	log.Infof("User %s logged out successfully from %s", username, c.ClientIP())
+	log.Infof("User logged out successfully from %s", c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
@@ -370,33 +333,9 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		return
 	}
 
-	username, exists := c.Get("username")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User not found in context",
-		})
-		return
-	}
-
-	// 获取当前用户信息并验证旧密码
-	authRepo := database.Auth()
-	authInfo, err := authRepo.Get(context.Background())
+	err := database.AuthVerify(req.Username, req.OldPassword)
 	if err != nil {
-		log.Errorf("Failed to get auth info: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to get user information",
-		})
-		return
-	}
-
-	// 验证旧密码
-	err = passwd.Verify(req.OldPassword, authInfo.Password)
-	if err != nil {
-		log.Warnf("Change password failed for user %s: old password verification failed from %s", username, c.ClientIP())
+		log.Warnf("Change password failed for user %s: old password verification failed from %s", req.Username, c.ClientIP())
 		c.JSON(http.StatusUnauthorized, api.ResponseError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized",
@@ -405,22 +344,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		return
 	}
 
-	// 加密新密码
-	hashedPassword, err := passwd.Hash(req.NewPassword)
-	if err != nil {
-		log.Errorf("Failed to hash new password: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to process new password",
-		})
-		return
-	}
-
-	// 更新密码
-	authInfo.Password = hashedPassword
-	authInfo.UpdatedAt = time.Now()
-	err = authRepo.Update(context.Background(), authInfo)
+	err = database.AuthUpdatePassWord(req.NewPassword)
 	if err != nil {
 		log.Errorf("Failed to update password: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
@@ -431,10 +355,9 @@ func (h *authHandler) changePassword(c *gin.Context) {
 		return
 	}
 
-	// 删除所有会话（强制重新登录）
 	session.DisableAll()
 
-	log.Infof("Password changed successfully for user %s from %s", username.(string), c.ClientIP())
+	log.Infof("Password changed successfully for user %s from %s", req.Username, c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
@@ -454,48 +377,20 @@ func (h *authHandler) changePassword(c *gin.Context) {
 // @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/user [get]
 func (h *authHandler) getUserInfo(c *gin.Context) {
-	_, exists := c.Get("username")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User not found in context",
-		})
-		return
-	}
-
-	// 获取用户信息
-	authRepo := database.Auth()
-	authInfo, err := authRepo.Get(context.Background())
+	authInfo, err := database.AuthGet()
 	if err != nil {
-		log.Errorf("Failed to get auth info: %v", err)
+		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
-			Error:   "Failed to get user information",
+			Error:   "Failed to get auth info",
 		})
 		return
 	}
-
-	if authInfo == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "Not Found",
-			Error:   "User not found",
-		})
-		return
-	}
-
-	userInfo := auth.Data{
-		UserName:  authInfo.UserName,
-		CreatedAt: authInfo.CreatedAt,
-		UpdatedAt: authInfo.UpdatedAt,
-	}
-
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "User information retrieved successfully",
-		Data:    userInfo,
+		Data:    authInfo,
 	})
 }
 
@@ -511,26 +406,12 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 // @Failure 500 {object} api.ResponseError "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func (h *authHandler) getSessions(c *gin.Context) {
-	username, exists := c.Get("username")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User not found in context",
-		})
-		return
-	}
-
-	// 获取所有活跃会话
-	sessions := session.GetActive()
-
+	sessions := session.GetAll()
 	response := auth.SessionListResponse{
 		Sessions: *sessions,
 		Total:    len(*sessions),
 	}
-
-	log.Debugf("Retrieved %d sessions for user %s", len(*sessions), username)
-
+	log.Debugf("Retrieved %d sessions", len(*sessions))
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
 		Message: "Sessions retrieved successfully",
@@ -563,8 +444,8 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	sessionID := uint8(0)
-	if _, err := fmt.Sscanf(sessionIDStr, "%d", &sessionID); err != nil {
+	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 8)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
@@ -573,18 +454,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	username, exists := c.Get("username")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User not found in context",
-		})
-		return
-	}
-
-	// 检查会话是否存在
-	_, err := session.Get(sessionID)
+	_, err = session.Get(uint8(sessionID))
 	if err != nil {
 		if err == session.ErrSessionNotFound {
 			c.JSON(http.StatusNotFound, api.ResponseError{
@@ -603,8 +473,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	// 禁用会话
-	err = session.Disable(sessionID)
+	err = session.Disable(uint8(sessionID))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
@@ -615,11 +484,11 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Session %d deleted by user %s from %s", sessionID, username.(string), c.ClientIP())
+	log.Infof("Session %d disabled by user from %s", sessionID, c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
-		Message: "Session deleted successfully",
+		Message: "Session disabled successfully",
 	})
 }
 
@@ -648,18 +517,18 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 		return
 	}
 
-	currentUsername, exists := c.Get("username")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User not found in context",
+	authInfo, err := database.AuthGet()
+	if err != nil {
+		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
+		c.JSON(http.StatusInternalServerError, api.ResponseError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal Server Error",
+			Error:   "Failed to get auth info",
 		})
 		return
 	}
 
-	// 检查新用户名是否与当前用户名相同
-	if req.Username == currentUsername.(string) {
+	if authInfo.UserName == req.Username {
 		c.JSON(http.StatusBadRequest, api.ResponseError{
 			Code:    http.StatusBadRequest,
 			Message: "Bad Request",
@@ -668,13 +537,7 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 		return
 	}
 
-	// 更新用户名
-	authRepo := database.Auth()
-	err := authRepo.UpdateUsername(context.Background(), req.Username)
-	if err != nil {
-		log.Errorf("Failed to update username from %s to %s: %v", currentUsername, req.Username, err)
-		// 根据错误类型返回不同的状态码
-		// 这里假设数据库层会返回适当的错误，如果用户名已存在等
+	if err := database.AuthUpdateName(req.Username); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
@@ -683,7 +546,7 @@ func (h *authHandler) updateUsername(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Username changed successfully from %s to %s from %s", currentUsername.(string), req.Username, c.ClientIP())
+	log.Infof("Username changed successfully from %s to %s from %s", authInfo.UserName, req.Username, c.ClientIP())
 
 	c.JSON(http.StatusOK, api.ResponseSuccess{
 		Code:    http.StatusOK,
