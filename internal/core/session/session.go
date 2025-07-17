@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"path"
-	"sync"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
@@ -21,14 +20,11 @@ var (
 	ErrSessionPoolFull  = errors.New("session pool is full")
 	ErrInvalidSessionID = errors.New("invalid session ID")
 	ErrSessionNotFound  = errors.New("session not found")
-	sessions            [MaxSessions]auth.Session
-	mu                  sync.RWMutex
+	sessions            = make([]auth.Session, MaxSessions)
 )
 
 // Load 从文件加载会话信息
 func init() {
-	mu.Lock()
-	defer mu.Unlock()
 	sessionFile := config.Base().Session.Path
 	if _, err := os.Stat(sessionFile); os.IsNotExist(err) {
 		return
@@ -43,25 +39,16 @@ func init() {
 		return
 	}
 
-	var loadedSessions [MaxSessions]auth.Session
 	decoder := gob.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&loadedSessions); err != nil {
+	if err := decoder.Decode(&sessions); err != nil {
 		return
 	}
-
-	now := uint32(local.Time().Unix())
-	for i := range loadedSessions {
-		if loadedSessions[i].IsActive && now > loadedSessions[i].ExpiresAt {
-			loadedSessions[i].IsActive = false
-		}
-		sessions[i] = loadedSessions[i]
-	}
+	Cleanup()
 }
 
 // Close 关闭会话管理器，将会话信息保存到文件
 func Close() error {
-	mu.Lock()
-	defer mu.Unlock()
+	Cleanup()
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -78,49 +65,52 @@ func Close() error {
 	return os.WriteFile(sessionFile, buf.Bytes(), 0600)
 }
 
-func GetUnActive() (uint8, *auth.Session) {
-	mu.Lock()
-	defer mu.Unlock()
+func GetOne() (uint8, *auth.Session) {
+	var oldestIndex uint8 = 0
+	var oldestTime uint32 = 0
+	found := false
+	Cleanup()
 	for i := range sessions {
 		if !sessions[i].IsActive {
-			return uint8(i), &sessions[i]
+			if sessions[i].CreatedAt == 0 {
+				return uint8(i), &sessions[i]
+			}
+
+			if !found || sessions[i].CreatedAt < oldestTime {
+				oldestIndex = uint8(i)
+				oldestTime = sessions[i].CreatedAt
+				found = true
+			}
 		}
+	}
+
+	if found {
+		return oldestIndex, &sessions[oldestIndex]
 	}
 	return 0, nil
 }
 
 // Get 获取会话
 func Get(sessionID uint8) (*auth.Session, error) {
-	if sessionID >= 10 {
+	Cleanup()
+	if sessionID >= MaxSessions {
 		return nil, ErrInvalidSessionID
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
+	if int(sessionID) >= len(sessions) {
+		return nil, ErrSessionNotFound
+	}
 	session := &sessions[sessionID]
-	if !session.IsActive {
-		return nil, ErrSessionNotFound
-	}
-
-	// 检查是否过期
-	now := uint32(local.Time().Unix())
-	if now > session.ExpiresAt {
-		session.IsActive = false
-		return nil, ErrSessionNotFound
-	}
 
 	return session, nil
 }
 
 // Disable 禁用会话
 func Disable(sessionID uint8) error {
-	if sessionID >= 10 {
+	Cleanup()
+	if sessionID >= MaxSessions {
 		return ErrInvalidSessionID
 	}
-
-	mu.Lock()
-	defer mu.Unlock()
 
 	sessions[sessionID].IsActive = false
 	return nil
@@ -128,43 +118,37 @@ func Disable(sessionID uint8) error {
 
 // DisableAll 禁用所有会话
 func DisableAll() {
-	mu.Lock()
-	defer mu.Unlock()
-
 	for i := range sessions {
 		sessions[i].IsActive = false
 	}
 }
 
 // GetActive 获取所有活跃会话
-func GetActive() *[]auth.SessionResponse {
-	mu.RLock()
-	defer mu.RUnlock()
+func GetAll() *[]auth.SessionResponse {
+	Cleanup()
 
-	var active []auth.SessionResponse
-	now := uint32(local.Time().Unix())
+	var sessionResponse []auth.SessionResponse
 
 	for i := range sessions {
-		if sessions[i].IsActive && now <= sessions[i].ExpiresAt {
-			active = append(active, auth.SessionResponse{
-				ID:           uint8(i),
-				IsActive:     sessions[i].IsActive,
-				ClientIP:     utils.Uint32ToIP(sessions[i].ClientIP),
-				UserAgent:    sessions[i].UserAgent,
-				ExpiresAt:    time.Unix(int64(sessions[i].ExpiresAt), 0),
-				CreatedAt:    time.Unix(int64(sessions[i].CreatedAt), 0),
-				LastAccessAt: time.Unix(int64(sessions[i].LastAccessAt), 0),
-			})
+		if sessions[i].CreatedAt == 0 {
+			continue
 		}
+		sessionResponse = append(sessionResponse, auth.SessionResponse{
+			ID:           uint8(i),
+			IsActive:     sessions[i].IsActive,
+			ClientIP:     utils.Uint32ToIP(sessions[i].ClientIP),
+			UserAgent:    sessions[i].UserAgent,
+			ExpiresAt:    time.Unix(int64(sessions[i].ExpiresAt), 0),
+			CreatedAt:    time.Unix(int64(sessions[i].CreatedAt), 0),
+			LastAccessAt: time.Unix(int64(sessions[i].LastAccessAt), 0),
+		})
 	}
 
-	return &active
+	return &sessionResponse
 }
 
 // Cleanup 清理过期会话，返回清理数量
 func Cleanup() int {
-	mu.Lock()
-	defer mu.Unlock()
 
 	cleaned := 0
 	now := uint32(local.Time().Unix())
@@ -177,25 +161,4 @@ func Cleanup() int {
 	}
 
 	return cleaned
-}
-
-// Stats 获取会话统计信息
-func Stats() (total, active, expired int) {
-	mu.RLock()
-	defer mu.RUnlock()
-
-	now := uint32(local.Time().Unix())
-
-	for i := range sessions {
-		if sessions[i].IsActive {
-			total++
-			if now > sessions[i].ExpiresAt {
-				expired++
-			} else {
-				active++
-			}
-		}
-	}
-
-	return total, active, expired
 }
