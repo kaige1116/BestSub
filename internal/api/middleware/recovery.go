@@ -18,5 +18,6 @@ func Recovery() gin.HandlerFunc {
 			Message: "Internal Server Error",
 			Error:   "An unexpected error occurred",
 		})
+		c.Abort()
 	})
 }
