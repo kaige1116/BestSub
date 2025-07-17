@@ -11,7 +11,7 @@ import (
 
 func Proxy() (*system.ProxyConfig, error) {
 	ctx := context.Background()
-	configRepo := database.SystemConfig()
+	configRepo := database.ConfigRepo()
 
 	// 使用 GetConfigsByGroup 批量获取 proxy 组的所有配置
 	configs, err := configRepo.GetConfigsByGroup(ctx, "proxy")

@@ -102,7 +102,7 @@ func (h *notifyHandler) getNotifies(c *gin.Context) {
 			}
 
 			// 获取通知配置
-			notifyData, err := database.Notify().GetByID(c.Request.Context(), id)
+			notifyData, err := database.NotifyRepo().GetByID(c.Request.Context(), id)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -148,7 +148,7 @@ func (h *notifyHandler) getNotifies(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 获取通知配置列表
-	notifies, err := database.Notify().List(c.Request.Context(), offset, pageSize)
+	notifies, err := database.NotifyRepo().List(c.Request.Context(), offset, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -159,7 +159,7 @@ func (h *notifyHandler) getNotifies(c *gin.Context) {
 	}
 
 	// 获取总数
-	total, err := database.Notify().Count(c.Request.Context())
+	total, err := database.NotifyRepo().Count(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -232,7 +232,7 @@ func (h *notifyHandler) createNotify(c *gin.Context) {
 	}
 
 	// 创建通知配置
-	if err := database.Notify().Create(c.Request.Context(), notifyData); err != nil {
+	if err := database.NotifyRepo().Create(c.Request.Context(), notifyData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "创建通知配置失败",
@@ -285,7 +285,7 @@ func (h *notifyHandler) updateNotify(c *gin.Context) {
 	}
 
 	// 检查通知配置是否存在
-	existingNotify, err := database.Notify().GetByID(c.Request.Context(), req.ID)
+	existingNotify, err := database.NotifyRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -319,7 +319,7 @@ func (h *notifyHandler) updateNotify(c *gin.Context) {
 		notifyData.Enable = existingNotify.Enable
 	}
 
-	if err := database.Notify().Update(c.Request.Context(), notifyData); err != nil {
+	if err := database.NotifyRepo().Update(c.Request.Context(), notifyData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "更新通知配置失败",
@@ -329,7 +329,7 @@ func (h *notifyHandler) updateNotify(c *gin.Context) {
 	}
 
 	// 获取更新后的通知配置数据
-	updatedNotify, err := database.Notify().GetByID(c.Request.Context(), req.ID)
+	updatedNotify, err := database.NotifyRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -385,7 +385,7 @@ func (h *notifyHandler) deleteNotify(c *gin.Context) {
 	}
 
 	// 检查通知配置是否存在
-	existingNotify, err := database.Notify().GetByID(c.Request.Context(), id)
+	existingNotify, err := database.NotifyRepo().GetByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -404,7 +404,7 @@ func (h *notifyHandler) deleteNotify(c *gin.Context) {
 	}
 
 	// 删除通知配置
-	if err := database.Notify().Delete(c.Request.Context(), id); err != nil {
+	if err := database.NotifyRepo().Delete(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "删除通知配置失败",
@@ -457,7 +457,7 @@ func (h *notifyHandler) getTemplates(c *gin.Context) {
 			}
 
 			// 获取通知模板
-			templateData, err := database.NotifyTemplate().GetByID(c.Request.Context(), id)
+			templateData, err := database.NotifyTemplateRepo().GetByID(c.Request.Context(), id)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -503,7 +503,7 @@ func (h *notifyHandler) getTemplates(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 获取通知模板列表
-	templates, err := database.NotifyTemplate().List(c.Request.Context(), offset, pageSize)
+	templates, err := database.NotifyTemplateRepo().List(c.Request.Context(), offset, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -514,7 +514,7 @@ func (h *notifyHandler) getTemplates(c *gin.Context) {
 	}
 
 	// 获取总数
-	total, err := database.NotifyTemplate().Count(c.Request.Context())
+	total, err := database.NotifyTemplateRepo().Count(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -579,7 +579,7 @@ func (h *notifyHandler) createTemplate(c *gin.Context) {
 	}
 
 	// 创建通知模板
-	if err := database.NotifyTemplate().Create(c.Request.Context(), templateData); err != nil {
+	if err := database.NotifyTemplateRepo().Create(c.Request.Context(), templateData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "创建通知模板失败",
@@ -632,7 +632,7 @@ func (h *notifyHandler) updateTemplate(c *gin.Context) {
 	}
 
 	// 检查通知模板是否存在
-	existingTemplate, err := database.NotifyTemplate().GetByID(c.Request.Context(), req.ID)
+	existingTemplate, err := database.NotifyTemplateRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -658,7 +658,7 @@ func (h *notifyHandler) updateTemplate(c *gin.Context) {
 		Template:    req.Template,
 	}
 
-	if err := database.NotifyTemplate().Update(c.Request.Context(), templateData); err != nil {
+	if err := database.NotifyTemplateRepo().Update(c.Request.Context(), templateData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "更新通知模板失败",
@@ -668,7 +668,7 @@ func (h *notifyHandler) updateTemplate(c *gin.Context) {
 	}
 
 	// 获取更新后的通知模板数据
-	updatedTemplate, err := database.NotifyTemplate().GetByID(c.Request.Context(), req.ID)
+	updatedTemplate, err := database.NotifyTemplateRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -724,7 +724,7 @@ func (h *notifyHandler) deleteTemplate(c *gin.Context) {
 	}
 
 	// 检查通知模板是否存在
-	existingTemplate, err := database.NotifyTemplate().GetByID(c.Request.Context(), id)
+	existingTemplate, err := database.NotifyTemplateRepo().GetByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -743,7 +743,7 @@ func (h *notifyHandler) deleteTemplate(c *gin.Context) {
 	}
 
 	// 删除通知模板
-	if err := database.NotifyTemplate().Delete(c.Request.Context(), id); err != nil {
+	if err := database.NotifyTemplateRepo().Delete(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "删除通知模板失败",

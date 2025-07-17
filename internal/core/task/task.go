@@ -30,7 +30,7 @@ func Initialize() error {
 // Start 启动任务调度器
 func Start() {
 	taskScheduler.Start()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	tasks, err := repo.List(context.Background(), 0, math.MaxInt)
 	if err != nil {
 		log.Errorf("failed to get tasks: %v", err)
@@ -57,7 +57,7 @@ func Start() {
 func AddTask(req *task.CreateRequest) (*task.Data, error) {
 	mu.Lock()
 	defer mu.Unlock()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	enable := true
 	if req.Enable != nil {
 		enable = *req.Enable
@@ -91,7 +91,7 @@ func AddTask(req *task.CreateRequest) (*task.Data, error) {
 func UpdateTask(req *task.UpdateRequest) (*task.Data, error) {
 	mu.Lock()
 	defer mu.Unlock()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	enable := true
 	if req.Enable != nil {
 		enable = *req.Enable
@@ -130,7 +130,7 @@ func RunTask(taskID int64) error {
 func RemoveTaskWithDb(taskID int64) error {
 	mu.Lock()
 	defer mu.Unlock()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	err := repo.Delete(context.Background(), taskID)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func StopTask(taskID int64) error {
 func ListTasks(offset, pageSize int) (*[]task.Data, int64, error) {
 	mu.RLock()
 	defer mu.RUnlock()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	tasks, err := repo.List(context.Background(), offset, pageSize)
 	if err != nil {
 		return nil, 0, err
@@ -163,7 +163,7 @@ func ListTasks(offset, pageSize int) (*[]task.Data, int64, error) {
 func GetTask(taskID int64) (*task.Data, error) {
 	mu.RLock()
 	defer mu.RUnlock()
-	repo := database.Task()
+	repo := database.TaskRepo()
 	return repo.GetByID(context.Background(), taskID)
 }
 

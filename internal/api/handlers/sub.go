@@ -89,7 +89,7 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 	}
 
 	// 创建订阅链接
-	if err := database.SubLink().Create(c.Request.Context(), subData); err != nil {
+	if err := database.SubRepo().Create(c.Request.Context(), subData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "创建订阅链接失败",
@@ -115,7 +115,7 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 
 		// 建立订阅与任务的关联
 		log.Debugf("建立订阅与任务的关联: %d, %d", subData.ID, taskData.ID)
-		if err := database.SubLink().AddTaskRelation(c.Request.Context(), subData.ID, taskData.ID); err != nil {
+		if err := database.SubRepo().AddTaskRelation(c.Request.Context(), subData.ID, taskData.ID); err != nil {
 			c.JSON(http.StatusInternalServerError, api.ResponseError{
 				Code:    http.StatusInternalServerError,
 				Message: "建立订阅任务关联失败",
@@ -178,7 +178,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 			}
 
 			// 获取订阅链接
-			subData, err := database.SubLink().GetByID(c.Request.Context(), id)
+			subData, err := database.SubRepo().GetByID(c.Request.Context(), id)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -197,7 +197,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 			}
 
 			// 获取关联的任务
-			tasks, err := database.Task().GetBySubID(c.Request.Context(), id)
+			tasks, err := database.TaskRepo().GetBySubID(c.Request.Context(), id)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -240,7 +240,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 	offset := (page - 1) * pageSize
 
 	// 获取订阅链接列表
-	subs, err := database.SubLink().List(c.Request.Context(), offset, pageSize)
+	subs, err := database.SubRepo().List(c.Request.Context(), offset, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -251,7 +251,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 	}
 
 	// 获取总数
-	total, err := database.SubLink().Count(c.Request.Context())
+	total, err := database.SubRepo().Count(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -266,7 +266,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 	if subs != nil {
 		for _, subData := range *subs {
 			// 获取每个订阅的关联任务
-			tasks, err := database.Task().GetBySubID(c.Request.Context(), subData.ID)
+			tasks, err := database.TaskRepo().GetBySubID(c.Request.Context(), subData.ID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, api.ResponseError{
 					Code:    http.StatusInternalServerError,
@@ -340,7 +340,7 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 	}
 
 	// 检查订阅链接是否存在
-	existingSub, err := database.SubLink().GetByID(c.Request.Context(), req.ID)
+	existingSub, err := database.SubRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -368,7 +368,7 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 		URL: req.URL,
 	}
 
-	if err := database.SubLink().Update(c.Request.Context(), subData); err != nil {
+	if err := database.SubRepo().Update(c.Request.Context(), subData); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "更新订阅链接失败",
@@ -394,7 +394,7 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 	}
 
 	// 获取更新后的订阅链接数据
-	updatedSub, err := database.SubLink().GetByID(c.Request.Context(), req.ID)
+	updatedSub, err := database.SubRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -455,7 +455,7 @@ func (h *subLinkHandler) deleteSub(c *gin.Context) {
 	}
 
 	// 检查订阅链接是否存在
-	existingSub, err := database.SubLink().GetByID(c.Request.Context(), id)
+	existingSub, err := database.SubRepo().GetByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -473,7 +473,7 @@ func (h *subLinkHandler) deleteSub(c *gin.Context) {
 		return
 	}
 
-	taskIDs, err := database.Task().GetTaskIDsBySubID(c.Request.Context(), id)
+	taskIDs, err := database.TaskRepo().GetTaskIDsBySubID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
@@ -495,7 +495,7 @@ func (h *subLinkHandler) deleteSub(c *gin.Context) {
 	}
 
 	// 删除订阅链接（数据库触发器会自动删除关联的任务）
-	if err := database.SubLink().Delete(c.Request.Context(), id); err != nil {
+	if err := database.SubRepo().Delete(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusInternalServerError, api.ResponseError{
 			Code:    http.StatusInternalServerError,
 			Message: "删除订阅链接失败",

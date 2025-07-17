@@ -10,7 +10,7 @@ import (
 
 func Task() *system.TaskConfig {
 	ctx := context.Background()
-	configRepo := database.SystemConfig()
+	configRepo := database.ConfigRepo()
 
 	// 使用 GetConfigsByGroup 批量获取 task 组的所有配置
 	configs, err := configRepo.GetConfigsByGroup(ctx, "task")
