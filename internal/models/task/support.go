@@ -2,7 +2,6 @@ package task
 
 const (
 	TypeGC           = "gc"            // 垃圾回收任务
-	TypeSessionClean = "session_clean" // 会话清理任务
 	TypeLogClean     = "log_clean"     // 日志清理任务
 	TypeSubFetch     = "sub_fetch"     // 订阅获取任务
 	TypeNodeDetect   = "node_detect"   // 节点检测任务

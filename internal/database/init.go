@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 
-	"github.com/bestruirui/bestsub/internal/database/defaults"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
+	authModel "github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -17,13 +17,13 @@ func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 		log.Fatalf("failed to check if database is initialized: %v", err)
 	}
 	if !isInitialized {
-		authData := defaults.Auth()
+		authData := authModel.Default()
 		hashedBytes, err := bcrypt.GenerateFromPassword([]byte(authData.Password), bcrypt.DefaultCost)
 		if err != nil {
 			log.Fatalf("failed to hash password: %v", err)
 		}
 		authData.Password = string(hashedBytes)
-		if err := auth.Initialize(ctx, authData); err != nil {
+		if err := auth.Initialize(ctx, &authData); err != nil {
 			log.Fatalf("failed to initialize auth: %v", err)
 		}
 		log.Info("初始化默认管理员账号 用户名: admin 密码: admin")
@@ -31,43 +31,36 @@ func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 	return nil
 }
 func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigRepository) error {
-	defaultSystemConfig := defaults.Configs()
-
-	existingKeys, err := systemConfig.GetAllKeys(ctx)
+	defaultSystemConfig := system.DefaultDbConfig()
+	existingSystemConfig, err := systemConfig.GetAll(ctx)
+	notExistConfig := make([]system.Data, 0)
 	if err != nil {
-		log.Fatalf("failed to get existing config keys: %v", err)
+		log.Fatalf("failed to get existing system config: %v", err)
 	}
 
-	existingKeysMap := make(map[string]bool)
-	for _, key := range existingKeys {
-		existingKeysMap[key] = true
+	existingSystemConfigMap := make(map[string]bool)
+	for _, config := range *existingSystemConfig {
+		existingSystemConfigMap[config.Key] = true
 	}
 
-	defaultKeysMap := make(map[string]system.Data)
-	for _, config := range defaultSystemConfig {
-		defaultKeysMap[config.Key] = config
-	}
-
-	for key, config := range defaultKeysMap {
-		if !existingKeysMap[key] {
-			if err := systemConfig.Create(ctx, &config); err != nil {
-				log.Fatalf("failed to create missing config %s: %v", key, err)
+	for _, group := range defaultSystemConfig {
+		for _, config := range group.Data {
+			if !existingSystemConfigMap[config.Key] {
+				notExistConfig = append(notExistConfig, config)
 			}
 		}
 	}
 
-	for _, key := range existingKeys {
-		if _, exists := defaultKeysMap[key]; !exists {
-			if err := systemConfig.DeleteByKey(ctx, key); err != nil {
-				log.Fatalf("failed to delete extra config %s: %v", key, err)
-			}
+	if len(notExistConfig) > 0 {
+		if err := systemConfig.Create(ctx, &notExistConfig); err != nil {
+			log.Fatalf("failed to create missing system config: %v", err)
 		}
 	}
 
 	return nil
 }
 func initTask(ctx context.Context, taskRepo interfaces.TaskRepository) error {
-	defaultTasks := defaults.Tasks()
+	defaultTasks := task.Default()
 
 	existingTasks, err := taskRepo.GetSystemTasks(ctx)
 	if err != nil {
