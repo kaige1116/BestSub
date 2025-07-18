@@ -26,9 +26,7 @@ CREATE TABLE IF NOT EXISTS "auth" (
 
 CREATE TABLE IF NOT EXISTS "system_config" (
 	"key" TEXT NOT NULL UNIQUE,
-	"group_name" TEXT NOT NULL,
 	"value" TEXT,
-	"description" TEXT,
 	PRIMARY KEY("key")
 );
 
