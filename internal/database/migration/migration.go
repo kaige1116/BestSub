@@ -1,42 +1,41 @@
 package migration
 
-import (
-	"sort"
-)
+import "sort"
 
 type Info struct {
 	Date        int64 // 迁移日期 格式 202507171200
 	Version     string
 	Description string
-	Content     string
-}
-type Migrations struct {
-	migrations []Info
+	Content     func() string
 }
 
-func NewMigration(size int) *Migrations {
-	return &Migrations{
-		migrations: make([]Info, 0, size),
-	}
-}
+var clientMigrations = make(map[string][]*Info)
 
-func (m *Migrations) Register(date int64, version, description, content string) {
-	newInfo := Info{
+func Register(client string, date int64, version, description string, contentFunc func() string) {
+	info := &Info{
 		Date:        date,
 		Version:     version,
 		Description: description,
-		Content:     content,
+		Content:     contentFunc,
 	}
 
-	index := sort.Search(len(m.migrations), func(i int) bool {
-		return m.migrations[i].Date > date
+	migrations := clientMigrations[client]
+
+	index := sort.Search(len(migrations), func(i int) bool {
+		return migrations[i].Date > date
 	})
 
-	m.migrations = append(m.migrations, Info{})
-	copy(m.migrations[index+1:], m.migrations[index:])
-	m.migrations[index] = newInfo
+	migrations = append(migrations, nil)
+	copy(migrations[index+1:], migrations[index:])
+	migrations[index] = info
+
+	clientMigrations[client] = migrations
 }
 
-func (m *Migrations) Get() *[]Info {
-	return &m.migrations
+// Get 获取指定客户端的迁移数据
+func Get(client string) []*Info {
+	if migrations := clientMigrations[client]; migrations != nil {
+		return migrations
+	}
+	return make([]*Info, 0)
 }
