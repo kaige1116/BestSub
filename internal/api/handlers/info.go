@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	sys "github.com/bestruirui/bestsub/internal/core/system"
-	"github.com/bestruirui/bestsub/internal/database"
-	"github.com/bestruirui/bestsub/internal/models/api"
+	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/utils/info"
 	"github.com/bestruirui/bestsub/internal/utils/local"
@@ -17,27 +18,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// healthHandler 健康检查处理器
-type healthHandler struct{}
-
-// init 函数用于自动注册路由
 func init() {
-	h := newHealthHandler()
-
 	router.NewGroupRouter("/api/v1/system").
 		AddRoute(
 			router.NewRoute("/health", router.GET).
-				Handle(h.healthCheck).
+				Handle(healthCheck).
 				WithDescription("Health check endpoint"),
 		).
 		AddRoute(
 			router.NewRoute("/ready", router.GET).
-				Handle(h.readinessCheck).
+				Handle(readinessCheck).
 				WithDescription("Readiness check endpoint"),
 		).
 		AddRoute(
 			router.NewRoute("/live", router.GET).
-				Handle(h.livenessCheck).
+				Handle(livenessCheck).
 				WithDescription("Liveness check endpoint"),
 		)
 
@@ -45,14 +40,9 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/info", router.GET).
-				Handle(h.systemInfo).
+				Handle(systemInfo).
 				WithDescription("Get system information"),
 		)
-}
-
-// newHealthHandler 创建健康检查处理器
-func newHealthHandler() *healthHandler {
-	return &healthHandler{}
 }
 
 // healthCheck 健康检查
@@ -61,47 +51,39 @@ func newHealthHandler() *healthHandler {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.ResponseSuccess{data=system.HealthResponse} "服务正常"
-// @Failure 503 {object} api.ResponseError "服务不可用"
+// @Success 200 {object} common.ResponseSuccessStruct{data=system.HealthResponse} "服务正常"
+// @Failure 503 {object} common.ResponseErrorStruct "服务不可用"
 // @Router /api/v1/system/health [get]
-func (h *healthHandler) healthCheck(c *gin.Context) {
+func healthCheck(c *gin.Context) {
 	// 检查数据库连接状态
-	databaseStatus := "connected"
+	opStatus := "connected"
 
 	// 尝试执行一个简单的数据库查询来检查连接
-	authRepo := database.Auth()
+	authRepo := op.AuthRepo()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	_, err := authRepo.IsInitialized(ctx)
 	if err != nil {
 		log.Errorf("Database health check failed: %v", err)
-		databaseStatus = "disconnected"
+		opStatus = "disconnected"
 	}
 
 	response := system.HealthResponse{
 		Status:    "ok",
 		Timestamp: local.Time().Format(time.RFC3339),
 		Version:   info.Version,
-		Database:  databaseStatus,
+		Database:  opStatus,
 	}
 
 	// 如果数据库连接失败，返回503状态码
-	if databaseStatus == "disconnected" {
+	if opStatus == "disconnected" {
 		response.Status = "error"
-		c.JSON(http.StatusServiceUnavailable, api.ResponseError{
-			Code:    http.StatusServiceUnavailable,
-			Message: "Service Unavailable",
-			Error:   "Database connection failed",
-		})
+		common.ResponseError(c, http.StatusServiceUnavailable, errors.New("database connection failed"))
 		return
 	}
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Service is healthy",
-		Data:    response,
-	})
+	common.ResponseSuccess(c, response)
 }
 
 // readinessCheck 就绪检查
@@ -110,16 +92,16 @@ func (h *healthHandler) healthCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.ResponseSuccess{data=system.HealthResponse} "服务就绪"
-// @Failure 503 {object} api.ResponseError "服务未就绪"
+// @Success 200 {object} common.ResponseSuccessStruct{data=system.HealthResponse} "服务就绪"
+// @Failure 503 {object} common.ResponseErrorStruct "服务未就绪"
 // @Router /api/v1/system/ready [get]
-func (h *healthHandler) readinessCheck(c *gin.Context) {
+func readinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
 	ready := true
 	var errorMsg string
 
 	// 检查数据库是否已初始化
-	authRepo := database.Auth()
+	authRepo := op.AuthRepo()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -127,7 +109,7 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 	if err != nil || !isInitialized {
 		ready = false
 		errorMsg = "Database not initialized"
-		log.Errorf("Readiness check failed: database not initialized, error: %v", err)
+		log.Errorf("Readiness check failed: op not initialized, error: %v", err)
 	}
 
 	response := system.HealthResponse{
@@ -140,19 +122,11 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 	if !ready {
 		response.Status = "not ready"
 		response.Database = "not initialized"
-		c.JSON(http.StatusServiceUnavailable, api.ResponseError{
-			Code:    http.StatusServiceUnavailable,
-			Message: "Service Not Ready",
-			Error:   errorMsg,
-		})
+		common.ResponseError(c, http.StatusServiceUnavailable, errors.New(errorMsg))
 		return
 	}
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Service is ready",
-		Data:    response,
-	})
+	common.ResponseSuccess(c, response)
 }
 
 // livenessCheck 存活检查
@@ -161,16 +135,12 @@ func (h *healthHandler) readinessCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.ResponseSuccess "服务存活"
+// @Success 200 {object} common.ResponseSuccessStruct "服务存活"
 // @Router /api/v1/system/live [get]
-func (h *healthHandler) livenessCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Service is alive",
-		Data: map[string]interface{}{
-			"status":    "alive",
-			"timestamp": local.Time().Format(time.RFC3339),
-		},
+func livenessCheck(c *gin.Context) {
+	common.ResponseSuccess(c, map[string]interface{}{
+		"status":    "alive",
+		"timestamp": local.Time().Format(time.RFC3339),
 	})
 }
 
@@ -181,17 +151,10 @@ func (h *healthHandler) livenessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} api.ResponseSuccess{data=system.Info} "获取成功"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=system.Info} "获取成功"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/system/info [get]
-func (h *healthHandler) systemInfo(c *gin.Context) {
-	sysInfo := sys.GetSystemInfo()
-	log.Debug("System information retrieved successfully")
-
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "System information retrieved successfully",
-		Data:    sysInfo,
-	})
+func systemInfo(c *gin.Context) {
+	common.ResponseSuccess(c, sys.GetSystemInfo())
 }

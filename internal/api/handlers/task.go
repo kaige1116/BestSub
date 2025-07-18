@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/core/task"
-	"github.com/bestruirui/bestsub/internal/models/api"
 	taskModel "github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
@@ -75,41 +75,29 @@ func newTaskHandler() *taskHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param request body taskModel.CreateRequest true "创建任务请求"
-// @Success 200 {object} api.ResponseSuccess{data=taskModel.Data} "创建成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=taskModel.Data} "创建成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [post]
 func (h *taskHandler) createTask(c *gin.Context) {
 	var req taskModel.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "请求参数错误",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 创建任务
 	taskData, err := task.AddTask(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "创建任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d created by user %s from %s", taskData.ID, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "创建成功",
-		Data:    taskData,
-	})
+	common.ResponseSuccess(c, taskData)
 }
 
 // getTasks 获取任务列表
@@ -121,10 +109,10 @@ func (h *taskHandler) createTask(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页大小" default(10)
 // @Param ids query string false "任务ID列表，逗号分隔"
-// @Success 200 {object} api.ResponseSuccess{data=[]taskModel.Data} "获取成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=[]taskModel.Data} "获取成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [get]
 func (h *taskHandler) getTasks(c *gin.Context) {
 	// 解析查询参数
@@ -138,41 +126,26 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 		for _, idStr := range idStrs {
 			id, err := strconv.ParseInt(strings.TrimSpace(idStr), 10, 64)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, api.ResponseError{
-					Code:    http.StatusBadRequest,
-					Message: "无效的ID格式",
-					Error:   err.Error(),
-				})
+				common.ResponseError(c, http.StatusBadRequest, err)
 				return
 			}
 
 			// 获取任务
 			taskData, err := task.GetTask(id)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, api.ResponseError{
-					Code:    http.StatusInternalServerError,
-					Message: "获取任务失败",
-					Error:   err.Error(),
-				})
+				common.ResponseError(c, http.StatusInternalServerError, err)
 				return
 			}
 
 			if taskData == nil {
-				c.JSON(http.StatusNotFound, api.ResponseError{
-					Code:    http.StatusNotFound,
-					Message: fmt.Sprintf("任务 ID %d 不存在", id),
-				})
+				common.ResponseError(c, http.StatusNotFound, fmt.Errorf("任务 ID %d 不存在", id))
 				return
 			}
 
 			tasks = append(tasks, *taskData)
 		}
 
-		c.JSON(http.StatusOK, api.ResponseSuccess{
-			Code:    http.StatusOK,
-			Message: "获取成功",
-			Data:    tasks,
-		})
+		common.ResponseSuccess(c, tasks)
 		return
 	}
 
@@ -192,11 +165,7 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 	// 获取任务列表
 	tasks, total, err := task.ListTasks(offset, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "获取任务列表失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -211,11 +180,7 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 	username, _ := c.Get("username")
 	log.Infof("Task list requested by user %s from %s", username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "获取成功",
-		Data:    result,
-	})
+	common.ResponseSuccess(c, result)
 }
 
 // getTask 获取单个任务
@@ -225,60 +190,42 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "任务ID"
-// @Success 200 {object} api.ResponseSuccess{data=taskModel.Data} "获取成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "任务不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=taskModel.Data} "获取成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id} [get]
 func (h *taskHandler) getTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "任务ID不能为空",
-		})
+		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("任务ID不能为空"))
 		return
 	}
 
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "无效的ID格式",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 获取任务
 	taskData, err := task.GetTask(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "获取任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	if taskData == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "任务不存在",
-		})
+		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("任务不存在"))
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d requested by user %s from %s", id, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "获取成功",
-		Data:    taskData,
-	})
+	common.ResponseSuccess(c, taskData)
 }
 
 // updateTask 更新任务
@@ -289,50 +236,35 @@ func (h *taskHandler) getTask(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body taskModel.UpdateRequest true "更新任务请求"
-// @Success 200 {object} api.ResponseSuccess{data=taskModel.Data} "更新成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "任务不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=taskModel.Data} "更新成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [patch]
 func (h *taskHandler) updateTask(c *gin.Context) {
 	var req taskModel.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "请求参数错误",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	if req.ID == 0 {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "任务ID不能为空",
-		})
+		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("任务ID不能为空"))
 		return
 	}
 
 	// 更新任务
 	taskData, err := task.UpdateTask(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "更新任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d updated by user %s from %s", req.ID, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "更新成功",
-		Data:    taskData,
-	})
+	common.ResponseSuccess(c, taskData)
 }
 
 // deleteTask 删除任务
@@ -343,69 +275,48 @@ func (h *taskHandler) updateTask(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "任务ID"
-// @Success 200 {object} api.ResponseSuccess "删除成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "任务不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "删除成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id} [delete]
 func (h *taskHandler) deleteTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "任务ID不能为空",
-		})
+		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("任务ID不能为空"))
 		return
 	}
 
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "无效的ID格式",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
 	existingTask, err := task.GetTask(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "获取任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	if existingTask == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "任务不存在",
-		})
+		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("任务不存在"))
 		return
 	}
 
 	// 删除任务
 	if err := task.RemoveTaskWithDb(id); err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "删除任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d deleted by user %s from %s", id, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "删除成功",
-	})
+	common.ResponseSuccess(c, nil)
 }
 
 // runTask 手动运行任务
@@ -416,69 +327,48 @@ func (h *taskHandler) deleteTask(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "任务ID"
-// @Success 200 {object} api.ResponseSuccess "运行成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "任务不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "运行成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id}/run [post]
 func (h *taskHandler) runTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "任务ID不能为空",
-		})
+		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("任务ID不能为空"))
 		return
 	}
 
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "无效的ID格式",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
 	existingTask, err := task.GetTask(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "获取任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	if existingTask == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "任务不存在",
-		})
+		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("任务不存在"))
 		return
 	}
 
 	// 运行任务
 	if err := task.RunTask(id); err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "运行任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d manually run by user %s from %s", id, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "任务已开始运行",
-	})
+	common.ResponseSuccess(c, nil)
 }
 
 // stopTask 停止任务
@@ -489,67 +379,46 @@ func (h *taskHandler) runTask(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "任务ID"
-// @Success 200 {object} api.ResponseSuccess "停止成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "任务不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "停止成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id}/stop [post]
 func (h *taskHandler) stopTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "任务ID不能为空",
-		})
+		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("任务ID不能为空"))
 		return
 	}
 
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "无效的ID格式",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
 	existingTask, err := task.GetTask(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "获取任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	if existingTask == nil {
-		c.JSON(http.StatusNotFound, api.ResponseError{
-			Code:    http.StatusNotFound,
-			Message: "任务不存在",
-		})
+		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("任务不存在"))
 		return
 	}
 
 	// 停止任务
 	if err := task.StopTask(id); err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "停止任务失败",
-			Error:   err.Error(),
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	username, _ := c.Get("username")
 	log.Infof("Task %d stopped by user %s from %s", id, username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "任务已停止",
-	})
+	common.ResponseSuccess(c, nil)
 }

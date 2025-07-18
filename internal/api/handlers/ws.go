@@ -1,15 +1,16 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
-	"github.com/bestruirui/bestsub/internal/models/api"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -127,11 +128,7 @@ func newWSHandler() *wsHandler {
 
 func (h *wsHandler) handleLogWebSocket(c *gin.Context) {
 	if atomic.LoadInt32(&h.clientCount) >= MaxConnections {
-		c.JSON(http.StatusTooManyRequests, api.ResponseError{
-			Code:    http.StatusTooManyRequests,
-			Message: "Too Many Requests",
-			Error:   "连接数已达上限",
-		})
+		common.ResponseError(c, http.StatusTooManyRequests, fmt.Errorf("连接数已达上限"))
 		return
 	}
 

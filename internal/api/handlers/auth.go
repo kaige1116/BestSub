@@ -1,15 +1,16 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"
-	"github.com/bestruirui/bestsub/internal/core/session"
-	"github.com/bestruirui/bestsub/internal/database"
-	"github.com/bestruirui/bestsub/internal/models/api"
+	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
@@ -85,53 +86,37 @@ func newAuthHandler() *authHandler {
 // @Accept json
 // @Produce json
 // @Param request body auth.LoginRequest true "登录请求"
-// @Success 200 {object} api.ResponseSuccess{data=auth.LoginResponse} "登录成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "用户名或密码错误"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=auth.LoginResponse} "登录成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "用户名或密码错误"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func (h *authHandler) login(c *gin.Context) {
 	var req auth.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Invalid request format: " + err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	err := database.AuthVerify(req.Username, req.Password)
+	err := op.AuthVerify(req.Username, req.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Invalid username or password",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
-	sessionID, tempSess := session.GetOne()
+	sessionID, tempSess := common.GetOneSession()
 	if tempSess == nil {
 		log.Warnf("No unused session found from %s", c.ClientIP())
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Too many devices, please log out of other devices",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
-	tokenPair, err := middleware.GenerateTokenPair(sessionID, req.Username, config.Base().JWT.Secret)
+	tokenPair, err := common.GenerateTokenPair(sessionID, req.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
-		session.Disable(sessionID)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to generate tokens",
-		})
+		common.DisableSession(sessionID)
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -142,17 +127,13 @@ func (h *authHandler) login(c *gin.Context) {
 	tempSess.UserAgent = c.GetHeader("User-Agent")
 	tempSess.CreatedAt = now
 	tempSess.LastAccessAt = now
-	tempSess.ExpiresAt = uint32(tokenPair.AccessExpiresAt.Unix())
+	tempSess.ExpiresAt = uint32(tokenPair.RefreshExpiresAt.Unix())
 	tempSess.HashRToken = xxhash.Sum64String(tokenPair.RefreshToken)
 	tempSess.HashAToken = xxhash.Sum64String(tokenPair.AccessToken)
 
 	log.Infof("User %s logged in successfully from %s", req.Username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Login successful",
-		Data:    tokenPair,
-	})
+	common.ResponseSuccess(c, tokenPair)
 }
 
 // refreshToken 刷新令牌
@@ -162,61 +143,41 @@ func (h *authHandler) login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body auth.RefreshTokenRequest true "刷新令牌请求"
-// @Success 200 {object} api.ResponseSuccess{data=auth.RefreshTokenResponse} "刷新成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "刷新令牌无效"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=auth.LoginResponse} "刷新成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "刷新令牌无效"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
 func (h *authHandler) refreshToken(c *gin.Context) {
 	var req auth.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Invalid request format: " + err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	claims, err := middleware.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
+	claims, err := common.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Invalid refresh token",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("refresh token validation failed"))
 		return
 	}
 
-	sess, err := session.Get(claims.SessionID)
+	sess, err := common.GetSession(claims.SessionID)
 	if err != nil {
 		log.Warnf("Failed to get session by ID: %v", err)
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Session not found or expired",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
 	if !sess.IsActive {
 		log.Warnf("Session %d is not active", claims.SessionID)
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Session is not active",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("session is not active"))
 		return
 	}
 
 	if sess.HashRToken != xxhash.Sum64String(req.RefreshToken) {
 		log.Warnf("Refresh token hash mismatch: session=%d, request=%d", sess.HashRToken, xxhash.Sum64String(req.RefreshToken))
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Refresh token hash mismatch",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
@@ -224,33 +185,21 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 
 	if sess.ClientIP != clientIP {
 		log.Warnf("Client IP mismatch during token refresh: session=%s, request=%s", utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Client IP mismatch",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
 	if sess.UserAgent != c.GetHeader("User-Agent") {
 		log.Warnf("User agent mismatch during token refresh: session=%s, request=%s",
 			sess.UserAgent, c.GetHeader("User-Agent"))
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "User agent mismatch",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
-	newTokenPair, err := middleware.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
+	newTokenPair, err := common.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to generate new tokens",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -261,11 +210,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 
 	log.Infof("Token refreshed for session %d from %s", claims.SessionID, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Token refreshed successfully",
-		Data:    newTokenPair,
-	})
+	common.ResponseSuccess(c, newTokenPair)
 }
 
 // logout 用户登出
@@ -275,38 +220,27 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} api.ResponseSuccess "登出成功"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "登出成功"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/logout [post]
 func (h *authHandler) logout(c *gin.Context) {
 	sessionID, exists := c.Get("session_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Session not found",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, errors.New("session not found"))
 		return
 	}
 
-	err := session.Disable(sessionID.(uint8))
+	err := common.DisableSession(sessionID.(uint8))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to logout",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Infof("User logged out successfully from %s", c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Logout successful",
-	})
+	common.ResponseSuccess(c, nil)
 }
 
 // changePassword 修改密码
@@ -317,52 +251,37 @@ func (h *authHandler) logout(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body auth.ChangePasswordRequest true "修改密码请求"
-// @Success 200 {object} api.ResponseSuccess "密码修改成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权或旧密码错误"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "密码修改成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权或旧密码错误"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
 func (h *authHandler) changePassword(c *gin.Context) {
 	var req auth.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Invalid request format: " + err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	err := database.AuthVerify(req.Username, req.OldPassword)
+	err := op.AuthVerify(req.Username, req.OldPassword)
 	if err != nil {
 		log.Warnf("Change password failed for user %s: old password verification failed from %s", req.Username, c.ClientIP())
-		c.JSON(http.StatusUnauthorized, api.ResponseError{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-			Error:   "Old password is incorrect",
-		})
+		common.ResponseError(c, http.StatusUnauthorized, err)
 		return
 	}
 
-	err = database.AuthUpdatePassWord(req.NewPassword)
+	err = op.AuthUpdatePassWord(req.NewPassword)
 	if err != nil {
 		log.Errorf("Failed to update password: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to update password",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	session.DisableAll()
+	common.DisableAllSession()
 
 	log.Infof("Password changed successfully for user %s from %s", req.Username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Password changed successfully. Please login again.",
-	})
+	common.ResponseSuccess(c, nil)
 }
 
 // getUserInfo 获取当前用户信息
@@ -372,26 +291,18 @@ func (h *authHandler) changePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} api.ResponseSuccess{data=auth.Data} "获取成功"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=auth.Data} "获取成功"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user [get]
 func (h *authHandler) getUserInfo(c *gin.Context) {
-	authInfo, err := database.AuthGet()
+	authInfo, err := op.AuthGet()
 	if err != nil {
 		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to get auth info",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "User information retrieved successfully",
-		Data:    authInfo,
-	})
+	common.ResponseSuccess(c, authInfo)
 }
 
 // getSessions 获取当前用户的所有会话
@@ -401,22 +312,17 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} api.ResponseSuccess{data=auth.SessionListResponse} "获取成功"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct{data=auth.SessionListResponse} "获取成功"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func (h *authHandler) getSessions(c *gin.Context) {
-	sessions := session.GetAll()
+	sessions := common.GetAllSession()
 	response := auth.SessionListResponse{
 		Sessions: *sessions,
 		Total:    len(*sessions),
 	}
-	log.Debugf("Retrieved %d sessions", len(*sessions))
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Sessions retrieved successfully",
-		Data:    response,
-	})
+	common.ResponseSuccess(c, response)
 }
 
 // deleteSession 删除指定会话
@@ -427,69 +333,46 @@ func (h *authHandler) getSessions(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "会话ID"
-// @Success 200 {object} api.ResponseSuccess "删除成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 404 {object} api.ResponseError "会话不存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "删除成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 404 {object} common.ResponseErrorStruct "会话不存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions/{id} [delete]
 func (h *authHandler) deleteSession(c *gin.Context) {
 	sessionIDStr := c.Param("id")
 	if sessionIDStr == "" {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Session ID is required",
-		})
+		common.ResponseError(c, http.StatusBadRequest, errors.New("session ID is required"))
 		return
 	}
 
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 8)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Invalid session ID format",
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	_, err = session.Get(uint8(sessionID))
+	_, err = common.GetSession(uint8(sessionID))
 	if err != nil {
-		if err == session.ErrSessionNotFound {
-			c.JSON(http.StatusNotFound, api.ResponseError{
-				Code:    http.StatusNotFound,
-				Message: "Not Found",
-				Error:   "Session not found",
-			})
+		if err == common.ErrSessionNotFound {
+			common.ResponseError(c, http.StatusNotFound, err)
 		} else {
 			log.Errorf("Failed to get session: %v", err)
-			c.JSON(http.StatusInternalServerError, api.ResponseError{
-				Code:    http.StatusInternalServerError,
-				Message: "Internal Server Error",
-				Error:   "Failed to get session",
-			})
+			common.ResponseError(c, http.StatusInternalServerError, err)
 		}
 		return
 	}
 
-	err = session.Disable(uint8(sessionID))
+	err = common.DisableSession(uint8(sessionID))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to delete session",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Infof("Session %d disabled by user from %s", sessionID, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Session disabled successfully",
-	})
+	common.ResponseSuccess(c, nil)
 }
 
 // updateUsername 修改用户名
@@ -500,56 +383,37 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body auth.UpdateUserInfoRequest true "修改用户名请求"
-// @Success 200 {object} api.ResponseSuccess "用户名修改成功"
-// @Failure 400 {object} api.ResponseError "请求参数错误"
-// @Failure 401 {object} api.ResponseError "未授权"
-// @Failure 409 {object} api.ResponseError "用户名已存在"
-// @Failure 500 {object} api.ResponseError "服务器内部错误"
+// @Success 200 {object} common.ResponseSuccessStruct "用户名修改成功"
+// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
+// @Failure 401 {object} common.ResponseErrorStruct "未授权"
+// @Failure 409 {object} common.ResponseErrorStruct "用户名已存在"
+// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
 func (h *authHandler) updateUsername(c *gin.Context) {
 	var req auth.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "Invalid request format: " + err.Error(),
-		})
+		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	authInfo, err := database.AuthGet()
+	authInfo, err := op.AuthGet()
 	if err != nil {
 		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to get auth info",
-		})
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	if authInfo.UserName == req.Username {
-		c.JSON(http.StatusBadRequest, api.ResponseError{
-			Code:    http.StatusBadRequest,
-			Message: "Bad Request",
-			Error:   "New username cannot be the same as current username",
-		})
+		common.ResponseError(c, http.StatusBadRequest, errors.New("new username cannot be the same as current username"))
 		return
 	}
 
-	if err := database.AuthUpdateName(req.Username); err != nil {
-		c.JSON(http.StatusInternalServerError, api.ResponseError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Error:   "Failed to update username",
-		})
+	if err := op.AuthUpdateName(req.Username); err != nil {
+		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	log.Infof("Username changed successfully from %s to %s from %s", authInfo.UserName, req.Username, c.ClientIP())
 
-	c.JSON(http.StatusOK, api.ResponseSuccess{
-		Code:    http.StatusOK,
-		Message: "Username updated successfully.",
-	})
+	common.ResponseSuccess(c, nil)
 }

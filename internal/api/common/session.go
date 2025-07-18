@@ -1,4 +1,4 @@
-package session
+package common
 
 import (
 	"bytes"
@@ -43,12 +43,12 @@ func init() {
 	if err := decoder.Decode(&sessions); err != nil {
 		return
 	}
-	Cleanup()
+	cleanup()
 }
 
-// Close 关闭会话管理器，将会话信息保存到文件
-func Close() error {
-	Cleanup()
+// CloseSession 关闭会话管理器，将会话信息保存到文件
+func CloseSession() error {
+	cleanup()
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -65,11 +65,11 @@ func Close() error {
 	return os.WriteFile(sessionFile, buf.Bytes(), 0600)
 }
 
-func GetOne() (uint8, *auth.Session) {
+func GetOneSession() (uint8, *auth.Session) {
 	var oldestIndex uint8 = 0
 	var oldestTime uint32 = 0
 	found := false
-	Cleanup()
+	cleanup()
 	for i := range sessions {
 		if !sessions[i].IsActive {
 			if sessions[i].CreatedAt == 0 {
@@ -90,9 +90,9 @@ func GetOne() (uint8, *auth.Session) {
 	return 0, nil
 }
 
-// Get 获取会话
-func Get(sessionID uint8) (*auth.Session, error) {
-	Cleanup()
+// GetSession 获取会话
+func GetSession(sessionID uint8) (*auth.Session, error) {
+	cleanup()
 	if sessionID >= MaxSessions {
 		return nil, ErrInvalidSessionID
 	}
@@ -105,9 +105,9 @@ func Get(sessionID uint8) (*auth.Session, error) {
 	return session, nil
 }
 
-// Disable 禁用会话
-func Disable(sessionID uint8) error {
-	Cleanup()
+// DisableSession 禁用会话
+func DisableSession(sessionID uint8) error {
+	cleanup()
 	if sessionID >= MaxSessions {
 		return ErrInvalidSessionID
 	}
@@ -116,16 +116,16 @@ func Disable(sessionID uint8) error {
 	return nil
 }
 
-// DisableAll 禁用所有会话
-func DisableAll() {
+// DisableAllSession 禁用所有会话
+func DisableAllSession() {
 	for i := range sessions {
 		sessions[i].IsActive = false
 	}
 }
 
-// GetActive 获取所有活跃会话
-func GetAll() *[]auth.SessionResponse {
-	Cleanup()
+// GetAllSession 获取所有会话
+func GetAllSession() *[]auth.SessionResponse {
+	cleanup()
 
 	var sessionResponse []auth.SessionResponse
 
@@ -147,8 +147,8 @@ func GetAll() *[]auth.SessionResponse {
 	return &sessionResponse
 }
 
-// Cleanup 清理过期会话，返回清理数量
-func Cleanup() int {
+// cleanup 清理过期会话，返回清理数量
+func cleanup() int {
 
 	cleaned := 0
 	now := uint32(local.Time().Unix())

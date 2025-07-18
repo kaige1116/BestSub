@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/server"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/task"
@@ -14,7 +15,7 @@ func main() {
 
 	info.Banner()
 
-	cfg := config.Get()
+	cfg := config.Base()
 
 	if err := log.Initialize(cfg.Log.Level, cfg.Log.Output, cfg.Log.Dir); err != nil {
 		panic(err)
@@ -37,6 +38,7 @@ func main() {
 	shutdown.Register("Database", database.Close)
 	shutdown.Register("HTTP Server", server.Close)
 	shutdown.Register("Task", task.Shutdown)
+	shutdown.Register("Session", common.CloseSession)
 
 	shutdown.Listen()
 }
