@@ -18,41 +18,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// subLinkHandler 订阅链接处理器
-type subLinkHandler struct{}
-
 // init 函数用于自动注册路由
 func init() {
-	h := newSubLinkHandler()
-
 	// 需要认证的订阅链接路由
 	router.NewGroupRouter("/api/v1/sub").
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("", router.POST).
-				Handle(h.createSub).
+				Handle(createSub).
 				WithDescription("Create subscription links"),
 		).
 		AddRoute(
 			router.NewRoute("", router.GET).
-				Handle(h.getSubs).
+				Handle(getSubs).
 				WithDescription("Get subscription links or list all with pagination"),
 		).
 		AddRoute(
 			router.NewRoute("", router.PATCH).
-				Handle(h.updateSub).
+				Handle(updateSub).
 				WithDescription("Update subscription links"),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.DELETE).
-				Handle(h.deleteSub).
+				Handle(deleteSub).
 				WithDescription("Delete subscription link"),
 		)
-}
-
-// newSubLinkHandler 创建订阅链接处理器
-func newSubLinkHandler() *subLinkHandler {
-	return &subLinkHandler{}
 }
 
 // createSub 创建订阅链接
@@ -68,7 +58,7 @@ func newSubLinkHandler() *subLinkHandler {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [post]
-func (h *subLinkHandler) createSub(c *gin.Context) {
+func createSub(c *gin.Context) {
 	var req sub.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -137,7 +127,7 @@ func (h *subLinkHandler) createSub(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [get]
-func (h *subLinkHandler) getSubs(c *gin.Context) {
+func getSubs(c *gin.Context) {
 	// 解析查询参数
 	idsParam := c.Query("ids")
 
@@ -265,7 +255,7 @@ func (h *subLinkHandler) getSubs(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "订阅链接不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [patch]
-func (h *subLinkHandler) updateSub(c *gin.Context) {
+func updateSub(c *gin.Context) {
 	var req sub.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -348,7 +338,7 @@ func (h *subLinkHandler) updateSub(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "订阅链接不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/sub/{id} [delete]
-func (h *subLinkHandler) deleteSub(c *gin.Context) {
+func deleteSub(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {

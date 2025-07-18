@@ -13,31 +13,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// configHandler 配置处理器
-type configHandler struct{}
-
 // init 函数用于自动注册路由
 func init() {
-	h := newConfigHandler()
 
 	// 需要认证的配置路由
 	router.NewGroupRouter("/api/v1/config").
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/items", router.GET).
-				Handle(h.getConfigItems).
+				Handle(getConfigItems).
 				WithDescription("Get all configuration items"),
 		).
 		AddRoute(
 			router.NewRoute("/items", router.PATCH).
-				Handle(h.updateConfigItem).
+				Handle(updateConfigItem).
 				WithDescription("Batch update configuration items"),
 		)
-}
-
-// newConfigHandler 创建配置处理器
-func newConfigHandler() *configHandler {
-	return &configHandler{}
 }
 
 // getConfigItems 获取所有配置项
@@ -51,7 +42,7 @@ func newConfigHandler() *configHandler {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/config/items [get]
-func (h *configHandler) getConfigItems(c *gin.Context) {
+func getConfigItems(c *gin.Context) {
 
 	dbConfig, err := op.GetAllConfig(context.Background())
 	if err != nil {
@@ -76,7 +67,7 @@ func (h *configHandler) getConfigItems(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/config/items [patch]
-func (h *configHandler) updateConfigItem(c *gin.Context) {
+func updateConfigItem(c *gin.Context) {
 	var req []system.UpdateData
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)

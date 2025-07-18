@@ -19,23 +19,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// authHandler 认证处理器
-type authHandler struct{}
-
 // init 函数用于自动注册路由
 func init() {
-	h := newAuthHandler()
 
 	// 公开的认证路由（无需认证）
 	router.NewGroupRouter("/api/v1/auth").
 		AddRoute(
 			router.NewRoute("/login", router.POST).
-				Handle(h.login).
+				Handle(login).
 				WithDescription("User login"),
 		).
 		AddRoute(
 			router.NewRoute("/refresh", router.POST).
-				Handle(h.refreshToken).
+				Handle(refreshToken).
 				WithDescription("Refresh access token"),
 		)
 
@@ -44,39 +40,34 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/logout", router.POST).
-				Handle(h.logout).
+				Handle(logout).
 				WithDescription("User logout"),
 		).
 		AddRoute(
 			router.NewRoute("/user/password", router.POST).
-				Handle(h.changePassword).
+				Handle(changePassword).
 				WithDescription("Change user password"),
 		).
 		AddRoute(
 			router.NewRoute("/user/name", router.POST).
-				Handle(h.updateUsername).
+				Handle(updateUsername).
 				WithDescription("Update username"),
 		).
 		AddRoute(
 			router.NewRoute("/user", router.GET).
-				Handle(h.getUserInfo).
+				Handle(getUserInfo).
 				WithDescription("Get user information"),
 		).
 		AddRoute(
 			router.NewRoute("/sessions", router.GET).
-				Handle(h.getSessions).
+				Handle(getSessions).
 				WithDescription("Get user sessions"),
 		).
 		AddRoute(
 			router.NewRoute("/sessions/:id", router.DELETE).
-				Handle(h.deleteSession).
+				Handle(deleteSession).
 				WithDescription("Delete session"),
 		)
-}
-
-// newAuthHandler 创建认证处理器
-func newAuthHandler() *authHandler {
-	return &authHandler{}
 }
 
 // login 用户登录
@@ -91,7 +82,7 @@ func newAuthHandler() *authHandler {
 // @Failure 401 {object} common.ResponseErrorStruct "用户名或密码错误"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/login [post]
-func (h *authHandler) login(c *gin.Context) {
+func login(c *gin.Context) {
 	var req auth.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -148,7 +139,7 @@ func (h *authHandler) login(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "刷新令牌无效"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
-func (h *authHandler) refreshToken(c *gin.Context) {
+func refreshToken(c *gin.Context) {
 	var req auth.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -224,7 +215,7 @@ func (h *authHandler) refreshToken(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/logout [post]
-func (h *authHandler) logout(c *gin.Context) {
+func logout(c *gin.Context) {
 	sessionID, exists := c.Get("session_id")
 	if !exists {
 		common.ResponseError(c, http.StatusUnauthorized, errors.New("session not found"))
@@ -256,7 +247,7 @@ func (h *authHandler) logout(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权或旧密码错误"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
-func (h *authHandler) changePassword(c *gin.Context) {
+func changePassword(c *gin.Context) {
 	var req auth.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -295,7 +286,7 @@ func (h *authHandler) changePassword(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user [get]
-func (h *authHandler) getUserInfo(c *gin.Context) {
+func getUserInfo(c *gin.Context) {
 	authInfo, err := op.AuthGet()
 	if err != nil {
 		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
@@ -316,7 +307,7 @@ func (h *authHandler) getUserInfo(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
-func (h *authHandler) getSessions(c *gin.Context) {
+func getSessions(c *gin.Context) {
 	sessions := common.GetAllSession()
 	response := auth.SessionListResponse{
 		Sessions: *sessions,
@@ -339,7 +330,7 @@ func (h *authHandler) getSessions(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "会话不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions/{id} [delete]
-func (h *authHandler) deleteSession(c *gin.Context) {
+func deleteSession(c *gin.Context) {
 	sessionIDStr := c.Param("id")
 	if sessionIDStr == "" {
 		common.ResponseError(c, http.StatusBadRequest, errors.New("session ID is required"))
@@ -389,7 +380,7 @@ func (h *authHandler) deleteSession(c *gin.Context) {
 // @Failure 409 {object} common.ResponseErrorStruct "用户名已存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
-func (h *authHandler) updateUsername(c *gin.Context) {
+func updateUsername(c *gin.Context) {
 	var req auth.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)

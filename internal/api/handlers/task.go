@@ -15,56 +15,47 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// taskHandler 任务处理器
-type taskHandler struct{}
-
 // init 函数用于自动注册路由
 func init() {
-	h := newTaskHandler()
 
 	// 需要认证的任务路由
 	router.NewGroupRouter("/api/v1/tasks").
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("", router.POST).
-				Handle(h.createTask).
+				Handle(createTask).
 				WithDescription("Create task"),
 		).
 		AddRoute(
 			router.NewRoute("", router.GET).
-				Handle(h.getTasks).
+				Handle(getTasks).
 				WithDescription("Get tasks or list all with pagination"),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.GET).
-				Handle(h.getTask).
+				Handle(getTask).
 				WithDescription("Get task by ID"),
 		).
 		AddRoute(
 			router.NewRoute("", router.PATCH).
-				Handle(h.updateTask).
+				Handle(updateTask).
 				WithDescription("Update task"),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.DELETE).
-				Handle(h.deleteTask).
+				Handle(deleteTask).
 				WithDescription("Delete task"),
 		).
 		AddRoute(
 			router.NewRoute("/:id/run", router.POST).
-				Handle(h.runTask).
+				Handle(runTask).
 				WithDescription("Run task manually"),
 		).
 		AddRoute(
 			router.NewRoute("/:id/stop", router.POST).
-				Handle(h.stopTask).
+				Handle(stopTask).
 				WithDescription("Stop running task"),
 		)
-}
-
-// newTaskHandler 创建任务处理器
-func newTaskHandler() *taskHandler {
-	return &taskHandler{}
 }
 
 // createTask 创建任务
@@ -80,7 +71,7 @@ func newTaskHandler() *taskHandler {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [post]
-func (h *taskHandler) createTask(c *gin.Context) {
+func createTask(c *gin.Context) {
 	var req taskModel.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -114,7 +105,7 @@ func (h *taskHandler) createTask(c *gin.Context) {
 // @Failure 401 {object} common.ResponseErrorStruct "未授权"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [get]
-func (h *taskHandler) getTasks(c *gin.Context) {
+func getTasks(c *gin.Context) {
 	// 解析查询参数
 	idsParam := c.Query("ids")
 
@@ -196,7 +187,7 @@ func (h *taskHandler) getTasks(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id} [get]
-func (h *taskHandler) getTask(c *gin.Context) {
+func getTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
@@ -242,7 +233,7 @@ func (h *taskHandler) getTask(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks [patch]
-func (h *taskHandler) updateTask(c *gin.Context) {
+func updateTask(c *gin.Context) {
 	var req taskModel.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
@@ -281,7 +272,7 @@ func (h *taskHandler) updateTask(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id} [delete]
-func (h *taskHandler) deleteTask(c *gin.Context) {
+func deleteTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
@@ -333,7 +324,7 @@ func (h *taskHandler) deleteTask(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id}/run [post]
-func (h *taskHandler) runTask(c *gin.Context) {
+func runTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
@@ -385,7 +376,7 @@ func (h *taskHandler) runTask(c *gin.Context) {
 // @Failure 404 {object} common.ResponseErrorStruct "任务不存在"
 // @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
 // @Router /api/v1/tasks/{id}/stop [post]
-func (h *taskHandler) stopTask(c *gin.Context) {
+func stopTask(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
