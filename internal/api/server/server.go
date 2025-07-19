@@ -118,8 +118,6 @@ func Close() error {
 		return fmt.Errorf("HTTP 服务器未初始化")
 	}
 
-	log.Debug("关闭 HTTP 服务器...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
 	defer cancel()
 

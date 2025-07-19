@@ -6,7 +6,7 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Log      LogConfig      `json:"log"`
 	JWT      JWTConfig      `json:"jwt"`
-	Session  SessionConfig  `json:"session"`
+	Session  SessionConfig  `json:"-"`
 }
 
 // ServerConfig 服务器配置

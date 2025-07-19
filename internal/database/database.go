@@ -37,5 +37,10 @@ func Initialize(sqltype, path string) error {
 	return nil
 }
 func Close() error {
-	return op.Close()
+	if err := op.Close(); err != nil {
+		log.Errorf("failed to close database: %v", err)
+		return err
+	}
+	log.Debugf("数据库关闭成功")
+	return nil
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 const MaxSessions = 10
@@ -61,8 +62,11 @@ func CloseSession() error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0755)
 	}
-
-	return os.WriteFile(sessionFile, buf.Bytes(), 0600)
+	if os.WriteFile(sessionFile, buf.Bytes(), 0600) != nil {
+		log.Error("保存会话信息失败")
+	}
+	log.Debugf("保存会话信息成功")
+	return nil
 }
 
 func GetOneSession() (uint8, *auth.Session) {

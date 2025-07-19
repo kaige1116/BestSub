@@ -78,15 +78,13 @@ func createTask(c *gin.Context) {
 		return
 	}
 
-	// 创建任务
 	taskData, err := task.AddTask(&req)
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d created by user %s from %s", taskData.ID, username, c.ClientIP())
+	log.Infof("Task %d created from %s", taskData.ID, c.ClientIP())
 
 	common.ResponseSuccess(c, taskData)
 }
@@ -168,8 +166,7 @@ func getTasks(c *gin.Context) {
 		"page_size": pageSize,
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task list requested by user %s from %s", username, c.ClientIP())
+	log.Infof("Task list requested from %s", c.ClientIP())
 
 	common.ResponseSuccess(c, result)
 }
@@ -213,8 +210,7 @@ func getTask(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d requested by user %s from %s", id, username, c.ClientIP())
+	log.Infof("Task %d requested from %s", id, c.ClientIP())
 
 	common.ResponseSuccess(c, taskData)
 }
@@ -252,8 +248,7 @@ func updateTask(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d updated by user %s from %s", req.ID, username, c.ClientIP())
+	log.Infof("Task %d updated from %s", req.ID, c.ClientIP())
 
 	common.ResponseSuccess(c, taskData)
 }
@@ -304,8 +299,7 @@ func deleteTask(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d deleted by user %s from %s", id, username, c.ClientIP())
+	log.Infof("Task %d deleted from %s", id, c.ClientIP())
 
 	common.ResponseSuccess(c, nil)
 }
@@ -356,8 +350,7 @@ func runTask(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d manually run by user %s from %s", id, username, c.ClientIP())
+	log.Infof("Task %d manually run from %s", id, c.ClientIP())
 
 	common.ResponseSuccess(c, nil)
 }
@@ -408,8 +401,7 @@ func stopTask(c *gin.Context) {
 		return
 	}
 
-	username, _ := c.Get("username")
-	log.Infof("Task %d stopped by user %s from %s", id, username, c.ClientIP())
+	log.Infof("Task %d stopped from %s", id, c.ClientIP())
 
 	common.ResponseSuccess(c, nil)
 }
