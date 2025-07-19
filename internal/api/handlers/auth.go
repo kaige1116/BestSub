@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
+	"github.com/bestruirui/bestsub/internal/api/auth"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
 	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/op"
-	"github.com/bestruirui/bestsub/internal/models/auth"
+	authModel "github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -75,14 +75,14 @@ func init() {
 // @Tags 认证
 // @Accept json
 // @Produce json
-// @Param request body auth.LoginRequest true "登录请求"
-// @Success 200 {object} resp.SuccessStruct{data=auth.LoginResponse} "登录成功"
+// @Param request body authModel.LoginRequest true "登录请求"
+// @Success 200 {object} resp.SuccessStruct{data=authModel.LoginResponse} "登录成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "用户名或密码错误"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func login(c *gin.Context) {
-	var req auth.LoginRequest
+	var req authModel.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
@@ -95,17 +95,17 @@ func login(c *gin.Context) {
 		return
 	}
 
-	sessionID, tempSess := common.GetOneSession()
+	sessionID, tempSess := auth.GetOneSession()
 	if tempSess == nil {
 		log.Warnf("No unused session found from %s", c.ClientIP())
 		resp.Error(c, http.StatusUnauthorized, "please logout other devices first")
 		return
 	}
 
-	tokenPair, err := common.GenerateTokenPair(sessionID, req.Username, config.Base().JWT.Secret)
+	tokenPair, err := auth.GenerateTokenPair(sessionID, req.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
-		common.DisableSession(sessionID)
+		auth.DisableSession(sessionID)
 		resp.Error(c, http.StatusInternalServerError, "failed to generate token pair")
 		return
 	}
@@ -132,27 +132,27 @@ func login(c *gin.Context) {
 // @Tags 认证
 // @Accept json
 // @Produce json
-// @Param request body auth.RefreshTokenRequest true "刷新令牌请求"
-// @Success 200 {object} resp.SuccessStruct{data=auth.LoginResponse} "刷新成功"
+// @Param request body authModel.RefreshTokenRequest true "刷新令牌请求"
+// @Success 200 {object} resp.SuccessStruct{data=authModel.LoginResponse} "刷新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "刷新令牌无效"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
 func refreshToken(c *gin.Context) {
-	var req auth.RefreshTokenRequest
+	var req authModel.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
 
-	claims, err := common.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
+	claims, err := auth.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
 		resp.Error(c, http.StatusUnauthorized, "refresh token validation failed")
 		return
 	}
 
-	sess, err := common.GetSession(claims.SessionID)
+	sess, err := auth.GetSession(claims.SessionID)
 	if err != nil {
 		log.Warnf("Failed to get session by ID: %v", err)
 		resp.Error(c, http.StatusUnauthorized, "session not found")
@@ -186,7 +186,7 @@ func refreshToken(c *gin.Context) {
 		return
 	}
 
-	newTokenPair, err := common.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
+	newTokenPair, err := auth.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
 		resp.Error(c, http.StatusInternalServerError, "failed to generate new token pair")
@@ -221,7 +221,7 @@ func logout(c *gin.Context) {
 		return
 	}
 
-	err := common.DisableSession(sessionID.(uint8))
+	err := auth.DisableSession(sessionID.(uint8))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
 		resp.Error(c, http.StatusInternalServerError, "failed to disable session")
@@ -240,14 +240,14 @@ func logout(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body auth.ChangePasswordRequest true "修改密码请求"
+// @Param request body authModel.ChangePasswordRequest true "修改密码请求"
 // @Success 200 {object} resp.SuccessStruct "密码修改成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权或旧密码错误"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
 func changePassword(c *gin.Context) {
-	var req auth.ChangePasswordRequest
+	var req authModel.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
@@ -267,7 +267,7 @@ func changePassword(c *gin.Context) {
 		return
 	}
 
-	common.DisableAllSession()
+	auth.DisableAllSession()
 
 	log.Infof("Password changed successfully for user %s from %s", req.Username, c.ClientIP())
 
@@ -281,7 +281,7 @@ func changePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=auth.Data} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=authModel.Data} "获取成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user [get]
@@ -302,13 +302,13 @@ func getUserInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=auth.SessionListResponse} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=authModel.SessionListResponse} "获取成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func getSessions(c *gin.Context) {
-	sessions := common.GetAllSession()
-	response := auth.SessionListResponse{
+	sessions := auth.GetAllSession()
+	response := authModel.SessionListResponse{
 		Sessions: *sessions,
 		Total:    uint8(len(*sessions)),
 	}
@@ -342,9 +342,9 @@ func deleteSession(c *gin.Context) {
 		return
 	}
 
-	_, err = common.GetSession(uint8(sessionID))
+	_, err = auth.GetSession(uint8(sessionID))
 	if err != nil {
-		if err == common.ErrSessionNotFound {
+		if err == auth.ErrSessionNotFound {
 			resp.Error(c, http.StatusNotFound, "session not found")
 		} else {
 			log.Errorf("Failed to get session: %v", err)
@@ -353,7 +353,7 @@ func deleteSession(c *gin.Context) {
 		return
 	}
 
-	err = common.DisableSession(uint8(sessionID))
+	err = auth.DisableSession(uint8(sessionID))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
 		resp.Error(c, http.StatusInternalServerError, "failed to disable session")
@@ -372,7 +372,7 @@ func deleteSession(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body auth.UpdateUserInfoRequest true "修改用户名请求"
+// @Param request body authModel.UpdateUserInfoRequest true "修改用户名请求"
 // @Success 200 {object} resp.SuccessStruct "用户名修改成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
@@ -380,7 +380,7 @@ func deleteSession(c *gin.Context) {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
 func updateUsername(c *gin.Context) {
-	var req auth.UpdateUserInfoRequest
+	var req authModel.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/bestruirui/bestsub/internal/api/common"
+	"github.com/bestruirui/bestsub/internal/api/auth"
 	"github.com/bestruirui/bestsub/internal/api/server"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/task"
@@ -34,11 +34,11 @@ func main() {
 	task.Start()
 	server.Start()
 
-	shutdown.Register(server.Close)        // 关闭顺序
-	shutdown.Register(database.Close)      //   ↓↓
-	shutdown.Register(common.CloseSession) //   ↓↓
-	shutdown.Register(task.Shutdown)       //   ↓↓
-	shutdown.Register(log.Close)           //   ↓↓
+	shutdown.Register(server.Close)      // 关闭顺序
+	shutdown.Register(database.Close)    //   ↓↓
+	shutdown.Register(auth.CloseSession) //   ↓↓
+	shutdown.Register(task.Shutdown)     //   ↓↓
+	shutdown.Register(log.Close)         //   ↓↓
 
 	shutdown.Listen()
 }

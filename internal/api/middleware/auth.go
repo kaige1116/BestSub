@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
+	"github.com/bestruirui/bestsub/internal/api/auth"
 	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/utils"
@@ -23,7 +23,7 @@ func Auth() gin.HandlerFunc {
 		}
 		token := authHeader[7:]
 
-		claims, err := common.ValidateToken(token, config.Base().JWT.Secret)
+		claims, err := auth.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
 			resp.Error(c, http.StatusUnauthorized, "Invalid or expired token")
@@ -31,7 +31,7 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		sess, err := common.GetSession(claims.SessionID)
+		sess, err := auth.GetSession(claims.SessionID)
 		if err != nil {
 			log.Warnf("Session not found: %v", err)
 			resp.Error(c, http.StatusUnauthorized, "Session not found or expired")
@@ -86,14 +86,14 @@ func WSAuth() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := common.ValidateToken(token, config.Base().JWT.Secret)
+		claims, err := auth.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("WebSocket JWT validation failed: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		sess, err := common.GetSession(claims.SessionID)
+		sess, err := auth.GetSession(claims.SessionID)
 		if err != nil {
 			log.Warnf("WebSocket session not found: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
