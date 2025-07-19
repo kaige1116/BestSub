@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/op"
@@ -77,29 +76,29 @@ func init() {
 // @Accept json
 // @Produce json
 // @Param request body auth.LoginRequest true "登录请求"
-// @Success 200 {object} common.ResponseSuccessStruct{data=auth.LoginResponse} "登录成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "用户名或密码错误"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=auth.LoginResponse} "登录成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "用户名或密码错误"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func login(c *gin.Context) {
 	var req auth.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	err := op.AuthVerify(req.Username, req.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "username or password error")
 		return
 	}
 
 	sessionID, tempSess := common.GetOneSession()
 	if tempSess == nil {
 		log.Warnf("No unused session found from %s", c.ClientIP())
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "please logout other devices first")
 		return
 	}
 
@@ -107,7 +106,7 @@ func login(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
 		common.DisableSession(sessionID)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to generate token pair")
 		return
 	}
 
@@ -124,7 +123,7 @@ func login(c *gin.Context) {
 
 	log.Infof("User %s logged in successfully from %s", req.Username, c.ClientIP())
 
-	common.ResponseSuccess(c, tokenPair)
+	resp.Success(c, tokenPair)
 }
 
 // refreshToken 刷新令牌
@@ -134,41 +133,41 @@ func login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body auth.RefreshTokenRequest true "刷新令牌请求"
-// @Success 200 {object} common.ResponseSuccessStruct{data=auth.LoginResponse} "刷新成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "刷新令牌无效"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=auth.LoginResponse} "刷新成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "刷新令牌无效"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
 func refreshToken(c *gin.Context) {
 	var req auth.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	claims, err := common.ValidateToken(req.RefreshToken, config.Base().JWT.Secret)
 	if err != nil {
 		log.Warnf("Refresh token validation failed: %v", err)
-		common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("refresh token validation failed"))
+		resp.Error(c, http.StatusUnauthorized, "refresh token validation failed")
 		return
 	}
 
 	sess, err := common.GetSession(claims.SessionID)
 	if err != nil {
 		log.Warnf("Failed to get session by ID: %v", err)
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "session not found")
 		return
 	}
 
 	if !sess.IsActive {
 		log.Warnf("Session %d is not active", claims.SessionID)
-		common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("session is not active"))
+		resp.Error(c, http.StatusUnauthorized, "session is not active")
 		return
 	}
 
 	if sess.HashRToken != xxhash.Sum64String(req.RefreshToken) {
 		log.Warnf("Refresh token hash mismatch: session=%d, request=%d", sess.HashRToken, xxhash.Sum64String(req.RefreshToken))
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "refresh token hash mismatch")
 		return
 	}
 
@@ -176,21 +175,21 @@ func refreshToken(c *gin.Context) {
 
 	if sess.ClientIP != clientIP {
 		log.Warnf("Client IP mismatch during token refresh: session=%s, request=%s", utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "client IP mismatch")
 		return
 	}
 
 	if sess.UserAgent != c.GetHeader("User-Agent") {
 		log.Warnf("User agent mismatch during token refresh: session=%s, request=%s",
 			sess.UserAgent, c.GetHeader("User-Agent"))
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "user agent mismatch")
 		return
 	}
 
 	newTokenPair, err := common.GenerateTokenPair(claims.SessionID, claims.Username, config.Base().JWT.Secret)
 	if err != nil {
 		log.Errorf("Failed to generate new token pair: %v", err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to generate new token pair")
 		return
 	}
 
@@ -201,7 +200,7 @@ func refreshToken(c *gin.Context) {
 
 	log.Infof("Token refreshed for session %d from %s", claims.SessionID, c.ClientIP())
 
-	common.ResponseSuccess(c, newTokenPair)
+	resp.Success(c, newTokenPair)
 }
 
 // logout 用户登出
@@ -211,27 +210,27 @@ func refreshToken(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.ResponseSuccessStruct "登出成功"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct "登出成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/logout [post]
 func logout(c *gin.Context) {
 	sessionID, exists := c.Get("session_id")
 	if !exists {
-		common.ResponseError(c, http.StatusUnauthorized, errors.New("session not found"))
+		resp.Error(c, http.StatusUnauthorized, "session not found")
 		return
 	}
 
 	err := common.DisableSession(sessionID.(uint8))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to disable session")
 		return
 	}
 
 	log.Infof("User logged out successfully from %s", c.ClientIP())
 
-	common.ResponseSuccess(c, nil)
+	resp.Success(c, nil)
 }
 
 // changePassword 修改密码
@@ -242,29 +241,29 @@ func logout(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body auth.ChangePasswordRequest true "修改密码请求"
-// @Success 200 {object} common.ResponseSuccessStruct "密码修改成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权或旧密码错误"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct "密码修改成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权或旧密码错误"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
 func changePassword(c *gin.Context) {
 	var req auth.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	err := op.AuthVerify(req.Username, req.OldPassword)
 	if err != nil {
 		log.Warnf("Change password failed for user %s: old password verification failed from %s", req.Username, c.ClientIP())
-		common.ResponseError(c, http.StatusUnauthorized, err)
+		resp.Error(c, http.StatusUnauthorized, "old password verification failed")
 		return
 	}
 
 	err = op.AuthUpdatePassWord(req.NewPassword)
 	if err != nil {
 		log.Errorf("Failed to update password: %v", err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to update password")
 		return
 	}
 
@@ -272,7 +271,7 @@ func changePassword(c *gin.Context) {
 
 	log.Infof("Password changed successfully for user %s from %s", req.Username, c.ClientIP())
 
-	common.ResponseSuccess(c, nil)
+	resp.Success(c, nil)
 }
 
 // getUserInfo 获取当前用户信息
@@ -282,18 +281,18 @@ func changePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.ResponseSuccessStruct{data=auth.Data} "获取成功"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=auth.Data} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user [get]
 func getUserInfo(c *gin.Context) {
 	authInfo, err := op.AuthGet()
 	if err != nil {
 		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get auth info")
 		return
 	}
-	common.ResponseSuccess(c, authInfo)
+	resp.Success(c, authInfo)
 }
 
 // getSessions 获取当前用户的所有会话
@@ -303,9 +302,9 @@ func getUserInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.ResponseSuccessStruct{data=auth.SessionListResponse} "获取成功"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=auth.SessionListResponse} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func getSessions(c *gin.Context) {
 	sessions := common.GetAllSession()
@@ -313,7 +312,7 @@ func getSessions(c *gin.Context) {
 		Sessions: *sessions,
 		Total:    uint8(len(*sessions)),
 	}
-	common.ResponseSuccess(c, response)
+	resp.Success(c, response)
 }
 
 // deleteSession 删除指定会话
@@ -324,32 +323,32 @@ func getSessions(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "会话ID"
-// @Success 200 {object} common.ResponseSuccessStruct "删除成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 404 {object} common.ResponseErrorStruct "会话不存在"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct "删除成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 404 {object} resp.ErrorStruct "会话不存在"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions/{id} [delete]
 func deleteSession(c *gin.Context) {
 	sessionIDStr := c.Param("id")
 	if sessionIDStr == "" {
-		common.ResponseError(c, http.StatusBadRequest, errors.New("session ID is required"))
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 8)
 	if err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	_, err = common.GetSession(uint8(sessionID))
 	if err != nil {
 		if err == common.ErrSessionNotFound {
-			common.ResponseError(c, http.StatusNotFound, err)
+			resp.Error(c, http.StatusNotFound, "session not found")
 		} else {
 			log.Errorf("Failed to get session: %v", err)
-			common.ResponseError(c, http.StatusInternalServerError, err)
+			resp.Error(c, http.StatusInternalServerError, "failed to get session")
 		}
 		return
 	}
@@ -357,13 +356,13 @@ func deleteSession(c *gin.Context) {
 	err = common.DisableSession(uint8(sessionID))
 	if err != nil {
 		log.Errorf("Failed to disable session: %v", err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to disable session")
 		return
 	}
 
 	log.Infof("Session %d disabled by user from %s", sessionID, c.ClientIP())
 
-	common.ResponseSuccess(c, nil)
+	resp.Success(c, nil)
 }
 
 // updateUsername 修改用户名
@@ -374,37 +373,37 @@ func deleteSession(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body auth.UpdateUserInfoRequest true "修改用户名请求"
-// @Success 200 {object} common.ResponseSuccessStruct "用户名修改成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 409 {object} common.ResponseErrorStruct "用户名已存在"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct "用户名修改成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 409 {object} resp.ErrorStruct "用户名已存在"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
 func updateUsername(c *gin.Context) {
 	var req auth.UpdateUserInfoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	authInfo, err := op.AuthGet()
 	if err != nil {
 		log.Errorf("Failed to get auth info from %s: %v", c.ClientIP(), err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get auth info")
 		return
 	}
 
 	if authInfo.UserName == req.Username {
-		common.ResponseError(c, http.StatusBadRequest, errors.New("new username cannot be the same as current username"))
+		resp.Error(c, http.StatusBadRequest, "new username cannot be the same as current username")
 		return
 	}
 
 	if err := op.AuthUpdateName(req.Username); err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to update username")
 		return
 	}
 
 	log.Infof("Username changed successfully from %s to %s from %s", authInfo.UserName, req.Username, c.ClientIP())
 
-	common.ResponseSuccess(c, nil)
+	resp.Success(c, nil)
 }

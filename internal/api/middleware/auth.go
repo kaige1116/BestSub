@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/bestruirui/bestsub/internal/api/common"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -17,7 +17,7 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Authorization header is required"))
+			resp.Error(c, http.StatusUnauthorized, "Authorization header is required")
 			c.Abort()
 			return
 		}
@@ -26,7 +26,7 @@ func Auth() gin.HandlerFunc {
 		claims, err := common.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
 			log.Warnf("JWT validation failed: %v", err)
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Invalid or expired token"))
+			resp.Error(c, http.StatusUnauthorized, "Invalid or expired token")
 			c.Abort()
 			return
 		}
@@ -34,21 +34,21 @@ func Auth() gin.HandlerFunc {
 		sess, err := common.GetSession(claims.SessionID)
 		if err != nil {
 			log.Warnf("Session not found: %v", err)
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Session not found or expired"))
+			resp.Error(c, http.StatusUnauthorized, "Session not found or expired")
 			c.Abort()
 			return
 		}
 
 		if !sess.IsActive {
 			log.Warnf("Session %d is not active", claims.SessionID)
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Session is not active"))
+			resp.Error(c, http.StatusUnauthorized, "Session is not active")
 			c.Abort()
 			return
 		}
 
 		if sess.HashAToken != xxhash.Sum64String(token) {
 			log.Warnf("Token hash mismatch: session=%d, request=%d", sess.HashAToken, xxhash.Sum64String(token))
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Token hash mismatch"))
+			resp.Error(c, http.StatusUnauthorized, "Token hash mismatch")
 			c.Abort()
 			return
 		}
@@ -57,14 +57,14 @@ func Auth() gin.HandlerFunc {
 		if sess.ClientIP != clientIP {
 			log.Warnf("Client IP mismatch: session=%s, request=%s",
 				utils.Uint32ToIP(sess.ClientIP), c.ClientIP())
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("Client IP mismatch"))
+			resp.Error(c, http.StatusUnauthorized, "Client IP mismatch")
 			c.Abort()
 			return
 		}
 		userAgent := c.GetHeader("User-Agent")
 		if sess.UserAgent != userAgent {
 			log.Warnf("User-Agent mismatch for session %d", claims.SessionID)
-			common.ResponseError(c, http.StatusUnauthorized, fmt.Errorf("User-Agent mismatch"))
+			resp.Error(c, http.StatusUnauthorized, "User-Agent mismatch")
 			c.Abort()
 			return
 		}
@@ -81,21 +81,21 @@ func WSAuth() gin.HandlerFunc {
 		token := c.Query("token")
 
 		if token == "" {
-			log.Warnf("WebSocket认证失败: 缺少token, IP=%s", c.ClientIP())
+			log.Warnf("WebSocket authentication failed: missing token, IP=%s", c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		claims, err := common.ValidateToken(token, config.Base().JWT.Secret)
 		if err != nil {
-			log.Warnf("WebSocket JWT验证失败: %v, IP=%s", err, c.ClientIP())
+			log.Warnf("WebSocket JWT validation failed: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		sess, err := common.GetSession(claims.SessionID)
 		if err != nil {
-			log.Warnf("WebSocket会话未找到: %v, IP=%s", err, c.ClientIP())
+			log.Warnf("WebSocket session not found: %v, IP=%s", err, c.ClientIP())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

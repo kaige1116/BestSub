@@ -4,11 +4,9 @@ import "time"
 
 // 用户认证信息
 type Data struct {
-	ID        uint8     `db:"id" json:"-"`                // 主键ID
-	UserName  string    `db:"user_name" json:"user_name"` // 用户名
-	Password  string    `db:"password" json:"-"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ID       uint8  `db:"id" json:"-"`              // 主键ID
+	UserName string `db:"username" json:"username"` // 用户名
+	Password string `db:"password" json:"-"`
 }
 
 // 认证会话

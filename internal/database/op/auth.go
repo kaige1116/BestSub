@@ -31,11 +31,10 @@ func AuthUpdateName(name string) error {
 		AuthGet()
 	}
 	authData.UserName = name
-	updatedAt, err := AuthRepo().UpdateName(context.Background(), name)
+	err := AuthRepo().UpdateName(context.Background(), name)
 	if err != nil {
 		return err
 	}
-	authData.UpdatedAt = updatedAt
 	return nil
 }
 func AuthUpdatePassWord(password string) error {
@@ -47,11 +46,10 @@ func AuthUpdatePassWord(password string) error {
 		return err
 	}
 	authData.Password = string(hashedBytes)
-	updatedAt, err := AuthRepo().UpdatePassword(context.Background(), authData.Password)
+	err = AuthRepo().UpdatePassword(context.Background(), authData.Password)
 	if err != nil {
 		return err
 	}
-	authData.UpdatedAt = updatedAt
 	return nil
 }
 func AuthVerify(username, password string) error {

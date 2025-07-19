@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"context"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/auth"
 )
@@ -13,10 +12,10 @@ type AuthRepository interface {
 	Get(ctx context.Context) (*auth.Data, error)
 
 	// 更新用户名
-	UpdateName(ctx context.Context, name string) (time.Time, error)
+	UpdateName(ctx context.Context, name string) error
 
 	// 更新密码
-	UpdatePassword(ctx context.Context, hashPassword string) (time.Time, error)
+	UpdatePassword(ctx context.Context, hashPassword string) error
 
 	// 初始化认证信息（首次创建密码）
 	Initialize(ctx context.Context, auth *auth.Data) error
