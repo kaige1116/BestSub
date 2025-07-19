@@ -185,7 +185,7 @@ func refreshToken(c *gin.Context) {
 		return
 	}
 
-	sess.ExpiresAt = uint32(newTokenPair.AccessExpiresAt.Unix())
+	sess.ExpiresAt = uint32(newTokenPair.RefreshExpiresAt.Unix())
 	sess.LastAccessAt = uint32(local.Time().Unix())
 	sess.HashRToken = xxhash.Sum64String(newTokenPair.RefreshToken)
 	sess.HashAToken = xxhash.Sum64String(newTokenPair.AccessToken)
