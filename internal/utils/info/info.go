@@ -31,7 +31,7 @@ func Banner() {
 	fmt.Print(color.Reset)
 
 	fmt.Print(color.Blue + color.Bold)
-	fmt.Println("          🚀 BestSub - Best Subscription Manager")
+	fmt.Println("          🚀 BestSub - Best Sub For You")
 	fmt.Print(color.Reset)
 
 	fmt.Print(color.Dim)

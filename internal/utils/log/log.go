@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 
 	"go.uber.org/zap"
@@ -23,7 +24,7 @@ type LogEntry struct {
 var (
 	wsChannel chan LogEntry
 
-	basePath string
+	basePath string = "build"
 
 	useConsole bool
 
@@ -107,7 +108,6 @@ func init() {
 }
 
 func Initialize(level, path, method string) error {
-	// 关闭旧的日志记录器
 	logger.Close()
 
 	basePath = path
@@ -127,6 +127,7 @@ func Initialize(level, path, method string) error {
 		useConsole = true
 		useFile = false
 	}
+	fmt.Printf("useConsole %v useFile %v method %s\n", useConsole, useFile, method)
 
 	var err error
 	logger, err = NewLogger(Config{
@@ -150,7 +151,7 @@ func NewTaskLogger(taskid int64, level string) (*Logger, error) {
 	return NewLogger(Config{
 		Level:      level,
 		Path:       path,
-		UseConsole: false,
+		UseConsole: utils.IsDebug(),
 		UseFile:    useFile,
 		Name:       name,
 		CallerSkip: 1,
@@ -172,7 +173,6 @@ func NewLogger(config Config) (*Logger, error) {
 	var cores []zapcore.Core
 	var file *os.File
 
-	// 创建终端core
 	if config.UseConsole {
 		consoleCore := zapcore.NewCore(
 			zapcore.NewConsoleEncoder(consoleEncoder),
@@ -182,9 +182,7 @@ func NewLogger(config Config) (*Logger, error) {
 		cores = append(cores, consoleCore)
 	}
 
-	// 创建文件core
 	if config.UseFile && config.Path != "" {
-		logger.Error("createLogFile", config.Path)
 		file, err = createLogFile(config.Path)
 		if err != nil {
 			return nil, err
@@ -197,7 +195,6 @@ func NewLogger(config Config) (*Logger, error) {
 		cores = append(cores, fileCore)
 	}
 
-	// WebSocket core 默认创建
 	wsEncoderConfig := zapcore.EncoderConfig{
 		LevelKey:    "level",
 		MessageKey:  "msg",
