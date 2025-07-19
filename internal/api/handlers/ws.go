@@ -90,8 +90,7 @@ func init() {
 		Use(middleware.WSAuth()).
 		AddRoute(
 			router.NewRoute("/logs", router.GET).
-				Handle(wsHandler.handleLogWebSocket).
-				WithDescription("WebSocket logs streaming"),
+				Handle(wsHandler.handleLogWebSocket),
 		)
 }
 

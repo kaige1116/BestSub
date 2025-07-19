@@ -25,23 +25,19 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("", router.POST).
-				Handle(createSub).
-				WithDescription("Create subscription links"),
+				Handle(createSub),
 		).
 		AddRoute(
 			router.NewRoute("", router.GET).
-				Handle(getSubs).
-				WithDescription("Get subscription links or list all with pagination"),
+				Handle(getSubs),
 		).
 		AddRoute(
 			router.NewRoute("", router.PATCH).
-				Handle(updateSub).
-				WithDescription("Update subscription links"),
+				Handle(updateSub),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.DELETE).
-				Handle(deleteSub).
-				WithDescription("Delete subscription link"),
+				Handle(deleteSub),
 		)
 }
 

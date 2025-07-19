@@ -21,26 +21,22 @@ func init() {
 	router.NewGroupRouter("/api/v1/system").
 		AddRoute(
 			router.NewRoute("/health", router.GET).
-				Handle(healthCheck).
-				WithDescription("Health check endpoint"),
+				Handle(healthCheck),
 		).
 		AddRoute(
 			router.NewRoute("/ready", router.GET).
-				Handle(readinessCheck).
-				WithDescription("Readiness check endpoint"),
+				Handle(readinessCheck),
 		).
 		AddRoute(
 			router.NewRoute("/live", router.GET).
-				Handle(livenessCheck).
-				WithDescription("Liveness check endpoint"),
+				Handle(livenessCheck),
 		)
 
 	router.NewGroupRouter("/api/v1/system").
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/info", router.GET).
-				Handle(systemInfo).
-				WithDescription("Get system information"),
+				Handle(systemInfo),
 		)
 }
 

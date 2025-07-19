@@ -25,13 +25,11 @@ func init() {
 	router.NewGroupRouter("/api/v1/auth").
 		AddRoute(
 			router.NewRoute("/login", router.POST).
-				Handle(login).
-				WithDescription("User login"),
+				Handle(login),
 		).
 		AddRoute(
 			router.NewRoute("/refresh", router.POST).
-				Handle(refreshToken).
-				WithDescription("Refresh access token"),
+				Handle(refreshToken),
 		)
 
 	// 需要认证的路由
@@ -39,33 +37,27 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/logout", router.POST).
-				Handle(logout).
-				WithDescription("User logout"),
+				Handle(logout),
 		).
 		AddRoute(
 			router.NewRoute("/user/password", router.POST).
-				Handle(changePassword).
-				WithDescription("Change user password"),
+				Handle(changePassword),
 		).
 		AddRoute(
 			router.NewRoute("/user/name", router.POST).
-				Handle(updateUsername).
-				WithDescription("Update username"),
+				Handle(updateUsername),
 		).
 		AddRoute(
 			router.NewRoute("/user", router.GET).
-				Handle(getUserInfo).
-				WithDescription("Get user information"),
+				Handle(getUserInfo),
 		).
 		AddRoute(
 			router.NewRoute("/sessions", router.GET).
-				Handle(getSessions).
-				WithDescription("Get user sessions"),
+				Handle(getSessions),
 		).
 		AddRoute(
 			router.NewRoute("/sessions/:id", router.DELETE).
-				Handle(deleteSession).
-				WithDescription("Delete session"),
+				Handle(deleteSession),
 		)
 }
 

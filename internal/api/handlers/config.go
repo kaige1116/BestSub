@@ -21,13 +21,11 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("/items", router.GET).
-				Handle(getConfigItems).
-				WithDescription("Get all configuration items"),
+				Handle(getConfigItems),
 		).
 		AddRoute(
 			router.NewRoute("/items", router.PATCH).
-				Handle(updateConfigItem).
-				WithDescription("Batch update configuration items"),
+				Handle(updateConfigItem),
 		)
 }
 

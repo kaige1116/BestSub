@@ -23,38 +23,31 @@ func init() {
 		Use(middleware.Auth()).
 		AddRoute(
 			router.NewRoute("", router.POST).
-				Handle(createTask).
-				WithDescription("Create task"),
+				Handle(createTask),	
 		).
 		AddRoute(
 			router.NewRoute("", router.GET).
-				Handle(getTasks).
-				WithDescription("Get tasks or list all with pagination"),
+				Handle(getTasks),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.GET).
-				Handle(getTask).
-				WithDescription("Get task by ID"),
+				Handle(getTask),
 		).
 		AddRoute(
 			router.NewRoute("", router.PATCH).
-				Handle(updateTask).
-				WithDescription("Update task"),
+				Handle(updateTask),
 		).
 		AddRoute(
 			router.NewRoute("/:id", router.DELETE).
-				Handle(deleteTask).
-				WithDescription("Delete task"),
+				Handle(deleteTask),
 		).
 		AddRoute(
 			router.NewRoute("/:id/run", router.POST).
-				Handle(runTask).
-				WithDescription("Run task manually"),
+				Handle(runTask),
 		).
 		AddRoute(
 			router.NewRoute("/:id/stop", router.POST).
-				Handle(stopTask).
-				WithDescription("Stop running task"),
+				Handle(stopTask),
 		)
 }
 

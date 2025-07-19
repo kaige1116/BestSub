@@ -57,7 +57,6 @@ type Route struct {
 	Method      Method
 	Handlers    []gin.HandlerFunc
 	Middlewares []gin.HandlerFunc
-	Description string
 }
 
 // NewRoute creates a new Route instance with the given path and method.
@@ -78,12 +77,6 @@ func (r *Route) Handle(handlers ...gin.HandlerFunc) *Route {
 // Use adds middlewares to the route.
 func (r *Route) Use(middlewares ...gin.HandlerFunc) *Route {
 	r.Middlewares = append(r.Middlewares, middlewares...)
-	return r
-}
-
-// WithDescription adds a description to the route.
-func (r *Route) WithDescription(description string) *Route {
-	r.Description = description
 	return r
 }
 
