@@ -33,24 +33,14 @@ CREATE TABLE IF NOT EXISTS "system_config" (
 CREATE TABLE IF NOT EXISTS "notify_templates" (
 	"id" INTEGER,
 	"name" TEXT,
-	"description" TEXT,
 	"templates" TEXT NOT NULL,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
 CREATE TABLE IF NOT EXISTS "notify_config" (
 	"id" INTEGER NOT NULL UNIQUE,
-	"enable" BOOLEAN NOT NULL,
-	"name" TEXT,
-	"description" TEXT,
 	"type" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
-	"test_result" TEXT,
-	"last_test" DATETIME,
-	"created_at" DATETIME NOT NULL,
-	"updated_at" DATETIME NOT NULL,
 	PRIMARY KEY("id")
 );
 
