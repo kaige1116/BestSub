@@ -3,7 +3,7 @@ package migration
 import "sort"
 
 type Info struct {
-	Date        int64 // 迁移日期 格式 202507171200
+	Date        uint64 // 迁移日期 格式 202507171200
 	Version     string
 	Description string
 	Content     func() string
@@ -11,7 +11,7 @@ type Info struct {
 
 var clientMigrations = make(map[string][]*Info)
 
-func Register(client string, date int64, version, description string, contentFunc func() string) {
+func Register(client string, date uint64, version, description string, contentFunc func() string) {
 	info := &Info{
 		Date:        date,
 		Version:     version,

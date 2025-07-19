@@ -113,14 +113,14 @@ func getTasks(c *gin.Context) {
 		var tasks []taskModel.Data
 
 		for _, idStr := range idStrs {
-			id, err := strconv.ParseInt(strings.TrimSpace(idStr), 10, 64)
+			id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 16)
 			if err != nil {
 				common.ResponseError(c, http.StatusBadRequest, err)
 				return
 			}
 
 			// 获取任务
-			taskData, err := task.GetTask(id)
+			taskData, err := task.GetTask(uint16(id))
 			if err != nil {
 				common.ResponseError(c, http.StatusInternalServerError, err)
 				return
@@ -192,14 +192,14 @@ func getTask(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 获取任务
-	taskData, err := task.GetTask(id)
+	taskData, err := task.GetTask(uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -275,14 +275,14 @@ func deleteTask(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.GetTask(id)
+	existingTask, err := task.GetTask(uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -294,7 +294,7 @@ func deleteTask(c *gin.Context) {
 	}
 
 	// 删除任务
-	if err := task.RemoveTaskWithDb(id); err != nil {
+	if err := task.RemoveTaskWithDb(uint16(id)); err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -326,14 +326,14 @@ func runTask(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.GetTask(id)
+	existingTask, err := task.GetTask(uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -345,7 +345,7 @@ func runTask(c *gin.Context) {
 	}
 
 	// 运行任务
-	if err := task.RunTask(id); err != nil {
+	if err := task.RunTask(uint16(id)); err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -377,14 +377,14 @@ func stopTask(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查任务是否存在
-	existingTask, err := task.GetTask(id)
+	existingTask, err := task.GetTask(uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -396,7 +396,7 @@ func stopTask(c *gin.Context) {
 	}
 
 	// 停止任务
-	if err := task.StopTask(id); err != nil {
+	if err := task.StopTask(uint16(id)); err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}

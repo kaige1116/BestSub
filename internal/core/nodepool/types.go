@@ -39,8 +39,8 @@ type index struct {
 type pool struct {
 	mu        sync.RWMutex         // 读写锁
 	nodes     map[uint64]node.Data // 唯一键到节点数据的映射
-	subs      map[int64][]uint64   // 订阅链接ID到唯一键列表的映射
-	iterators map[int64]int        // 订阅链接ID到当前迭代位置的映射
+	subs      map[uint16][]uint64  // 订阅链接ID到唯一键列表的映射
+	iterators map[uint16]int       // 订阅链接ID到当前迭代位置的映射
 	index     *index               // 索引系统
 }
 

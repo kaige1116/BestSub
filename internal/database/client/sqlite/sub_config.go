@@ -16,7 +16,7 @@ type SubStorageConfigRepository struct {
 }
 
 // newSubStorageConfigRepository 创建存储配置仓库
-func (db *DB) SubStorageConfig() interfaces.SubStorageConfigRepository {
+func (db *DB) SubStorage() interfaces.SubStorageConfigRepository {
 	return &SubStorageConfigRepository{db: db}
 }
 
@@ -47,7 +47,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.Sto
 		return fmt.Errorf("failed to get storage config id: %w", err)
 	}
 
-	config.ID = id
+	config.ID = uint16(id)
 	config.CreatedAt = now
 	config.UpdatedAt = now
 
@@ -55,7 +55,7 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.Sto
 }
 
 // GetByID 根据ID获取存储配置
-func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id int64) (*sub.StorageConfig, error) {
+func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id uint16) (*sub.StorageConfig, error) {
 	query := `SELECT id, enable, name, description, type, config, test_result, last_test, created_at, updated_at
 	          FROM storage_configs WHERE id = ?`
 
@@ -108,7 +108,7 @@ func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.Sto
 }
 
 // Delete 删除存储配置
-func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error {
+func (r *SubStorageConfigRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM storage_configs WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -120,7 +120,7 @@ func (r *SubStorageConfigRepository) Delete(ctx context.Context, id int64) error
 }
 
 // GetBySaveID 根据保存ID获取存储配置列表
-func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID int64) (*[]sub.StorageConfig, error) {
+func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID uint16) (*[]sub.StorageConfig, error) {
 	query := `SELECT sc.id, sc.enable, sc.name, sc.description, sc.type, sc.config, sc.test_result, sc.last_test, sc.created_at, sc.updated_at
 	          FROM storage_configs sc
 	          INNER JOIN save_storage_relations ssr ON sc.id = ssr.storage_id
@@ -161,7 +161,7 @@ func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID int
 }
 
 // AddSaveRelation 添加存储配置与保存的关联
-func (r *SubStorageConfigRepository) AddSaveRelation(ctx context.Context, configID, saveID int64) error {
+func (r *SubStorageConfigRepository) AddSaveRelation(ctx context.Context, configID, saveID uint16) error {
 	query := `INSERT OR IGNORE INTO save_storage_relations (storage_id, save_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, configID, saveID)
@@ -207,7 +207,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.
 		return fmt.Errorf("failed to get output template id: %w", err)
 	}
 
-	template.ID = id
+	template.ID = uint16(id)
 	template.CreatedAt = now
 	template.UpdatedAt = now
 
@@ -215,7 +215,7 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.
 }
 
 // GetByID 根据ID获取输出模板
-func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id int64) (*sub.OutputTemplate, error) {
+func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id uint16) (*sub.OutputTemplate, error) {
 	query := `SELECT id, enable, name, description, type, template, created_at, updated_at
 	          FROM sub_output_templates WHERE id = ?`
 
@@ -263,7 +263,7 @@ func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.
 }
 
 // Delete 删除输出模板
-func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id int64) error {
+func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM sub_output_templates WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -275,7 +275,7 @@ func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id int64) erro
 }
 
 // GetBySaveID 根据保存ID获取输出模板
-func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID int64) (*sub.OutputTemplate, error) {
+func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID uint16) (*sub.OutputTemplate, error) {
 	query := `SELECT ot.id, ot.enable, ot.name, ot.description, ot.type, ot.template, ot.created_at, ot.updated_at
 	          FROM sub_output_templates ot
 	          INNER JOIN save_template_relations str ON ot.id = str.template_id
@@ -304,7 +304,7 @@ func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID in
 }
 
 // GetByShareID 根据分享ID获取输出模板
-func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID int64) (*sub.OutputTemplate, error) {
+func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID uint16) (*sub.OutputTemplate, error) {
 	query := `SELECT ot.id, ot.enable, ot.name, ot.description, ot.type, ot.template, ot.created_at, ot.updated_at
 	          FROM sub_output_templates ot
 	          INNER JOIN share_template_relations str ON ot.id = str.template_id
@@ -333,7 +333,7 @@ func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID 
 }
 
 // AddShareRelation 添加输出模板与分享的关联
-func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, templateID, shareID int64) error {
+func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, templateID, shareID uint16) error {
 	query := `INSERT OR IGNORE INTO share_template_relations (template_id, share_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, templateID, shareID)
@@ -345,7 +345,7 @@ func (r *SubOutputTemplateRepository) AddShareRelation(ctx context.Context, temp
 }
 
 // AddSaveRelation 添加输出模板与保存的关联
-func (r *SubOutputTemplateRepository) AddSaveRelation(ctx context.Context, templateID, saveID int64) error {
+func (r *SubOutputTemplateRepository) AddSaveRelation(ctx context.Context, templateID, saveID uint16) error {
 	query := `INSERT OR IGNORE INTO save_template_relations (template_id, save_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, templateID, saveID)
@@ -391,7 +391,7 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.Node
 		return fmt.Errorf("failed to get node filter rule id: %w", err)
 	}
 
-	rule.ID = id
+	rule.ID = uint16(id)
 	rule.CreatedAt = now
 	rule.UpdatedAt = now
 
@@ -420,7 +420,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.Node
 }
 
 // GetByID 根据ID获取筛选规则
-func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*sub.NodeFilterRule, error) {
+func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id uint16) (*sub.NodeFilterRule, error) {
 	query := `SELECT id, name, field, operator, value, description, created_at, updated_at
 	          FROM sub_node_filter_rules WHERE id = ?`
 
@@ -447,7 +447,7 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id int64) (*s
 }
 
 // Delete 删除筛选规则
-func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id int64) error {
+func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM sub_node_filter_rules WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -459,7 +459,7 @@ func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id int64) erro
 }
 
 // GetBySaveID 根据保存ID获取筛选规则
-func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID int64) (*[]sub.NodeFilterRule, error) {
+func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID uint16) (*[]sub.NodeFilterRule, error) {
 	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
 	          FROM sub_node_filter_rules nfr
 	          INNER JOIN save_filter_relations sfr ON nfr.id = sfr.filter_id
@@ -498,7 +498,7 @@ func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID in
 }
 
 // GetByShareID 根据分享ID获取筛选规则
-func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID int64) (*[]sub.NodeFilterRule, error) {
+func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID uint16) (*[]sub.NodeFilterRule, error) {
 	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
 	          FROM sub_node_filter_rules nfr
 	          INNER JOIN share_filter_relations sfr ON nfr.id = sfr.filter_id
@@ -537,7 +537,7 @@ func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID 
 }
 
 // AddShareRelation 添加筛选规则与分享的关联
-func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, ruleID, shareID int64) error {
+func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, ruleID, shareID uint16) error {
 	query := `INSERT OR IGNORE INTO share_filter_relations (filter_id, share_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, ruleID, shareID)
@@ -549,7 +549,7 @@ func (r *SubNodeFilterRuleRepository) AddShareRelation(ctx context.Context, rule
 }
 
 // AddSaveRelation 添加筛选规则与保存的关联
-func (r *SubNodeFilterRuleRepository) AddSaveRelation(ctx context.Context, ruleID, saveID int64) error {
+func (r *SubNodeFilterRuleRepository) AddSaveRelation(ctx context.Context, ruleID, saveID uint16) error {
 	query := `INSERT OR IGNORE INTO save_filter_relations (filter_id, save_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, ruleID, saveID)

@@ -144,8 +144,8 @@ func Initialize(level, path, method string) error {
 	return nil
 }
 
-func NewTaskLogger(taskid int64, level string) (*Logger, error) {
-	taskidstr := strconv.FormatInt(taskid, 10)
+func NewTaskLogger(taskid uint16, level string) (*Logger, error) {
+	taskidstr := strconv.FormatUint(uint64(taskid), 10)
 	name := "task_" + taskidstr
 	path := filepath.Join(basePath, "task", taskidstr, local.Time().Format("20060102150405")+".log")
 	return NewLogger(Config{

@@ -44,7 +44,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 		return fmt.Errorf("failed to get sub id: %w", err)
 	}
 
-	link.ID = id
+	link.ID = uint16(id)
 	link.CreatedAt = now
 	link.UpdatedAt = now
 
@@ -52,7 +52,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 }
 
 // GetByID 根据ID获取订阅链接
-func (r *SubRepository) GetByID(ctx context.Context, id int64) (*sub.Data, error) {
+func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, error) {
 	query := `SELECT id, enable, name, description, url, created_at, updated_at
 	          FROM subs WHERE id = ?`
 
@@ -99,7 +99,7 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 }
 
 // Delete 删除订阅链接
-func (r *SubRepository) Delete(ctx context.Context, id int64) error {
+func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM subs WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -148,10 +148,10 @@ func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Dat
 }
 
 // Count 获取订阅链接总数
-func (r *SubRepository) Count(ctx context.Context) (int64, error) {
+func (r *SubRepository) Count(ctx context.Context) (uint16, error) {
 	query := `SELECT COUNT(*) FROM subs`
 
-	var count int64
+	var count uint16
 	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count subs: %w", err)
@@ -161,10 +161,10 @@ func (r *SubRepository) Count(ctx context.Context) (int64, error) {
 }
 
 // GetByTaskID 根据任务ID获取订阅ID
-func (r *SubRepository) GetByTaskID(ctx context.Context, taskID int64) (int64, error) {
+func (r *SubRepository) GetByTaskID(ctx context.Context, taskID uint16) (uint16, error) {
 	query := `SELECT sub_id FROM sub_task_relations WHERE task_id = ?`
 
-	var subID int64
+	var subID uint16
 	err := r.db.db.QueryRowContext(ctx, query, taskID).Scan(&subID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -177,7 +177,7 @@ func (r *SubRepository) GetByTaskID(ctx context.Context, taskID int64) (int64, e
 }
 
 // GetByShareID 根据分享ID获取订阅ID列表
-func (r *SubRepository) GetByShareID(ctx context.Context, shareID int64) ([]int64, error) {
+func (r *SubRepository) GetByShareID(ctx context.Context, shareID uint16) ([]uint16, error) {
 	query := `SELECT sub_id FROM share_sub_relations WHERE share_id = ?`
 
 	rows, err := r.db.db.QueryContext(ctx, query, shareID)
@@ -186,9 +186,9 @@ func (r *SubRepository) GetByShareID(ctx context.Context, shareID int64) ([]int6
 	}
 	defer rows.Close()
 
-	var subIDs []int64
+	var subIDs []uint16
 	for rows.Next() {
-		var subID int64
+		var subID uint16
 		err := rows.Scan(&subID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan sub id: %w", err)
@@ -204,7 +204,7 @@ func (r *SubRepository) GetByShareID(ctx context.Context, shareID int64) ([]int6
 }
 
 // GetBySaveID 根据保存ID获取订阅ID列表
-func (r *SubRepository) GetBySaveID(ctx context.Context, saveID int64) ([]int64, error) {
+func (r *SubRepository) GetBySaveID(ctx context.Context, saveID uint16) ([]uint16, error) {
 	query := `SELECT sub_id FROM save_sub_relations WHERE save_id = ?`
 
 	rows, err := r.db.db.QueryContext(ctx, query, saveID)
@@ -213,9 +213,9 @@ func (r *SubRepository) GetBySaveID(ctx context.Context, saveID int64) ([]int64,
 	}
 	defer rows.Close()
 
-	var subIDs []int64
+	var subIDs []uint16
 	for rows.Next() {
-		var subID int64
+		var subID uint16
 		err := rows.Scan(&subID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan sub id: %w", err)
@@ -231,7 +231,7 @@ func (r *SubRepository) GetBySaveID(ctx context.Context, saveID int64) ([]int64,
 }
 
 // AddTaskRelation 添加任务与订阅的关联
-func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID int64) error {
+func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID uint16) error {
 	query := `INSERT OR IGNORE INTO sub_task_relations (sub_id, task_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, subID, taskID)
@@ -243,7 +243,7 @@ func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID int64
 }
 
 // AddSaveRelation 添加保存配置与订阅的关联
-func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID int64) error {
+func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID uint16) error {
 	query := `INSERT OR IGNORE INTO save_sub_relations (sub_id, save_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, subID, saveID)
@@ -255,7 +255,7 @@ func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID int64
 }
 
 // AddShareRelation 添加分享链接与订阅的关联
-func (r *SubRepository) AddShareRelation(ctx context.Context, subID, shareID int64) error {
+func (r *SubRepository) AddShareRelation(ctx context.Context, subID, shareID uint16) error {
 	query := `INSERT OR IGNORE INTO share_sub_relations (sub_id, share_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, subID, shareID)

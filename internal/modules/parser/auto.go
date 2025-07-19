@@ -12,7 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils"
 )
 
-func auto(content *[]byte, sublinkID int64) (modparser.ParserType, int, error) {
+func auto(content *[]byte, sublinkID uint16) (modparser.ParserType, int, error) {
 	var addedCount int
 	var err error
 	utils.RemoveAllControlCharacters(content)

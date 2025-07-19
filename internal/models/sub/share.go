@@ -4,7 +4,7 @@ import "time"
 
 // 订阅输出系统的分享链接功能
 type Share struct {
-	ID             int64     `db:"id" json:"id"`
+	ID             uint16    `db:"id" json:"id"`
 	Enable         bool      `db:"enable" json:"enable"`                     // 是否启用
 	Name           string    `db:"name" json:"name"`                         // 分享链接名称
 	Rename         string    `db:"rename" json:"rename"`                     // 保存文件名

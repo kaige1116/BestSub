@@ -137,14 +137,14 @@ func getSubs(c *gin.Context) {
 		var responses []sub.Response
 
 		for _, idStr := range idStrs {
-			id, err := strconv.ParseInt(strings.TrimSpace(idStr), 10, 64)
+			id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 16)
 			if err != nil {
 				common.ResponseError(c, http.StatusBadRequest, err)
 				return
 			}
 
 			// 获取订阅链接
-			subData, err := op.SubRepo().GetByID(c.Request.Context(), id)
+			subData, err := op.SubRepo().GetByID(c.Request.Context(), uint16(id))
 			if err != nil {
 				common.ResponseError(c, http.StatusInternalServerError, err)
 				return
@@ -156,7 +156,7 @@ func getSubs(c *gin.Context) {
 			}
 
 			// 获取关联的任务
-			tasks, err := op.TaskRepo().GetBySubID(c.Request.Context(), id)
+			tasks, err := op.TaskRepo().GetBySubID(c.Request.Context(), uint16(id))
 			if err != nil {
 				common.ResponseError(c, http.StatusInternalServerError, err)
 				return
@@ -346,14 +346,14 @@ func deleteSub(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
 		common.ResponseError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// 检查订阅链接是否存在
-	existingSub, err := op.SubRepo().GetByID(c.Request.Context(), id)
+	existingSub, err := op.SubRepo().GetByID(c.Request.Context(), uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -364,7 +364,7 @@ func deleteSub(c *gin.Context) {
 		return
 	}
 
-	taskIDs, err := op.TaskRepo().GetTaskIDsBySubID(c.Request.Context(), id)
+	taskIDs, err := op.TaskRepo().GetTaskIDsBySubID(c.Request.Context(), uint16(id))
 	if err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
@@ -378,7 +378,7 @@ func deleteSub(c *gin.Context) {
 	}
 
 	// 删除订阅链接（数据库触发器会自动删除关联的任务）
-	if err := op.SubRepo().Delete(c.Request.Context(), id); err != nil {
+	if err := op.SubRepo().Delete(c.Request.Context(), uint16(id)); err != nil {
 		common.ResponseError(c, http.StatusInternalServerError, err)
 		return
 	}

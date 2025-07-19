@@ -9,7 +9,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/modules/parser/v2ray"
 )
 
-func Parse(content *[]byte, subType modparser.ParserType, sublinkID int64) (modparser.ParserType, int, error) {
+func Parse(content *[]byte, subType modparser.ParserType, sublinkID uint16) (modparser.ParserType, int, error) {
 	if content == nil || len(*content) == 0 {
 		return "", 0, fmt.Errorf("content is empty")
 	}

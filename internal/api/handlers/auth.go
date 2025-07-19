@@ -311,7 +311,7 @@ func getSessions(c *gin.Context) {
 	sessions := common.GetAllSession()
 	response := auth.SessionListResponse{
 		Sessions: *sessions,
-		Total:    len(*sessions),
+		Total:    uint8(len(*sessions)),
 	}
 	common.ResponseSuccess(c, response)
 }

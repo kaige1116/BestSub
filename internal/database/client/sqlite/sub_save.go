@@ -16,7 +16,7 @@ type SubSaveConfigRepository struct {
 }
 
 // newSubSaveConfigRepository 创建保存配置仓库
-func (db *DB) SubSaveConfig() interfaces.SubSaveRepository {
+func (db *DB) SubSave() interfaces.SubSaveRepository {
 	return &SubSaveConfigRepository{db: db}
 }
 
@@ -38,14 +38,14 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 
 	if err != nil {
 		return fmt.Errorf("failed to create save config: %w", err)
-	}
+	}	
 
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("failed to get save config id: %w", err)
 	}
 
-	config.ID = id
+	config.ID = uint16(id)	
 	config.CreatedAt = now
 	config.UpdatedAt = now
 
@@ -53,7 +53,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 }
 
 // GetByID 根据ID获取保存配置
-func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id int64) (*sub.SaveConfig, error) {
+func (r *SubSaveConfigRepository) GetByID(ctx context.Context, id uint16) (*sub.SaveConfig, error) {
 	query := `SELECT id, enable, name, description, rename, file_name, created_at, updated_at
 	          FROM sub_save WHERE id = ?`
 
@@ -101,7 +101,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveCo
 }
 
 // Delete 删除保存配置
-func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
+func (r *SubSaveConfigRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM sub_save WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -113,7 +113,7 @@ func (r *SubSaveConfigRepository) Delete(ctx context.Context, id int64) error {
 }
 
 // GetByTaskID 根据任务ID获取保存配置列表
-func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID int64) (*[]sub.SaveConfig, error) {
+func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID uint16) (*[]sub.SaveConfig, error) {
 	query := `SELECT sc.id, sc.enable, sc.name, sc.description, sc.rename, sc.file_name, sc.created_at, sc.updated_at
 	          FROM sub_save sc
 	          INNER JOIN save_task_relations str ON sc.id = str.save_id
@@ -152,7 +152,7 @@ func (r *SubSaveConfigRepository) GetByTaskID(ctx context.Context, taskID int64)
 }
 
 // AddTaskRelation 添加保存配置与任务的关联
-func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, taskID int64) error {
+func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, taskID uint16) error {
 	query := `INSERT OR IGNORE INTO save_task_relations (save_id, task_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, saveID, taskID)
@@ -164,7 +164,7 @@ func (r *SubSaveConfigRepository) AddTaskRelation(ctx context.Context, saveID, t
 }
 
 // AddOutputTemplateRelation 添加保存配置与输出模板的关联
-func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context, saveID, templateID int64) error {
+func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context, saveID, templateID uint16) error {
 	query := `INSERT OR IGNORE INTO save_template_relations (save_id, template_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, saveID, templateID)
@@ -176,7 +176,7 @@ func (r *SubSaveConfigRepository) AddOutputTemplateRelation(ctx context.Context,
 }
 
 // AddFilterConfigRelation 添加保存配置与过滤配置的关联
-func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, saveID, configID int64) error {
+func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, saveID, configID uint16) error {
 	query := `INSERT OR IGNORE INTO save_fitter_relations (save_id, fitter_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, saveID, configID)
@@ -188,7 +188,7 @@ func (r *SubSaveConfigRepository) AddFilterConfigRelation(ctx context.Context, s
 }
 
 // AddSubRelation 添加保存配置与订阅的关联
-func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, subID int64) error {
+func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, subID uint16) error {
 	query := `INSERT OR IGNORE INTO save_sub_relations (save_id, sub_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, saveID, subID)
@@ -200,7 +200,7 @@ func (r *SubSaveConfigRepository) AddSubRelation(ctx context.Context, saveID, su
 }
 
 // AddStorageConfigRelation 添加保存配置与存储配置的关联
-func (r *SubSaveConfigRepository) AddStorageConfigRelation(ctx context.Context, saveID, configID int64) error {
+func (r *SubSaveConfigRepository) AddStorageConfigRelation(ctx context.Context, saveID, configID uint16) error {
 	query := `INSERT OR IGNORE INTO save_storage_relations (save_id, storage_id) VALUES (?, ?)`
 
 	_, err := r.db.db.ExecContext(ctx, query, saveID, configID)

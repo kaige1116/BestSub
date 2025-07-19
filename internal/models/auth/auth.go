@@ -4,7 +4,7 @@ import "time"
 
 // 用户认证信息
 type Data struct {
-	ID        int64     `db:"id" json:"-"`                // 主键ID
+	ID        uint8     `db:"id" json:"-"`                // 主键ID
 	UserName  string    `db:"user_name" json:"user_name"` // 用户名
 	Password  string    `db:"password" json:"-"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
@@ -62,7 +62,7 @@ type UpdateUserInfoRequest struct {
 // SessionListResponse 会话列表响应模型
 type SessionListResponse struct {
 	Sessions []SessionResponse `json:"sessions"` // 会话列表
-	Total    int               `json:"total"`    // 总数
+	Total    uint8             `json:"total"`    // 总数
 }
 
 // RefreshTokenRequest 刷新令牌请求模型

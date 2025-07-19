@@ -53,8 +53,8 @@ func (db *DB) ensureMigrationsTable() error {
 	return nil
 }
 
-func (db *DB) getAppliedMigrations() (map[int64]bool, error) {
-	appliedDates := make(map[int64]bool)
+func (db *DB) getAppliedMigrations() (map[uint64]bool, error) {
+	appliedDates := make(map[uint64]bool)
 
 	rows, err := db.db.Query("SELECT date FROM migrations")
 	if err != nil {
@@ -63,7 +63,7 @@ func (db *DB) getAppliedMigrations() (map[int64]bool, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var date int64
+		var date uint64
 		if err := rows.Scan(&date); err != nil {
 			return nil, fmt.Errorf("failed to scan migration date: %w", err)
 		}

@@ -10,8 +10,8 @@ const NodePoolSize = 100
 func init() {
 	globalPool = &pool{
 		nodes:     make(map[uint64]node.Data, NodePoolSize),
-		subs:      make(map[int64][]uint64, NodePoolSize),
-		iterators: make(map[int64]int, NodePoolSize),
+		subs:      make(map[uint16][]uint64, NodePoolSize),
+		iterators: make(map[uint16]int, NodePoolSize),
 		index: &index{
 			delay:       make([]uint64, NodePoolSize),
 			speedUp:     make([]uint64, NodePoolSize),
@@ -24,7 +24,7 @@ func init() {
 }
 
 // Add 添加节点到节点池
-func Add(nodes *[]node.Data, subLinkID int64) int {
+func Add(nodes *[]node.Data, subLinkID uint16) int {
 	if len(*nodes) == 0 {
 		return 0
 	}
@@ -57,7 +57,7 @@ func Add(nodes *[]node.Data, subLinkID int64) int {
 }
 
 // GetNextNode 获取下一个节点
-func GetNextNode(subLinkID int64) node.Data {
+func GetNextNode(subLinkID uint16) node.Data {
 	globalPool.mu.RLock()
 	defer globalPool.mu.RUnlock()
 
@@ -132,7 +132,7 @@ func RemoveNodes(uniqueKeys []uint64) int {
 	defer globalPool.mu.Unlock()
 
 	removedCount := 0
-	affectedSubLinks := make(map[int64]bool)
+	affectedSubLinks := make(map[uint16]bool)
 
 	for i, uniqueKey := range uniqueKeys {
 		nodeData, exists := globalPool.nodes[uniqueKey]
@@ -169,7 +169,7 @@ func RemoveNodes(uniqueKeys []uint64) int {
 }
 
 // RemoveBySubLink 删除订阅链接的所有节点
-func RemoveBySubLink(subLinkID int64) int {
+func RemoveBySubLink(subLinkID uint16) int {
 	globalPool.mu.Lock()
 	defer globalPool.mu.Unlock()
 
@@ -240,7 +240,7 @@ func UpdateNodeInfo(info node.Info) bool {
 }
 
 // ResetIterator 重置订阅链接的迭代器位置
-func ResetIterator(subLinkID int64) {
+func ResetIterator(subLinkID uint16) {
 	globalPool.mu.Lock()
 	defer globalPool.mu.Unlock()
 
@@ -253,8 +253,8 @@ func Reset() {
 	defer globalPool.mu.Unlock()
 
 	globalPool.nodes = make(map[uint64]node.Data)
-	globalPool.subs = make(map[int64][]uint64)
-	globalPool.iterators = make(map[int64]int)
+	globalPool.subs = make(map[uint16][]uint64)
+	globalPool.iterators = make(map[uint16]int)
 
 	globalPool.index.delay = make([]uint64, 0)
 	globalPool.index.speedUp = make([]uint64, 0)

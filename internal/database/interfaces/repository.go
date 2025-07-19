@@ -12,9 +12,9 @@ type Repository interface {
 	Task() TaskRepository
 
 	Sub() SubRepository
-	SubSaveConfig() SubSaveRepository
-	SubShareLink() SubShareRepository
-	SubStorageConfig() SubStorageConfigRepository
+	SubSave() SubSaveRepository
+	SubShare() SubShareRepository
+	SubStorage() SubStorageConfigRepository
 	SubOutputTemplate() SubOutputTemplateRepository
 	SubNodeFilterRule() SubNodeFilterRuleRepository
 

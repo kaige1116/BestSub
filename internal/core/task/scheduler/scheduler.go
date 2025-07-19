@@ -6,18 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/core/task/exec"
+	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/go-co-op/gocron/v2"
 )
 
 type Scheduler interface {
 	Start()
-	AddTask(cron string, function any, taskInfo *exec.TaskInfo) error
-	UpdateTask(cron string, function any, taskInfo *exec.TaskInfo) error
-	RunTask(taskID int64) error
-	RemoveTask(taskID int64) error
-	StopTask(taskID int64) error
+	AddTask(cron string, function any, taskInfo *task.Info) error
+	UpdateTask(cron string, function any, taskInfo *task.Info) error
+	RunTask(taskID uint16) error
+	RemoveTask(taskID uint16) error
+	StopTask(taskID uint16) error
 	Stop() error
 }
 
@@ -60,13 +60,13 @@ func (s *scheduler) Stop() error {
 	return nil
 }
 
-func (s *scheduler) AddTask(cron string, function any, taskInfo *exec.TaskInfo) error {
+func (s *scheduler) AddTask(cron string, function any, taskInfo *task.Info) error {
 	log.Debugf("add task %d to scheduler, cron: %s, function: %v", taskInfo.ID, cron, function)
 	newTask := func() {
 		ctx, cancel := context.WithCancel(s.Ctx)
 		s.RunningTasks.Store(taskInfo.ID, cancel)
 		defer s.RunningTasks.Delete(taskInfo.ID)
-		fn, ok := function.(func(context.Context, exec.TaskInfo))
+		fn, ok := function.(func(context.Context, task.Info))
 		if !ok {
 			log.Errorf("function is not a func(context.Context, exec.TaskInfo)")
 			return
@@ -91,7 +91,7 @@ func (s *scheduler) AddTask(cron string, function any, taskInfo *exec.TaskInfo) 
 	return nil
 }
 
-func (s *scheduler) UpdateTask(cron string, function any, taskInfo *exec.TaskInfo) error {
+func (s *scheduler) UpdateTask(cron string, function any, taskInfo *task.Info) error {
 	value, ok := s.ScheduledTasks.Load(taskInfo.ID)
 	if !ok {
 		log.Errorf("task %d not found", taskInfo.ID)
@@ -117,7 +117,7 @@ func (s *scheduler) UpdateTask(cron string, function any, taskInfo *exec.TaskInf
 	return nil
 }
 
-func (s *scheduler) RunTask(taskID int64) error {
+func (s *scheduler) RunTask(taskID uint16) error {
 	value, ok := s.ScheduledTasks.Load(taskID)
 	if !ok {
 		log.Errorf("task %d not found at scheduler", taskID)
@@ -133,7 +133,7 @@ func (s *scheduler) RunTask(taskID int64) error {
 	return nil
 }
 
-func (s *scheduler) RemoveTask(taskID int64) error {
+func (s *scheduler) RemoveTask(taskID uint16) error {
 	value, ok := s.ScheduledTasks.Load(taskID)
 	if !ok {
 		log.Errorf("task %d not found at scheduler", taskID)
@@ -154,7 +154,7 @@ func (s *scheduler) RemoveTask(taskID int64) error {
 	return nil
 }
 
-func (s *scheduler) StopTask(taskID int64) error {
+func (s *scheduler) StopTask(taskID uint16) error {
 	value, ok := s.RunningTasks.Load(taskID)
 	if !ok {
 		log.Errorf("task %d not found at scheduler", taskID)

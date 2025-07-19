@@ -3,7 +3,7 @@ package sub
 import "time"
 
 type SaveConfig struct {
-	ID          int64     `db:"id" json:"id"`
+	ID          uint16    `db:"id" json:"id"`
 	Enable      bool      `db:"enable" json:"enable"`           // 是否启用
 	Name        string    `db:"name" json:"name"`               // 保存配置名称
 	Rename      string    `db:"rename" json:"rename"`           // 保存文件名

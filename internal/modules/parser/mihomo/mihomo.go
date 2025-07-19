@@ -16,7 +16,7 @@ import (
 )
 
 // Parse 解析mihomo配置内容
-func Parse(content *[]byte, sublinkID int64) (int, error) {
+func Parse(content *[]byte, sublinkID uint16) (int, error) {
 
 	var inProxiesSection bool
 	var yamlBuffer bytes.Buffer
