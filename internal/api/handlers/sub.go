@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	taskcore "github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
@@ -53,15 +53,15 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param request body sub.CreateRequest true "创建订阅链接请求"
-// @Success 200 {object} common.ResponseSuccessStruct{data=sub.Response} "创建成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=sub.Response} "创建成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [post]
 func createSub(c *gin.Context) {
 	var req sub.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
@@ -76,7 +76,7 @@ func createSub(c *gin.Context) {
 
 	// 创建订阅链接
 	if err := op.SubRepo().Create(c.Request.Context(), subData); err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to create subscription link")
 		return
 	}
 
@@ -87,14 +87,14 @@ func createSub(c *gin.Context) {
 		// 创建任务
 		taskData, err := taskcore.AddTask(&taskReq)
 		if err != nil {
-			common.ResponseError(c, http.StatusInternalServerError, err)
+			resp.Error(c, http.StatusInternalServerError, "failed to create task")
 			return
 		}
 
 		// 建立订阅与任务的关联
 		log.Debugf("建立订阅与任务的关联: %d, %d", subData.ID, taskData.ID)
 		if err := op.SubRepo().AddTaskRelation(c.Request.Context(), subData.ID, taskData.ID); err != nil {
-			common.ResponseError(c, http.StatusInternalServerError, err)
+			resp.Error(c, http.StatusInternalServerError, "failed to add task relation")
 			return
 		}
 
@@ -110,7 +110,7 @@ func createSub(c *gin.Context) {
 	username, _ := c.Get("username")
 	log.Infof("Subscription link %d created by user %s from %s", subData.ID, username, c.ClientIP())
 
-	common.ResponseSuccess(c, response)
+	resp.Success(c, response)
 }
 
 // getSubs 获取订阅链接
@@ -122,10 +122,10 @@ func createSub(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页大小" default(10)
 // @Param ids query string false "链接ID列表，逗号分隔"
-// @Success 200 {object} common.ResponseSuccessStruct{data=[]sub.Response} "获取成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=[]sub.Response} "获取成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [get]
 func getSubs(c *gin.Context) {
 	// 解析查询参数
@@ -139,26 +139,26 @@ func getSubs(c *gin.Context) {
 		for _, idStr := range idStrs {
 			id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 16)
 			if err != nil {
-				common.ResponseError(c, http.StatusBadRequest, err)
+				resp.Error(c, http.StatusBadRequest, "invalid id")
 				return
 			}
 
 			// 获取订阅链接
 			subData, err := op.SubRepo().GetByID(c.Request.Context(), uint16(id))
 			if err != nil {
-				common.ResponseError(c, http.StatusInternalServerError, err)
+				resp.Error(c, http.StatusInternalServerError, "failed to get subscription link")
 				return
 			}
 
 			if subData == nil {
-				common.ResponseError(c, http.StatusNotFound, fmt.Errorf("订阅链接 ID %d 不存在", id))
+				resp.Error(c, http.StatusNotFound, fmt.Sprintf("subscription link %d not found", id))
 				return
 			}
 
 			// 获取关联的任务
 			tasks, err := op.TaskRepo().GetBySubID(c.Request.Context(), uint16(id))
 			if err != nil {
-				common.ResponseError(c, http.StatusInternalServerError, err)
+				resp.Error(c, http.StatusInternalServerError, "failed to get tasks")
 				return
 			}
 
@@ -173,7 +173,7 @@ func getSubs(c *gin.Context) {
 			})
 		}
 
-		common.ResponseSuccess(c, responses)
+		resp.Success(c, responses)
 		return
 	}
 
@@ -193,14 +193,14 @@ func getSubs(c *gin.Context) {
 	// 获取订阅链接列表
 	subs, err := op.SubRepo().List(c.Request.Context(), offset, pageSize)
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get subscription links")
 		return
 	}
 
 	// 获取总数
 	total, err := op.SubRepo().Count(c.Request.Context())
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get total count")
 		return
 	}
 
@@ -211,7 +211,7 @@ func getSubs(c *gin.Context) {
 			// 获取每个订阅的关联任务
 			tasks, err := op.TaskRepo().GetBySubID(c.Request.Context(), subData.ID)
 			if err != nil {
-				common.ResponseError(c, http.StatusInternalServerError, err)
+				resp.Error(c, http.StatusInternalServerError, "failed to get tasks")
 				return
 			}
 
@@ -238,7 +238,7 @@ func getSubs(c *gin.Context) {
 	username, _ := c.Get("username")
 	log.Infof("Subscription link list by user %s from %s", username, c.ClientIP())
 
-	common.ResponseSuccess(c, result)
+	resp.Success(c, result)
 }
 
 // updateSub 更新订阅链接
@@ -249,33 +249,33 @@ func getSubs(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body sub.UpdateRequest true "更新订阅链接请求"
-// @Success 200 {object} common.ResponseSuccessStruct{data=sub.Response} "更新成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 404 {object} common.ResponseErrorStruct "订阅链接不存在"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=sub.Response} "更新成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [patch]
 func updateSub(c *gin.Context) {
 	var req sub.UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	if req.ID == 0 {
-		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("订阅链接ID不能为空"))
+		resp.Error(c, http.StatusBadRequest, "subscription link id is required")
 		return
 	}
 
 	// 检查订阅链接是否存在
 	existingSub, err := op.SubRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get subscription link")
 		return
 	}
 
 	if existingSub == nil {
-		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("订阅链接不存在"))
+		resp.Error(c, http.StatusNotFound, "subscription link not found")
 		return
 	}
 
@@ -290,7 +290,7 @@ func updateSub(c *gin.Context) {
 	}
 
 	if err := op.SubRepo().Update(c.Request.Context(), subData); err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to update subscription link")
 		return
 	}
 
@@ -299,7 +299,7 @@ func updateSub(c *gin.Context) {
 	for _, taskReq := range req.Task {
 		taskData, err := taskcore.UpdateTask(&taskReq)
 		if err != nil {
-			common.ResponseError(c, http.StatusInternalServerError, err)
+			resp.Error(c, http.StatusInternalServerError, "failed to update task")
 			return
 		}
 
@@ -309,7 +309,7 @@ func updateSub(c *gin.Context) {
 	// 获取更新后的订阅链接数据
 	updatedSub, err := op.SubRepo().GetByID(c.Request.Context(), req.ID)
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get updated subscription link")
 		return
 	}
 
@@ -321,7 +321,7 @@ func updateSub(c *gin.Context) {
 	username, _ := c.Get("username")
 	log.Infof("Subscription link %d updated by user %s from %s", req.ID, username, c.ClientIP())
 
-	common.ResponseSuccess(c, response)
+	resp.Success(c, response)
 }
 
 // deleteSub 删除订阅链接
@@ -332,59 +332,58 @@ func updateSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "订阅链接ID"
-// @Success 200 {object} common.ResponseSuccessStruct "删除成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 404 {object} common.ResponseErrorStruct "订阅链接不存在"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct "删除成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub/{id} [delete]
 func deleteSub(c *gin.Context) {
 	// 获取路径参数中的ID
 	idParam := c.Param("id")
 	if idParam == "" {
-		common.ResponseError(c, http.StatusBadRequest, fmt.Errorf("订阅链接ID不能为空"))
+		resp.Error(c, http.StatusBadRequest, "subscription link id is required")
 		return
 	}
 
 	id, err := strconv.ParseUint(idParam, 10, 16)
 	if err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	// 检查订阅链接是否存在
 	existingSub, err := op.SubRepo().GetByID(c.Request.Context(), uint16(id))
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get subscription link")
 		return
 	}
 
 	if existingSub == nil {
-		common.ResponseError(c, http.StatusNotFound, fmt.Errorf("订阅链接不存在"))
+		resp.Error(c, http.StatusNotFound, "subscription link not found")
 		return
 	}
 
 	taskIDs, err := op.TaskRepo().GetTaskIDsBySubID(c.Request.Context(), uint16(id))
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get task ids")
 		return
 	}
 
 	for _, taskID := range taskIDs {
 		if err := taskcore.RemoveTask(taskID); err != nil {
-			common.ResponseError(c, http.StatusInternalServerError, err)
+			resp.Error(c, http.StatusInternalServerError, "failed to remove task")
 			return
 		}
 	}
 
-	// 删除订阅链接（数据库触发器会自动删除关联的任务）
 	if err := op.SubRepo().Delete(c.Request.Context(), uint16(id)); err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to delete subscription link")
 		return
 	}
 	username, _ := c.Get("username")
 	log.Infof("Subscription link %d deleted by user %s from %s", id, username, c.ClientIP())
 
-	common.ResponseSuccess(c, nil)
+	resp.Success(c, nil)
 
 }

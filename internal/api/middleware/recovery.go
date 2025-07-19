@@ -1,10 +1,9 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
@@ -13,8 +12,7 @@ import (
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		log.Errorf("Panic recovered: %v", recovered)
-
-		common.ResponseError(c, http.StatusInternalServerError, fmt.Errorf("An unexpected error occurred"))
+		resp.Error(c, http.StatusInternalServerError, "An unexpected error occurred")
 		c.Abort()
 	})
 }

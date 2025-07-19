@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	sys "github.com/bestruirui/bestsub/internal/core/system"
 	"github.com/bestruirui/bestsub/internal/database/op"
@@ -51,8 +50,8 @@ func init() {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} common.ResponseSuccessStruct{data=system.HealthResponse} "服务正常"
-// @Failure 503 {object} common.ResponseErrorStruct "服务不可用"
+// @Success 200 {object} resp.SuccessStruct{data=system.HealthResponse} "服务正常"
+// @Failure 503 {object} resp.ErrorStruct "服务不可用"
 // @Router /api/v1/system/health [get]
 func healthCheck(c *gin.Context) {
 	// 检查数据库连接状态
@@ -79,11 +78,11 @@ func healthCheck(c *gin.Context) {
 	// 如果数据库连接失败，返回503状态码
 	if opStatus == "disconnected" {
 		response.Status = "error"
-		common.ResponseError(c, http.StatusServiceUnavailable, errors.New("database connection failed"))
+		resp.Error(c, http.StatusServiceUnavailable, "database connection failed")
 		return
 	}
 
-	common.ResponseSuccess(c, response)
+	resp.Success(c, response)
 }
 
 // readinessCheck 就绪检查
@@ -92,15 +91,14 @@ func healthCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} common.ResponseSuccessStruct{data=system.HealthResponse} "服务就绪"
-// @Failure 503 {object} common.ResponseErrorStruct "服务未就绪"
+// @Success 200 {object} resp.SuccessStruct{data=system.HealthResponse} "服务就绪"
+// @Failure 503 {object} resp.ErrorStruct "服务未就绪"
 // @Router /api/v1/system/ready [get]
 func readinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
 	ready := true
 	var errorMsg string
 
-	// 检查数据库是否已初始化
 	authRepo := op.AuthRepo()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -108,7 +106,7 @@ func readinessCheck(c *gin.Context) {
 	isInitialized, err := authRepo.IsInitialized(ctx)
 	if err != nil || !isInitialized {
 		ready = false
-		errorMsg = "Database not initialized"
+		errorMsg = "database not initialized"
 		log.Errorf("Readiness check failed: op not initialized, error: %v", err)
 	}
 
@@ -122,11 +120,11 @@ func readinessCheck(c *gin.Context) {
 	if !ready {
 		response.Status = "not ready"
 		response.Database = "not initialized"
-		common.ResponseError(c, http.StatusServiceUnavailable, errors.New(errorMsg))
+		resp.Error(c, http.StatusServiceUnavailable, errorMsg)
 		return
 	}
 
-	common.ResponseSuccess(c, response)
+	resp.Success(c, response)
 }
 
 // livenessCheck 存活检查
@@ -135,10 +133,10 @@ func readinessCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} common.ResponseSuccessStruct "服务存活"
+// @Success 200 {object} resp.SuccessStruct "服务存活"
 // @Router /api/v1/system/live [get]
 func livenessCheck(c *gin.Context) {
-	common.ResponseSuccess(c, map[string]interface{}{
+	resp.Success(c, map[string]interface{}{
 		"status":    "alive",
 		"timestamp": local.Time().Format(time.RFC3339),
 	})
@@ -151,10 +149,10 @@ func livenessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.ResponseSuccessStruct{data=system.Info} "获取成功"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=system.Info} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/system/info [get]
 func systemInfo(c *gin.Context) {
-	common.ResponseSuccess(c, sys.GetSystemInfo())
+	resp.Success(c, sys.GetSystemInfo())
 }

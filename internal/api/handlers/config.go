@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/common"
 	"github.com/bestruirui/bestsub/internal/api/middleware"
+	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/system"
@@ -38,20 +38,20 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.ResponseSuccessStruct{data=[]system.GroupData} "获取成功"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=[]system.GroupData} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/config/items [get]
 func getConfigItems(c *gin.Context) {
 
 	dbConfig, err := op.GetAllConfig(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get all config: %v", err)
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get all config")
 		return
 	}
 
-	common.ResponseSuccess(c, dbConfig)
+	resp.Success(c, dbConfig)
 }
 
 // updateConfigItem 更新配置项
@@ -62,23 +62,23 @@ func getConfigItems(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body []system.UpdateData  true "更新配置项请求"
-// @Success 200 {object} common.ResponseSuccessStruct{data=[]system.UpdateData} "更新成功"
-// @Failure 400 {object} common.ResponseErrorStruct "请求参数错误"
-// @Failure 401 {object} common.ResponseErrorStruct "未授权"
-// @Failure 500 {object} common.ResponseErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.SuccessStruct{data=[]system.UpdateData} "更新成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/config/items [patch]
 func updateConfigItem(c *gin.Context) {
 	var req []system.UpdateData
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ResponseError(c, http.StatusBadRequest, err)
+		resp.ErrorBadRequest(c)
 		return
 	}
 
 	err := op.UpdateConfig(context.Background(), &req)
 	if err != nil {
-		common.ResponseError(c, http.StatusInternalServerError, err)
+		resp.Error(c, http.StatusInternalServerError, "failed to update config")
 		return
 	}
 
-	common.ResponseSuccess(c, req)
+	resp.Success(c, req)
 }
