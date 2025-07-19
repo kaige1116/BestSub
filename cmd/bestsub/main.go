@@ -17,7 +17,7 @@ func main() {
 
 	cfg := config.Base()
 
-	if err := log.Initialize(cfg.Log.Level, cfg.Log.Output, cfg.Log.Dir); err != nil {
+	if err := log.Initialize(cfg.Log.Level, cfg.Log.Path, cfg.Log.Output); err != nil {
 		panic(err)
 	}
 	if err := database.Initialize(cfg.Database.Type, cfg.Database.Path); err != nil {
@@ -34,11 +34,11 @@ func main() {
 	task.Start()
 	server.Start()
 
-	shutdown.Register("Log", log.Close)
-	shutdown.Register("Database", database.Close)
-	shutdown.Register("HTTP Server", server.Close)
-	shutdown.Register("Task", task.Shutdown)
-	shutdown.Register("Session", common.CloseSession)
+	shutdown.Register(server.Close)        // 关闭顺序
+	shutdown.Register(database.Close)      //   ↓↓
+	shutdown.Register(common.CloseSession) //   ↓↓
+	shutdown.Register(task.Shutdown)       //   ↓↓
+	shutdown.Register(log.Close)           //   ↓↓
 
 	shutdown.Listen()
 }
