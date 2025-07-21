@@ -34,6 +34,9 @@ func Initialize(sqltype, path string) error {
 	if err := initTask(context.Background(), op.TaskRepo()); err != nil {
 		log.Fatalf("failed to initialize tasks: %v", err)
 	}
+	if err := initNotifyTemplate(context.Background(), op.NotifyTemplateRepo()); err != nil {
+		log.Fatalf("failed to initialize notify templates: %v", err)
+	}
 	return nil
 }
 func Close() error {

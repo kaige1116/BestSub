@@ -38,8 +38,6 @@ CREATE INDEX IF NOT EXISTS idx_save_task_task_id ON save_task_relations(task_id)
 -- 索引：用于通过 task_id 查询对应的 notify
 CREATE INDEX IF NOT EXISTS idx_notify_task_task_id ON notify_task_relations(task_id);
 
--- 索引：用于通过 task_id 查询对应的 notify_template
-CREATE INDEX IF NOT EXISTS idx_task_notify_template_task_id ON task_notify_template_relations(task_id);
 `
 }
 

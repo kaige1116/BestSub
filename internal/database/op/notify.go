@@ -6,13 +6,12 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/notify"
-	"github.com/bestruirui/bestsub/internal/modules/register"
 )
 
 var nr interfaces.NotifyRepository
 var ntr interfaces.NotifyTemplateRepository
 var notifyList *[]notify.Data
-var notifyTemplateList *[]notify.Template
+var notifyTemplateList map[string]string
 
 func notifyRepo() interfaces.NotifyRepository {
 	if nr == nil {
@@ -20,10 +19,7 @@ func notifyRepo() interfaces.NotifyRepository {
 	}
 	return nr
 }
-func GetNotifyTypes() []string {
-	return register.GetNotifyTypes()
-}
-func GetNotifyByType(t string) (*notify.Data, error) {
+func GetNotifyByID(id uint16) (*notify.Data, error) {
 	if notifyList == nil {
 		err := refreshNotify(context.Background())
 		if err != nil {
@@ -31,7 +27,7 @@ func GetNotifyByType(t string) (*notify.Data, error) {
 		}
 	}
 	for _, n := range *notifyList {
-		if n.Type == t {
+		if n.ID == id {
 			return &n, nil
 		}
 	}
@@ -48,10 +44,10 @@ func GetNotifyList(ctx context.Context) ([]notify.Data, error) {
 	return *notifyList, nil
 }
 func CreateNotify(ctx context.Context, req *notify.Data) error {
-	refreshNotify(ctx)
-	for _, n := range *notifyList {
-		if n.Type == req.Type {
-			return fmt.Errorf("通知渠道已存在")
+	if notifyList == nil {
+		err := refreshNotify(ctx)
+		if err != nil {
+			return err
 		}
 	}
 	err := notifyRepo().Create(ctx, req)
@@ -62,7 +58,12 @@ func CreateNotify(ctx context.Context, req *notify.Data) error {
 	return nil
 }
 func UpdateNotify(ctx context.Context, notify *notify.Data) error {
-	refreshNotify(ctx)
+	if notifyList == nil {
+		err := refreshNotify(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	for i, n := range *notifyList {
 		if n.ID == notify.ID {
 			(*notifyList)[i] = *notify
@@ -72,7 +73,12 @@ func UpdateNotify(ctx context.Context, notify *notify.Data) error {
 	return fmt.Errorf("通知渠道不存在")
 }
 func DeleteNotify(ctx context.Context, id uint16) error {
-	refreshNotify(ctx)
+	if notifyList == nil {
+		err := refreshNotify(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	for i, n := range *notifyList {
 		if n.ID == id {
 			*notifyList = append((*notifyList)[:i], (*notifyList)[i+1:]...)
@@ -90,11 +96,20 @@ func refreshNotify(ctx context.Context) error {
 	return nil
 }
 
-func notifyTemplateRepo() interfaces.NotifyTemplateRepository {
+func NotifyTemplateRepo() interfaces.NotifyTemplateRepository {
 	if ntr == nil {
 		ntr = repo.NotifyTemplate()
 	}
 	return ntr
+}
+func GetNotifyTemplate(ctx context.Context, t uint16) (string, error) {
+	if notifyTemplateList == nil {
+		err := refreshNotifyTemplate(ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+	return notifyTemplateList[notify.TypeMap[t]], nil
 }
 func GetNotifyTemplateList(ctx context.Context) ([]notify.Template, error) {
 	if notifyTemplateList == nil {
@@ -103,47 +118,39 @@ func GetNotifyTemplateList(ctx context.Context) ([]notify.Template, error) {
 			return nil, err
 		}
 	}
-	return *notifyTemplateList, nil
-}
-func CreateNotifyTemplate(ctx context.Context, req *notify.Template) error {
-	refreshNotifyTemplate(ctx)
-	for _, n := range *notifyTemplateList {
-		if n.Name == req.Name {
-			return fmt.Errorf("通知渠道已存在")
-		}
+
+	var list []notify.Template
+	for k, v := range notifyTemplateList {
+		list = append(list, notify.Template{
+			Type:     k,
+			Template: v,
+		})
 	}
-	err := notifyTemplateRepo().Create(ctx, req)
-	if err != nil {
-		return err
-	}
-	*notifyTemplateList = append(*notifyTemplateList, *req)
-	return nil
+	return list, nil
 }
 func UpdateNotifyTemplate(ctx context.Context, notify *notify.Template) error {
-	refreshNotifyTemplate(ctx)
-	for i, n := range *notifyTemplateList {
-		if n.ID == notify.ID {
-			(*notifyTemplateList)[i] = *notify
-			return notifyTemplateRepo().Update(ctx, notify)
+	if notifyTemplateList == nil {
+		err := refreshNotifyTemplate(ctx)
+		if err != nil {
+			return err
 		}
 	}
-	return fmt.Errorf("通知渠道不存在")
-}
-func DeleteNotifyTemplate(ctx context.Context, id uint16) error {
-	refreshNotifyTemplate(ctx)
-	for i, n := range *notifyTemplateList {
-		if n.ID == id {
-			*notifyTemplateList = append((*notifyTemplateList)[:i], (*notifyTemplateList)[i+1:]...)
-			return notifyTemplateRepo().Delete(ctx, id)
+	for k := range notifyTemplateList {
+		if k == notify.Type {
+			notifyTemplateList[notify.Type] = notify.Template
+			return NotifyTemplateRepo().Update(ctx, notify)
 		}
 	}
 	return fmt.Errorf("通知渠道不存在")
 }
 func refreshNotifyTemplate(ctx context.Context) error {
-	var err error
-	notifyTemplateList, err = notifyTemplateRepo().List(ctx)
+	notifyTemplateList = make(map[string]string)
+	list, err := NotifyTemplateRepo().List(ctx)
 	if err != nil {
 		return err
+	}
+	for _, n := range *list {
+		notifyTemplateList[n.Type] = n.Template
 	}
 	return nil
 }

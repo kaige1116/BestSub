@@ -107,19 +107,6 @@ func GetConfigByGroup(groupName string) ([]system.Data, error) {
 
 	return result, nil
 }
-func SetConfig(key string, value string) error {
-	cache.Set([]byte(key), []byte(value))
-	err := ConfigRepo().Update(context.Background(), &[]system.UpdateData{
-		{
-			Key:   key,
-			Value: value,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
 func UpdateConfig(ctx context.Context, config *[]system.UpdateData) error {
 	for _, item := range *config {
 		cache.Set([]byte(item.Key), []byte(item.Value))

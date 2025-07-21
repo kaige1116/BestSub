@@ -29,14 +29,14 @@ CREATE TABLE IF NOT EXISTS "system_config" (
 );
 
 CREATE TABLE IF NOT EXISTS "notify_templates" (
-	"id" INTEGER,
-	"name" TEXT,
+	"type" TEXT NOT NULL,
 	"templates" TEXT NOT NULL,
-	PRIMARY KEY("id")
+	PRIMARY KEY("type")
 );
 
 CREATE TABLE IF NOT EXISTS "notify_config" (
 	"id" INTEGER NOT NULL UNIQUE,
+	"name" TEXT NOT NULL,
 	"type" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
 	PRIMARY KEY("id")
@@ -228,16 +228,6 @@ CREATE TABLE IF NOT EXISTS "notify_task_relations" (
 	FOREIGN KEY ("task_id") REFERENCES "tasks"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE,
 	FOREIGN KEY ("notify_id") REFERENCES "notify_config"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "task_notify_template_relations" (
-	"task_id" INTEGER NOT NULL,
-	"notify_template_id" INTEGER NOT NULL,
-	PRIMARY KEY("task_id", "notify_template_id"),
-	FOREIGN KEY ("notify_template_id") REFERENCES "notify_templates"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("task_id") REFERENCES "tasks"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 

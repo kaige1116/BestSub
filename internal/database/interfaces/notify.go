@@ -38,24 +38,12 @@ type NotifyTemplateRepository interface {
 	// Create 创建通知模板
 	Create(ctx context.Context, template *notify.Template) error
 
-	// GetByID 根据ID获取通知模板
-	GetByID(ctx context.Context, id uint16) (*notify.Template, error)
+	// GetByType 根据类型获取通知模板
+	GetByType(ctx context.Context, t string) (*notify.Template, error)
 
 	// Update 更新通知模板
 	Update(ctx context.Context, template *notify.Template) error
 
-	// Delete 删除通知模板
-	Delete(ctx context.Context, id uint16) error
-
 	// List 获取通知模板列表
 	List(ctx context.Context) (*[]notify.Template, error)
-
-	// Count 获取通知模板总数
-	Count(ctx context.Context) (uint16, error)
-
-	// 根据任务ID获取通知模板
-	GetByTaskID(ctx context.Context, taskID uint16) (*notify.Template, error)
-
-	// 添加通知模板与任务的关联
-	AddTaskRelation(ctx context.Context, templateID, taskID uint16) error
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	authModel "github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/models/notify"
 	"github.com/bestruirui/bestsub/internal/models/system"
 	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -85,13 +86,24 @@ func initTask(ctx context.Context, taskRepo interfaces.TaskRepository) error {
 		}
 	}
 
-	for _, existingTask := range *existingTasks {
-		if _, exists := defaultTasksMap[existingTask.Type]; !exists {
-			if err := taskRepo.Delete(ctx, existingTask.ID); err != nil {
-				log.Fatalf("failed to delete extra system task %s: %v", existingTask.Type, err)
+	return nil
+}
+func initNotifyTemplate(ctx context.Context, notifyTemplateRepo interfaces.NotifyTemplateRepository) error {
+	defaultNotifyTemplates := notify.DefaultTemplates()
+	existingNotifyTemplates, err := notifyTemplateRepo.List(ctx)
+	if err != nil {
+		log.Fatalf("failed to get existing notify templates: %v", err)
+	}
+	existingNotifyTemplatesMap := make(map[string]bool)
+	for _, template := range *existingNotifyTemplates {
+		existingNotifyTemplatesMap[template.Type] = true
+	}
+	for _, template := range defaultNotifyTemplates {
+		if !existingNotifyTemplatesMap[template.Type] {
+			if err := notifyTemplateRepo.Create(ctx, &template); err != nil {
+				log.Fatalf("failed to create missing notify template %s: %v", template.Type, err)
 			}
 		}
 	}
-
 	return nil
 }
