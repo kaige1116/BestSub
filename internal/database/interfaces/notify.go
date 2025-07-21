@@ -21,7 +21,7 @@ type NotifyRepository interface {
 	Delete(ctx context.Context, id uint16) error
 
 	// List 获取通知渠道列表
-	List(ctx context.Context, offset, limit uint16) (*[]notify.Data, error)
+	List(ctx context.Context) (*[]notify.Data, error)
 
 	// Count 获取通知渠道总数
 	Count(ctx context.Context) (uint16, error)
@@ -48,7 +48,7 @@ type NotifyTemplateRepository interface {
 	Delete(ctx context.Context, id uint16) error
 
 	// List 获取通知模板列表
-	List(ctx context.Context, offset, limit uint16) (*[]notify.Template, error)
+	List(ctx context.Context) (*[]notify.Template, error)
 
 	// Count 获取通知模板总数
 	Count(ctx context.Context) (uint16, error)

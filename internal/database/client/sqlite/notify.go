@@ -7,6 +7,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/notify"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 // NotifyRepository 通知渠道数据访问实现
@@ -21,6 +22,7 @@ func (db *DB) Notify() interfaces.NotifyRepository {
 
 // Create 创建通知渠道
 func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) error {
+	log.Debugf("Create notify config")
 	query := `INSERT INTO notify_config (type, config )
 	          VALUES (?, ?)`
 
@@ -45,6 +47,7 @@ func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) err
 
 // GetByID 根据ID获取通知渠道
 func (r *NotifyRepository) GetByID(ctx context.Context, id uint16) (*notify.Data, error) {
+	log.Debugf("Get notify config by id")
 	query := `SELECT id, type, config
 	          FROM notify_config WHERE id = ?`
 
@@ -67,6 +70,7 @@ func (r *NotifyRepository) GetByID(ctx context.Context, id uint16) (*notify.Data
 
 // Update 更新通知渠道
 func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) error {
+	log.Debugf("Update notify config")
 	query := `UPDATE notify_config SET type = ?, config = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
@@ -84,6 +88,7 @@ func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) err
 
 // Delete 删除通知渠道
 func (r *NotifyRepository) Delete(ctx context.Context, id uint16) error {
+	log.Debugf("Delete notify config")
 	query := `DELETE FROM notify_config WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -95,11 +100,12 @@ func (r *NotifyRepository) Delete(ctx context.Context, id uint16) error {
 }
 
 // List 获取通知渠道列表
-func (r *NotifyRepository) List(ctx context.Context, offset, limit uint16) (*[]notify.Data, error) {
+func (r *NotifyRepository) List(ctx context.Context) (*[]notify.Data, error) {
+	log.Debugf("List notify config")
 	query := `SELECT id, type, config
-	          FROM notify_config ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	          FROM notify_config ORDER BY id DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notification channels: %w", err)
 	}
@@ -197,12 +203,11 @@ func (db *DB) NotifyTemplate() interfaces.NotifyTemplateRepository {
 
 // Create 创建通知模板
 func (r *NotifyTemplateRepository) Create(ctx context.Context, template *notify.Template) error {
-	query := `INSERT INTO notify_templates (name, description, templates)
-	          VALUES (?, ?, ?)`
+	query := `INSERT INTO notify_templates (name, templates)
+	          VALUES (?, ?)`
 
 	result, err := r.db.db.ExecContext(ctx, query,
 		template.Name,
-		template.Description,
 		template.Template,
 	)
 
@@ -222,14 +227,13 @@ func (r *NotifyTemplateRepository) Create(ctx context.Context, template *notify.
 
 // GetByID 根据ID获取通知模板
 func (r *NotifyTemplateRepository) GetByID(ctx context.Context, id uint16) (*notify.Template, error) {
-	query := `SELECT id, name, description, templates
+	query := `SELECT id, name, templates
 	          FROM notify_templates WHERE id = ?`
 
 	var template notify.Template
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&template.ID,
 		&template.Name,
-		&template.Description,
 		&template.Template,
 	)
 
@@ -245,11 +249,10 @@ func (r *NotifyTemplateRepository) GetByID(ctx context.Context, id uint16) (*not
 
 // Update 更新通知模板
 func (r *NotifyTemplateRepository) Update(ctx context.Context, template *notify.Template) error {
-	query := `UPDATE notify_templates SET name = ?, description = ?, templates = ? WHERE id = ?`
+	query := `UPDATE notify_templates SET name = ?, templates = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		template.Name,
-		template.Description,
 		template.Template,
 		template.ID,
 	)
@@ -274,11 +277,11 @@ func (r *NotifyTemplateRepository) Delete(ctx context.Context, id uint16) error 
 }
 
 // List 获取通知模板列表
-func (r *NotifyTemplateRepository) List(ctx context.Context, offset, limit uint16) (*[]notify.Template, error) {
-	query := `SELECT id, name, description, templates
-	          FROM notify_templates ORDER BY created_at DESC LIMIT ? OFFSET ?`
+func (r *NotifyTemplateRepository) List(ctx context.Context) (*[]notify.Template, error) {
+	query := `SELECT id, name, templates
+	          FROM notify_templates ORDER BY id DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notify templates: %w", err)
 	}
@@ -290,7 +293,6 @@ func (r *NotifyTemplateRepository) List(ctx context.Context, offset, limit uint1
 		err := rows.Scan(
 			&template.ID,
 			&template.Name,
-			&template.Description,
 			&template.Template,
 		)
 		if err != nil {
@@ -321,7 +323,7 @@ func (r *NotifyTemplateRepository) Count(ctx context.Context) (uint16, error) {
 
 // GetByTaskID 根据任务ID获取通知模板
 func (r *NotifyTemplateRepository) GetByTaskID(ctx context.Context, taskID uint16) (*notify.Template, error) {
-	query := `SELECT nt.id, nt.name, nt.description, nt.templates
+	query := `SELECT nt.id, nt.name, nt.templates
 	          FROM notify_templates nt
 	          INNER JOIN task_notify_template_relations tntr ON nt.id = tntr.notify_template_id
 	          WHERE tntr.task_id = ?`
@@ -330,7 +332,6 @@ func (r *NotifyTemplateRepository) GetByTaskID(ctx context.Context, taskID uint1
 	err := r.db.db.QueryRowContext(ctx, query, taskID).Scan(
 		&template.ID,
 		&template.Name,
-		&template.Description,
 		&template.Template,
 	)
 
