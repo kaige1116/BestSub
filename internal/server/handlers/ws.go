@@ -11,7 +11,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -218,13 +217,13 @@ func (h *wsHandler) handleClient(client *Client) {
 	for {
 		select {
 		case logEntry := <-client.send:
-			client.conn.SetWriteDeadline(local.Time().Add(time.Duration(WriteTimeout) * time.Second))
+			client.conn.SetWriteDeadline(time.Now().Add(time.Duration(WriteTimeout) * time.Second))
 			if err := client.conn.WriteJSON(logEntry); err != nil {
 				log.Errorf("WebSocket发送消息失败: %v", err)
 				return
 			}
 		case <-ticker.C:
-			client.conn.SetWriteDeadline(local.Time().Add(time.Duration(WriteTimeout) * time.Second))
+			client.conn.SetWriteDeadline(time.Now().Add(time.Duration(WriteTimeout) * time.Second))
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Debugf("WebSocket ping失败，断开连接: %v", err)
 				return

@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubSaveConfigRepository 保存配置数据访问实现
@@ -25,7 +25,7 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 	query := `INSERT INTO sub_save (enable, name, description, rename, file_name, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-	now := local.Time()
+	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
@@ -38,14 +38,14 @@ func (r *SubSaveConfigRepository) Create(ctx context.Context, config *sub.SaveCo
 
 	if err != nil {
 		return fmt.Errorf("failed to create save config: %w", err)
-	}	
+	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("failed to get save config id: %w", err)
 	}
 
-	config.ID = uint16(id)	
+	config.ID = uint16(id)
 	config.CreatedAt = now
 	config.UpdatedAt = now
 
@@ -89,7 +89,7 @@ func (r *SubSaveConfigRepository) Update(ctx context.Context, config *sub.SaveCo
 		config.Description,
 		config.Rename,
 		config.FileName,
-		local.Time(),
+		time.Now(),
 		config.ID,
 	)
 

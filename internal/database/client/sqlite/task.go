@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/task"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // TaskRepository 任务数据访问实现
@@ -25,7 +25,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (uint16, erro
 	query := `INSERT INTO tasks (enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := local.Time()
+	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
@@ -116,7 +116,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
 		t.LastRunDuration,
 		t.SuccessCount,
 		t.FailedCount,
-		local.Time(),
+		time.Now(),
 		t.ID,
 	)
 

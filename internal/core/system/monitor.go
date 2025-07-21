@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/system"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -18,7 +17,7 @@ var (
 )
 
 func init() {
-	startTime = local.Time().Format(time.RFC3339)
+	startTime = time.Now().Format(time.RFC3339)
 }
 
 func AddUploadBytes(bytes uint64) {

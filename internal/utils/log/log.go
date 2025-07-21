@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -66,14 +65,6 @@ type Config struct {
 	Name       string
 	CallerSkip int
 }
-type localClock struct{}
-
-func (localClock) Now() time.Time {
-	return local.Time()
-}
-func (localClock) NewTicker(duration time.Duration) *time.Ticker {
-	return time.NewTicker(duration)
-}
 
 // webSocketHook 发送日志到WebSocket通道
 func webSocketHook(entry zapcore.Entry) error {
@@ -111,7 +102,7 @@ func Initialize(level, path, method string) error {
 	logger.Close()
 
 	basePath = path
-	mainPath := filepath.Join(basePath, "main", local.Time().Format("20060102150405")+".log")
+	mainPath := filepath.Join(basePath, "main", time.Now().Format("20060102150405")+".log")
 
 	switch method {
 	case "console":
@@ -127,7 +118,6 @@ func Initialize(level, path, method string) error {
 		useConsole = true
 		useFile = false
 	}
-	fmt.Printf("useConsole %v useFile %v method %s\n", useConsole, useFile, method)
 
 	var err error
 	logger, err = NewLogger(Config{
@@ -143,11 +133,13 @@ func Initialize(level, path, method string) error {
 	}
 	return nil
 }
-
+func GetDefaultLogger() *Logger {
+	return logger
+}
 func NewTaskLogger(taskid uint16, level string) (*Logger, error) {
 	taskidstr := strconv.FormatUint(uint64(taskid), 10)
 	name := "task_" + taskidstr
-	path := filepath.Join(basePath, "task", taskidstr, local.Time().Format("20060102150405")+".log")
+	path := filepath.Join(basePath, "task", taskidstr, time.Now().Format("20060102150405")+".log")
 	return NewLogger(Config{
 		Level:      level,
 		Path:       path,
@@ -213,7 +205,6 @@ func NewLogger(config Config) (*Logger, error) {
 		core,
 		zap.Hooks(webSocketHook),
 		zap.AddStacktrace(zapcore.ErrorLevel),
-		zap.WithClock(localClock{}),
 	)
 	logger.Named(config.Name)
 
@@ -281,7 +272,7 @@ func Errorf(template string, args ...interface{}) {
 }
 
 func Fatalf(template string, args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.FatalLevel), zap.AddCaller()).Fatalf(template, args...)
+	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Fatalf(template, args...)
 }
 func Close() error {
 	return logger.Close()

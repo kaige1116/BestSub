@@ -11,7 +11,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -155,7 +154,7 @@ func GetAllSession() *[]auth.SessionResponse {
 func cleanup() int {
 
 	cleaned := 0
-	now := uint32(local.Time().Unix())
+	now := uint32(time.Now().Unix())
 
 	for i := range sessions {
 		if sessions[i].IsActive && now > sessions[i].ExpiresAt {

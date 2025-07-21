@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/op"
@@ -14,7 +15,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
@@ -88,7 +88,7 @@ func login(c *gin.Context) {
 		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
 			Username:  req.Username,
 			IP:        c.ClientIP(),
-			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Time:      time.Now().Format("2006-01-02 15:04:05"),
 			Msg:       "登录失败，用户名或密码错误",
 			UserAgent: c.GetHeader("User-Agent"),
 		})
@@ -102,7 +102,7 @@ func login(c *gin.Context) {
 		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
 			Username:  req.Username,
 			IP:        c.ClientIP(),
-			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Time:      time.Now().Format("2006-01-02 15:04:05"),
 			Msg:       "登录失败，没有找到空闲的会话",
 			UserAgent: c.GetHeader("User-Agent"),
 		})
@@ -117,7 +117,7 @@ func login(c *gin.Context) {
 		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
 			Username:  req.Username,
 			IP:        c.ClientIP(),
-			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Time:      time.Now().Format("2006-01-02 15:04:05"),
 			Msg:       "登录失败，生成令牌失败",
 			UserAgent: c.GetHeader("User-Agent"),
 		})
@@ -125,7 +125,7 @@ func login(c *gin.Context) {
 		return
 	}
 
-	now := uint32(local.Time().Unix())
+	now := uint32(time.Now().Unix())
 
 	tempSess.IsActive = true
 	tempSess.ClientIP = utils.IPToUint32(c.ClientIP())
@@ -139,7 +139,7 @@ func login(c *gin.Context) {
 	go notify.SendSystemNotify(notifyModel.TypeLoginSuccess, "登录成功", authModel.LoginNotify{
 		Username:  req.Username,
 		IP:        c.ClientIP(),
-		Time:      local.Time().Format("2006-01-02 15:04:05"),
+		Time:      time.Now().Format("2006-01-02 15:04:05"),
 		Msg:       "登录成功",
 		UserAgent: c.GetHeader("User-Agent"),
 	})
@@ -215,7 +215,7 @@ func refreshToken(c *gin.Context) {
 	}
 
 	sess.ExpiresAt = uint32(newTokenPair.RefreshExpiresAt.Unix())
-	sess.LastAccessAt = uint32(local.Time().Unix())
+	sess.LastAccessAt = uint32(time.Now().Unix())
 	sess.HashRToken = xxhash.Sum64String(newTokenPair.RefreshToken)
 	sess.HashAToken = xxhash.Sum64String(newTokenPair.AccessToken)
 

@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/nodepool"
 	"github.com/bestruirui/bestsub/internal/models/node"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/cespare/xxhash/v2"
 	"gopkg.in/yaml.v3"
@@ -98,7 +98,7 @@ func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Data) error {
 		Config: jsonBytes,
 		Info: node.Info{
 			UniqueKey: generateUniqueKey(&mihomoConfig),
-			AddTime:   local.Time().Unix(),
+			AddTime:   time.Now().Unix(),
 		},
 	}
 	*nodes = append(*nodes, *nodeData)

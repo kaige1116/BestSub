@@ -2,10 +2,10 @@ package sqlite
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/client/sqlite/migration"
 	migModel "github.com/bestruirui/bestsub/internal/database/migration"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 func (db *DB) Migrate() error {
@@ -96,7 +96,7 @@ func (db *DB) applyMigrations(migrations []*migModel.Info) error {
 			return fmt.Errorf("failed to execute migration %d SQL: %w", migration.Date, err)
 		}
 
-		_, err = insertStmt.Exec(migration.Date, migration.Version, migration.Description, local.Time())
+		_, err = insertStmt.Exec(migration.Date, migration.Version, migration.Description, time.Now())
 		if err != nil {
 			return fmt.Errorf("failed to record migration %d: %w", migration.Date, err)
 		}

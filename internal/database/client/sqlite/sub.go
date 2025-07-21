@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 )
 
 // SubRepository 订阅链接数据访问实现
@@ -25,7 +25,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	query := `INSERT INTO subs (enable, name, description, url, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?)`
 
-	now := local.Time()
+	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		true, // enable默认为true
 		link.Name,
@@ -87,7 +87,7 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 		link.Name,
 		link.Description,
 		link.URL,
-		local.Time(),
+		time.Now(),
 		link.ID,
 	)
 

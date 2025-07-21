@@ -6,7 +6,6 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/utils"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -21,7 +20,7 @@ type Claims struct {
 // GenerateTokenPair 生成访问令牌和刷新令牌对
 func GenerateTokenPair(sessionID uint8, username, secret string) (*auth.LoginResponse, error) {
 
-	now := local.Time()
+	now := time.Now()
 
 	accessExpiresAt := now.Add(15 * time.Minute)
 	if utils.IsDebug() {
@@ -91,7 +90,7 @@ func ValidateToken(tokenString, secret string) (*Claims, error) {
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		if local.Time().After(claims.ExpiresAt.Time) {
+		if time.Now().After(claims.ExpiresAt.Time) {
 			return nil, fmt.Errorf("token has expired")
 		}
 		return claims, nil

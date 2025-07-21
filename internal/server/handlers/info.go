@@ -12,7 +12,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/utils/info"
-	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
@@ -66,7 +65,7 @@ func healthCheck(c *gin.Context) {
 
 	response := system.HealthResponse{
 		Status:    "ok",
-		Timestamp: local.Time().Format(time.RFC3339),
+		Timestamp: time.Now().Format(time.RFC3339),
 		Version:   info.Version,
 		Database:  opStatus,
 	}
@@ -108,7 +107,7 @@ func readinessCheck(c *gin.Context) {
 
 	response := system.HealthResponse{
 		Status:    "ready",
-		Timestamp: local.Time().Format(time.RFC3339),
+		Timestamp: time.Now().Format(time.RFC3339),
 		Version:   info.Version,
 		Database:  "initialized",
 	}
@@ -134,7 +133,7 @@ func readinessCheck(c *gin.Context) {
 func livenessCheck(c *gin.Context) {
 	resp.Success(c, map[string]interface{}{
 		"status":    "alive",
-		"timestamp": local.Time().Format(time.RFC3339),
+		"timestamp": time.Now().Format(time.RFC3339),
 	})
 }
 
