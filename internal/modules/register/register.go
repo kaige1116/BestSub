@@ -1,21 +1,13 @@
 package register
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
-
-	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-type instance interface {
-	Init() error
-	Exec(ctx context.Context, log *log.Logger, args ...any) error
-}
-
-type desc struct {
+type Desc struct {
 	Name    string `json:"name,omitempty"`
 	Type    string `json:"type,omitempty"`
 	Default string `json:"default,omitempty"`
@@ -25,18 +17,18 @@ type desc struct {
 }
 
 type registerInfo struct {
-	im  map[string]instance
-	aim map[string][]desc
+	im  map[string]any
+	aim map[string][]Desc
 }
 
 var registers = map[string]*registerInfo{}
 
-func register(t string, m string, i instance) {
+func register(t string, m string, i any) {
 	r, exists := registers[t]
 	if !exists {
 		r = &registerInfo{
-			im:  make(map[string]instance),
-			aim: make(map[string][]desc),
+			im:  make(map[string]any),
+			aim: make(map[string][]Desc),
 		}
 		registers[t] = r
 	}
@@ -45,28 +37,28 @@ func register(t string, m string, i instance) {
 	r.aim[m] = genDesc(reflect.TypeOf(i).Elem())
 }
 
-func get(t string, m string, c string) (instance, error) {
+func Get[T any](t string, m string, c string) (T, error) {
 	ri, exists := registers[t]
 	if !exists {
-		return nil, errors.New("category not found")
+		return *new(T), errors.New("category not found")
 	}
 
 	info, exists := ri.im[m]
 	if !exists {
-		return nil, errors.New("item not found")
+		return *new(T), errors.New("item not found")
 	}
 
 	if c != "" {
 		err := json.Unmarshal([]byte(c), info)
 		if err != nil {
-			return nil, err
+			return *new(T), err
 		}
 	}
 
-	return info, nil
+	return info.(T), nil
 }
 
-func getList(t string) []string {
+func GetList(t string) []string {
 	ri, exists := registers[t]
 	if !exists {
 		return nil
@@ -79,7 +71,7 @@ func getList(t string) []string {
 	return keys
 }
 
-func getInfoMap(t string) map[string][]desc {
+func GetInfoMap(t string) map[string][]Desc {
 	ri, exists := registers[t]
 	if !exists {
 		return nil
@@ -87,8 +79,8 @@ func getInfoMap(t string) map[string][]desc {
 	return ri.aim
 }
 
-func genDesc(t reflect.Type) []desc {
-	var items []desc
+func genDesc(t reflect.Type) []Desc {
+	var items []Desc
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		if field.Type.Kind() == reflect.Struct {
@@ -100,7 +92,7 @@ func genDesc(t reflect.Type) []desc {
 		if !ok {
 			continue
 		}
-		item := desc{
+		item := Desc{
 			Name:    name,
 			Type:    strings.ToLower(field.Type.Name()),
 			Default: tag.Get("default"),
