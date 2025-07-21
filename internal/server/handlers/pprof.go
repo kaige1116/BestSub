@@ -5,7 +5,7 @@ package handlers
 import (
 	"net/http/pprof"
 
-	"github.com/bestruirui/bestsub/internal/api/router"
+	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,63 +14,51 @@ func init() {
 	router.NewGroupRouter("/debug/pprof").
 		AddRoute(
 			router.NewRoute("/", router.GET).
-				Handle(index).
-				WithDescription("pprof index page"),
+				Handle(index),
 		).
 		AddRoute(
 			router.NewRoute("/cmdline", router.GET).
-				Handle(cmdline).
-				WithDescription("pprof cmdline"),
+				Handle(cmdline),
 		).
 		AddRoute(
 			router.NewRoute("/profile", router.GET).
-				Handle(profile).
-				WithDescription("pprof CPU profile"),
+				Handle(profile),
 		).
 		AddRoute(
 			router.NewRoute("/symbol", router.GET).
-				Handle(symbol).
-				WithDescription("pprof symbol"),
+				Handle(symbol),
 		).
 		AddRoute(
 			router.NewRoute("/symbol", router.POST).
-				Handle(symbol).
-				WithDescription("pprof symbol"),
+				Handle(symbol),
 		).
 		AddRoute(
 			router.NewRoute("/trace", router.GET).
-				Handle(trace).
-				WithDescription("pprof trace"),
+				Handle(trace),
 		).
 		AddRoute(
 			router.NewRoute("/allocs", router.GET).
-				Handle(allocs).
-				WithDescription("pprof allocs"),
+				Handle(allocs),
 		).
 		AddRoute(
 			router.NewRoute("/block", router.GET).
-				Handle(block).
-				WithDescription("pprof block"),
+				Handle(block),
 		).
 		AddRoute(
 			router.NewRoute("/goroutine", router.GET).
-				Handle(goroutine).
-				WithDescription("pprof goroutine"),
+				Handle(goroutine),
 		).
 		AddRoute(
 			router.NewRoute("/heap", router.GET).
-				Handle(heap).
-				WithDescription("pprof heap"),
+				Handle(heap),
 		).
 		AddRoute(
 			router.NewRoute("/mutex", router.GET).
-				Handle(mutex).
-				WithDescription("pprof mutex"),
+				Handle(mutex),
 		).
 		AddRoute(
 			router.NewRoute("/threadcreate", router.GET).
-				Handle(threadcreate).
-				WithDescription("pprof threadcreate"),
+				Handle(threadcreate),
 		)
 }
 

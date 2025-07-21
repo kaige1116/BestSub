@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/local"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -23,6 +24,9 @@ func GenerateTokenPair(sessionID uint8, username, secret string) (*auth.LoginRes
 	now := local.Time()
 
 	accessExpiresAt := now.Add(15 * time.Minute)
+	if utils.IsDebug() {
+		accessExpiresAt = now.Add(24 * time.Hour)
+	}
 
 	claims := &Claims{
 		SessionID: sessionID,

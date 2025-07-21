@@ -8,6 +8,7 @@ import (
 // 日志中间件
 func Logging() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+
 		log.Debugf("%s %d %s %s %s",
 			param.Method,
 			param.StatusCode,

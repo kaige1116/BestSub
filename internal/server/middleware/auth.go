@@ -3,9 +3,9 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/auth"
-	"github.com/bestruirui/bestsub/internal/api/resp"
 	"github.com/bestruirui/bestsub/internal/config"
+	"github.com/bestruirui/bestsub/internal/server/auth"
+	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/cespare/xxhash/v2"

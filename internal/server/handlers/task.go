@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/api/resp"
-	"github.com/bestruirui/bestsub/internal/api/router"
+	"github.com/bestruirui/bestsub/internal/server/middleware"
+	"github.com/bestruirui/bestsub/internal/server/resp"
+	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	taskModel "github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"

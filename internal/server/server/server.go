@@ -43,11 +43,11 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/bestruirui/bestsub/internal/api/handlers"
-	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/models/system"
+	_ "github.com/bestruirui/bestsub/internal/server/handlers"
+	"github.com/bestruirui/bestsub/internal/server/middleware"
+	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )

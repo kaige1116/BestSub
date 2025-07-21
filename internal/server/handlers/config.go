@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bestruirui/bestsub/internal/api/middleware"
-	"github.com/bestruirui/bestsub/internal/api/resp"
-	"github.com/bestruirui/bestsub/internal/api/router"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/server/middleware"
+	"github.com/bestruirui/bestsub/internal/server/resp"
+	"github.com/bestruirui/bestsub/internal/server/router"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
