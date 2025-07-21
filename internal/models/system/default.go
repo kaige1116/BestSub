@@ -34,6 +34,18 @@ var systemConfigData = GroupData{
 			Value:       "7",
 			Description: "日志保留天数",
 		},
+		{
+			Type:        "number",
+			Key:         "notify.operation",
+			Value:       "0",
+			Description: "需要通知的操作类型",
+		},
+		{
+			Type:        "number",
+			Key:         "notify.id",
+			Value:       "0",
+			Description: "系统默认通知渠道ID",
+		},
 	},
 }
 
