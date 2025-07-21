@@ -23,7 +23,7 @@ type registerInfo struct {
 
 var registers = map[string]*registerInfo{}
 
-func register(t string, m string, i any) {
+func register(t string, i any) {
 	r, exists := registers[t]
 	if !exists {
 		r = &registerInfo{
@@ -32,7 +32,7 @@ func register(t string, m string, i any) {
 		}
 		registers[t] = r
 	}
-
+	m := reflect.TypeOf(i).Elem().Name()
 	r.im[m] = i
 	r.aim[m] = genDesc(reflect.TypeOf(i).Elem())
 }
