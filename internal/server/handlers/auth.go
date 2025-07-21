@@ -7,6 +7,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	authModel "github.com/bestruirui/bestsub/internal/models/auth"
+	notifyModel "github.com/bestruirui/bestsub/internal/models/notify"
+	"github.com/bestruirui/bestsub/internal/modules/notify"
 	"github.com/bestruirui/bestsub/internal/server/auth"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
 	"github.com/bestruirui/bestsub/internal/server/resp"
@@ -83,6 +85,13 @@ func login(c *gin.Context) {
 	err := op.AuthVerify(req.Username, req.Password)
 	if err != nil {
 		log.Warnf("Login failed for user %s: %v from %s", req.Username, err, c.ClientIP())
+		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
+			Username:  req.Username,
+			IP:        c.ClientIP(),
+			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Msg:       "登录失败，用户名或密码错误",
+			UserAgent: c.GetHeader("User-Agent"),
+		})
 		resp.Error(c, http.StatusUnauthorized, "username or password error")
 		return
 	}
@@ -90,6 +99,13 @@ func login(c *gin.Context) {
 	sessionID, tempSess := auth.GetOneSession()
 	if tempSess == nil {
 		log.Warnf("No unused session found from %s", c.ClientIP())
+		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
+			Username:  req.Username,
+			IP:        c.ClientIP(),
+			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Msg:       "登录失败，没有找到空闲的会话",
+			UserAgent: c.GetHeader("User-Agent"),
+		})
 		resp.Error(c, http.StatusUnauthorized, "please logout other devices first")
 		return
 	}
@@ -98,6 +114,13 @@ func login(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Failed to generate token pair: %v from %s", err, c.ClientIP())
 		auth.DisableSession(sessionID)
+		go notify.SendSystemNotify(notifyModel.TypeLoginFailed, "登录失败", authModel.LoginNotify{
+			Username:  req.Username,
+			IP:        c.ClientIP(),
+			Time:      local.Time().Format("2006-01-02 15:04:05"),
+			Msg:       "登录失败，生成令牌失败",
+			UserAgent: c.GetHeader("User-Agent"),
+		})
 		resp.Error(c, http.StatusInternalServerError, "failed to generate token pair")
 		return
 	}
@@ -112,8 +135,14 @@ func login(c *gin.Context) {
 	tempSess.ExpiresAt = uint32(tokenPair.RefreshExpiresAt.Unix())
 	tempSess.HashRToken = xxhash.Sum64String(tokenPair.RefreshToken)
 	tempSess.HashAToken = xxhash.Sum64String(tokenPair.AccessToken)
-
 	log.Infof("User %s logged in successfully from %s", req.Username, c.ClientIP())
+	go notify.SendSystemNotify(notifyModel.TypeLoginSuccess, "登录成功", authModel.LoginNotify{
+		Username:  req.Username,
+		IP:        c.ClientIP(),
+		Time:      local.Time().Format("2006-01-02 15:04:05"),
+		Msg:       "登录成功",
+		UserAgent: c.GetHeader("User-Agent"),
+	})
 
 	resp.Success(c, tokenPair)
 }

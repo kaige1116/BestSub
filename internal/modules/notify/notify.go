@@ -1,0 +1,79 @@
+package notify
+
+import (
+	"bytes"
+	"context"
+	"html/template"
+
+	"github.com/bestruirui/bestsub/internal/database/op"
+	notifyModel "github.com/bestruirui/bestsub/internal/models/notify"
+	_ "github.com/bestruirui/bestsub/internal/modules/notify/channel"
+	"github.com/bestruirui/bestsub/internal/modules/register"
+	"github.com/bestruirui/bestsub/internal/utils/log"
+)
+
+type Desc = register.Desc
+
+func SendSystemNotify(operation uint16, title string, content any) error {
+	if operation&uint16(op.GetConfigInt("notify.operation")) == 0 {
+		return nil
+	}
+
+	nt, err := op.GetNotifyTemplate(context.Background(), operation)
+	if err != nil {
+		log.Errorf("Failed to get notify template: %v", err)
+		return err
+	}
+
+	t, err := template.New("notify").Parse(nt)
+	if err != nil {
+		log.Errorf("Failed to parse notify template: %v", err)
+		return err
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, content)
+	if err != nil {
+		log.Errorf("Failed to execute notify template: %v", err)
+		return err
+	}
+
+	sysNotifyID := op.GetConfigInt("notify.id")
+	notifyConfig, err := op.GetNotifyByID(uint16(sysNotifyID))
+	if err != nil {
+		log.Errorf("Failed to get notify config: %v", err)
+		return err
+	}
+
+	notify, err := GetNotify(notifyConfig.Type, notifyConfig.Config)
+	if err != nil {
+		log.Errorf("Failed to get notify: %v", err)
+		return err
+	}
+
+	err = notify.Init()
+	if err != nil {
+		log.Errorf("Failed to init notify: %v", err)
+		return err
+	}
+
+	err = notify.Send(title, &buf)
+	if err != nil {
+		log.Errorf("Failed to send notify: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func GetNotify(m string, c string) (notifyModel.Instance, error) {
+	return register.Get[notifyModel.Instance]("notify", m, c)
+}
+
+func GetNotifyTypes() []string {
+	return register.GetList("notify")
+}
+
+func GetNotifyInfoMap() map[string][]Desc {
+	return register.GetInfoMap("notify")
+}
