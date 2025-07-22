@@ -48,14 +48,16 @@ func Get[T any](t string, m string, c string) (T, error) {
 		return *new(T), errors.New("item not found")
 	}
 
+	ni := reflect.New(reflect.TypeOf(info).Elem()).Interface()
+
 	if c != "" {
-		err := json.Unmarshal([]byte(c), info)
+		err := json.Unmarshal([]byte(c), ni)
 		if err != nil {
 			return *new(T), err
 		}
 	}
 
-	return info.(T), nil
+	return ni.(T), nil
 }
 
 func GetList(t string) []string {
