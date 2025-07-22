@@ -6,7 +6,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/modules/register"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -15,15 +14,15 @@ const (
 	bytesToMB = 1024 * 1024
 )
 
-type GCExec struct {
+type GC struct {
 	ForceGC bool `desc:"force" default:"false" description:"是否强制执行垃圾回收，true时会调用debug.FreeOSMemory()"`
 }
 
-func (e *GCExec) Init() error {
+func (e *GC) Init() error {
 	return nil
 }
 
-func (e *GCExec) Exec(ctx context.Context, log *log.Logger, args ...any) error {
+func (e *GC) Run(ctx context.Context, log *log.Logger) error {
 	startTime := time.Now()
 
 	var memBefore runtime.MemStats
@@ -46,5 +45,5 @@ func (e *GCExec) Exec(ctx context.Context, log *log.Logger, args ...any) error {
 }
 
 func init() {
-	register.Exec(task.TypeGC, &GCExec{})
+	register.Exec(&GC{})
 }
