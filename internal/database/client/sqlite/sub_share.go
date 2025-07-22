@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
@@ -22,21 +21,17 @@ func (db *DB) SubShare() interfaces.SubShareRepository {
 
 // Create 创建分享链接
 func (r *SubShareRepository) Create(ctx context.Context, shareLink *sub.Share) error {
-	query := `INSERT INTO sub_share_links (enable, name, description, rename, access_count, max_access_count, token, expires, created_at, updated_at)
+	query := `INSERT INTO sub_share_links (enable, name, rename, access_count, max_access_count, token, expires)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		shareLink.Enable,
 		shareLink.Name,
-		shareLink.Description,
 		shareLink.Rename,
 		shareLink.AccessCount,
 		shareLink.MaxAccessCount,
 		shareLink.Token,
 		shareLink.Expires,
-		now,
-		now,
 	)
 
 	if err != nil {
@@ -49,15 +44,13 @@ func (r *SubShareRepository) Create(ctx context.Context, shareLink *sub.Share) e
 	}
 
 	shareLink.ID = uint16(id)
-	shareLink.CreatedAt = now
-	shareLink.UpdatedAt = now
 
 	return nil
 }
 
 // GetByID 根据ID获取分享链接
 func (r *SubShareRepository) GetByID(ctx context.Context, id uint16) (*sub.Share, error) {
-	query := `SELECT id, enable, name, description, rename, access_count, max_access_count, token, expires, created_at, updated_at
+	query := `SELECT id, enable, name, rename, access_count, max_access_count, token, expires
 	          FROM sub_share_links WHERE id = ?`
 
 	var shareLink sub.Share
@@ -65,14 +58,11 @@ func (r *SubShareRepository) GetByID(ctx context.Context, id uint16) (*sub.Share
 		&shareLink.ID,
 		&shareLink.Enable,
 		&shareLink.Name,
-		&shareLink.Description,
 		&shareLink.Rename,
 		&shareLink.AccessCount,
 		&shareLink.MaxAccessCount,
 		&shareLink.Token,
 		&shareLink.Expires,
-		&shareLink.CreatedAt,
-		&shareLink.UpdatedAt,
 	)
 
 	if err != nil {
@@ -87,18 +77,16 @@ func (r *SubShareRepository) GetByID(ctx context.Context, id uint16) (*sub.Share
 
 // Update 更新分享链接
 func (r *SubShareRepository) Update(ctx context.Context, shareLink *sub.Share) error {
-	query := `UPDATE sub_share_links SET enable = ?, name = ?, description = ?, rename = ?, access_count = ?, max_access_count = ?, token = ?, expires = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE sub_share_links SET enable = ?, name = ?, rename = ?, access_count = ?, max_access_count = ?, token = ?, expires = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		shareLink.Enable,
 		shareLink.Name,
-		shareLink.Description,
 		shareLink.Rename,
 		shareLink.AccessCount,
 		shareLink.MaxAccessCount,
 		shareLink.Token,
 		shareLink.Expires,
-		time.Now(),
 		shareLink.ID,
 	)
 
@@ -123,7 +111,7 @@ func (r *SubShareRepository) Delete(ctx context.Context, id uint16) error {
 
 // List 获取分享链接列表
 func (r *SubShareRepository) List(ctx context.Context, offset, limit int) ([]*sub.Share, error) {
-	query := `SELECT id, enable, name, description, rename, access_count, max_access_count, token, expires, created_at, updated_at
+	query := `SELECT id, enable, name, rename, access_count, max_access_count, token, expires
 	          FROM sub_share_links ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
@@ -139,14 +127,11 @@ func (r *SubShareRepository) List(ctx context.Context, offset, limit int) ([]*su
 			&shareLink.ID,
 			&shareLink.Enable,
 			&shareLink.Name,
-			&shareLink.Description,
 			&shareLink.Rename,
 			&shareLink.AccessCount,
 			&shareLink.MaxAccessCount,
 			&shareLink.Token,
 			&shareLink.Expires,
-			&shareLink.CreatedAt,
-			&shareLink.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan share link: %w", err)

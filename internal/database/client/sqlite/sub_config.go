@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
@@ -22,20 +21,14 @@ func (db *DB) SubStorage() interfaces.SubStorageConfigRepository {
 
 // Create 创建存储配置
 func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.StorageConfig) error {
-	query := `INSERT INTO storage_configs (enable, name, description, type, config, test_result, last_test, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO storage_configs (enable, name, type, config)
+	          VALUES (?, ?, ?, ?)`
 
-	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
-		config.Description,
 		config.Type,
 		config.Config,
-		config.TestResult,
-		config.LastTest,
-		now,
-		now,
 	)
 
 	if err != nil {
@@ -48,15 +41,13 @@ func (r *SubStorageConfigRepository) Create(ctx context.Context, config *sub.Sto
 	}
 
 	config.ID = uint16(id)
-	config.CreatedAt = now
-	config.UpdatedAt = now
 
 	return nil
 }
 
 // GetByID 根据ID获取存储配置
 func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id uint16) (*sub.StorageConfig, error) {
-	query := `SELECT id, enable, name, description, type, config, test_result, last_test, created_at, updated_at
+	query := `SELECT id, enable, name, type, config
 	          FROM storage_configs WHERE id = ?`
 
 	var config sub.StorageConfig
@@ -64,13 +55,8 @@ func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id uint16) (*s
 		&config.ID,
 		&config.Enable,
 		&config.Name,
-		&config.Description,
 		&config.Type,
 		&config.Config,
-		&config.TestResult,
-		&config.LastTest,
-		&config.CreatedAt,
-		&config.UpdatedAt,
 	)
 
 	if err != nil {
@@ -85,18 +71,13 @@ func (r *SubStorageConfigRepository) GetByID(ctx context.Context, id uint16) (*s
 
 // Update 更新存储配置
 func (r *SubStorageConfigRepository) Update(ctx context.Context, config *sub.StorageConfig) error {
-	query := `UPDATE storage_configs SET enable = ?, name = ?, description = ?, type = ?, config = ?,
-	          test_result = ?, last_test = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE storage_configs SET enable = ?, name = ?, type = ?, config = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		config.Enable,
 		config.Name,
-		config.Description,
 		config.Type,
 		config.Config,
-		config.TestResult,
-		config.LastTest,
-		time.Now(),
 		config.ID,
 	)
 
@@ -121,7 +102,7 @@ func (r *SubStorageConfigRepository) Delete(ctx context.Context, id uint16) erro
 
 // GetBySaveID 根据保存ID获取存储配置列表
 func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID uint16) (*[]sub.StorageConfig, error) {
-	query := `SELECT sc.id, sc.enable, sc.name, sc.description, sc.type, sc.config, sc.test_result, sc.last_test, sc.created_at, sc.updated_at
+	query := `SELECT sc.id, sc.enable, sc.name, sc.type, sc.config
 	          FROM storage_configs sc
 	          INNER JOIN save_storage_relations ssr ON sc.id = ssr.storage_id
 	          WHERE ssr.save_id = ?`
@@ -139,13 +120,8 @@ func (r *SubStorageConfigRepository) GetBySaveID(ctx context.Context, saveID uin
 			&config.ID,
 			&config.Enable,
 			&config.Name,
-			&config.Description,
 			&config.Type,
 			&config.Config,
-			&config.TestResult,
-			&config.LastTest,
-			&config.CreatedAt,
-			&config.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan storage config: %w", err)
@@ -184,18 +160,13 @@ func (db *DB) SubOutputTemplate() interfaces.SubOutputTemplateRepository {
 
 // Create 创建输出模板
 func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.OutputTemplate) error {
-	query := `INSERT INTO sub_output_templates (enable, name, description, type, template, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO sub_output_templates (name, type, template)
+	          VALUES (?, ?, ?)`
 
-	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
-		template.Enable,
 		template.Name,
-		template.Description,
 		template.Type,
 		template.Template,
-		now,
-		now,
 	)
 
 	if err != nil {
@@ -208,27 +179,21 @@ func (r *SubOutputTemplateRepository) Create(ctx context.Context, template *sub.
 	}
 
 	template.ID = uint16(id)
-	template.CreatedAt = now
-	template.UpdatedAt = now
 
 	return nil
 }
 
 // GetByID 根据ID获取输出模板
 func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id uint16) (*sub.OutputTemplate, error) {
-	query := `SELECT id, enable, name, description, type, template, created_at, updated_at
+	query := `SELECT id, name, type, template
 	          FROM sub_output_templates WHERE id = ?`
 
 	var template sub.OutputTemplate
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&template.ID,
-		&template.Enable,
 		&template.Name,
-		&template.Description,
 		&template.Type,
 		&template.Template,
-		&template.CreatedAt,
-		&template.UpdatedAt,
 	)
 
 	if err != nil {
@@ -243,15 +208,12 @@ func (r *SubOutputTemplateRepository) GetByID(ctx context.Context, id uint16) (*
 
 // Update 更新输出模板
 func (r *SubOutputTemplateRepository) Update(ctx context.Context, template *sub.OutputTemplate) error {
-	query := `UPDATE sub_output_templates SET enable = ?, name = ?, description = ?, type = ?, template = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE sub_output_templates SET name = ?, type = ?, template = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
-		template.Enable,
 		template.Name,
-		template.Description,
 		template.Type,
 		template.Template,
-		time.Now(),
 		template.ID,
 	)
 
@@ -276,7 +238,7 @@ func (r *SubOutputTemplateRepository) Delete(ctx context.Context, id uint16) err
 
 // GetBySaveID 根据保存ID获取输出模板
 func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID uint16) (*sub.OutputTemplate, error) {
-	query := `SELECT ot.id, ot.enable, ot.name, ot.description, ot.type, ot.template, ot.created_at, ot.updated_at
+	query := `SELECT ot.id, ot.name, ot.type, ot.template
 	          FROM sub_output_templates ot
 	          INNER JOIN save_template_relations str ON ot.id = str.template_id
 	          WHERE str.save_id = ?`
@@ -284,13 +246,9 @@ func (r *SubOutputTemplateRepository) GetBySaveID(ctx context.Context, saveID ui
 	var template sub.OutputTemplate
 	err := r.db.db.QueryRowContext(ctx, query, saveID).Scan(
 		&template.ID,
-		&template.Enable,
 		&template.Name,
-		&template.Description,
 		&template.Type,
 		&template.Template,
-		&template.CreatedAt,
-		&template.UpdatedAt,
 	)
 
 	if err != nil {
@@ -313,13 +271,9 @@ func (r *SubOutputTemplateRepository) GetByShareID(ctx context.Context, shareID 
 	var template sub.OutputTemplate
 	err := r.db.db.QueryRowContext(ctx, query, shareID).Scan(
 		&template.ID,
-		&template.Enable,
 		&template.Name,
-		&template.Description,
 		&template.Type,
 		&template.Template,
-		&template.CreatedAt,
-		&template.UpdatedAt,
 	)
 
 	if err != nil {
@@ -368,18 +322,14 @@ func (db *DB) SubNodeFilterRule() interfaces.SubNodeFilterRuleRepository {
 
 // Create 创建筛选规则
 func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.NodeFilterRule) error {
-	query := `INSERT INTO sub_node_filter_rules (name, field, operator, value, description, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO sub_node_filter_rules (name, field, operator, value)
+	          VALUES (?, ?, ?, ?)`
 
-	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		rule.Name,
 		rule.Field,
 		rule.Operator,
 		rule.Value,
-		rule.Description,
-		now,
-		now,
 	)
 
 	if err != nil {
@@ -392,23 +342,19 @@ func (r *SubNodeFilterRuleRepository) Create(ctx context.Context, rule *sub.Node
 	}
 
 	rule.ID = uint16(id)
-	rule.CreatedAt = now
-	rule.UpdatedAt = now
 
 	return nil
 }
 
 // Update 更新筛选规则
 func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.NodeFilterRule) error {
-	query := `UPDATE sub_node_filter_rules SET name = ?, field = ?, operator = ?, value = ?, description = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE sub_node_filter_rules SET name = ?, field = ?, operator = ?, value = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		rule.Name,
 		rule.Field,
 		rule.Operator,
 		rule.Value,
-		rule.Description,
-		time.Now(),
 		rule.ID,
 	)
 
@@ -421,7 +367,7 @@ func (r *SubNodeFilterRuleRepository) Update(ctx context.Context, rule *sub.Node
 
 // GetByID 根据ID获取筛选规则
 func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id uint16) (*sub.NodeFilterRule, error) {
-	query := `SELECT id, name, field, operator, value, description, created_at, updated_at
+	query := `SELECT id, name, field, operator, value
 	          FROM sub_node_filter_rules WHERE id = ?`
 
 	var rule sub.NodeFilterRule
@@ -431,9 +377,6 @@ func (r *SubNodeFilterRuleRepository) GetByID(ctx context.Context, id uint16) (*
 		&rule.Field,
 		&rule.Operator,
 		&rule.Value,
-		&rule.Description,
-		&rule.CreatedAt,
-		&rule.UpdatedAt,
 	)
 
 	if err != nil {
@@ -460,7 +403,7 @@ func (r *SubNodeFilterRuleRepository) Delete(ctx context.Context, id uint16) err
 
 // GetBySaveID 根据保存ID获取筛选规则
 func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID uint16) (*[]sub.NodeFilterRule, error) {
-	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
+	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value
 	          FROM sub_node_filter_rules nfr
 	          INNER JOIN save_filter_relations sfr ON nfr.id = sfr.filter_id
 	          WHERE sfr.save_id = ?`
@@ -480,9 +423,6 @@ func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID ui
 			&rule.Field,
 			&rule.Operator,
 			&rule.Value,
-			&rule.Description,
-			&rule.CreatedAt,
-			&rule.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan node filter rule: %w", err)
@@ -499,7 +439,7 @@ func (r *SubNodeFilterRuleRepository) GetBySaveID(ctx context.Context, saveID ui
 
 // GetByShareID 根据分享ID获取筛选规则
 func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID uint16) (*[]sub.NodeFilterRule, error) {
-	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value, nfr.description, nfr.created_at, nfr.updated_at
+	query := `SELECT nfr.id, nfr.name, nfr.field, nfr.operator, nfr.value
 	          FROM sub_node_filter_rules nfr
 	          INNER JOIN share_filter_relations sfr ON nfr.id = sfr.filter_id
 	          WHERE sfr.share_id = ?`
@@ -519,9 +459,6 @@ func (r *SubNodeFilterRuleRepository) GetByShareID(ctx context.Context, shareID 
 			&rule.Field,
 			&rule.Operator,
 			&rule.Value,
-			&rule.Description,
-			&rule.CreatedAt,
-			&rule.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan node filter rule: %w", err)

@@ -29,9 +29,6 @@ CREATE INDEX IF NOT EXISTS idx_save_filter_save_id ON save_filter_relations(save
 -- 索引：用于通过 save_id 查询对应的 sub
 CREATE INDEX IF NOT EXISTS idx_save_sub_save_id ON save_sub_relations(save_id);
 
--- 索引：用于通过 task_id 查询对应的 sub
-CREATE INDEX IF NOT EXISTS idx_task_sub_task_id ON sub_task_relations(task_id);
-
 -- 索引：用于通过 task_id 查询对应的 save
 CREATE INDEX IF NOT EXISTS idx_save_task_task_id ON save_task_relations(task_id);
 

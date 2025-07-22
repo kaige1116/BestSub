@@ -10,26 +10,22 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/sub"
 )
 
-// SubRepository 订阅链接数据访问实现
 type SubRepository struct {
 	db *DB
 }
 
-// newSubRepository 创建订阅链接仓库
 func (db *DB) Sub() interfaces.SubRepository {
 	return &SubRepository{db: db}
 }
 
-// Create 创建订阅链接
 func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
-	query := `INSERT INTO subs (enable, name, description, url, created_at, updated_at)
+	query := `INSERT INTO subs (enable, name, url, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
-		true, // enable默认为true
+		link.Enable,
 		link.Name,
-		link.Description,
 		link.URL,
 		now,
 		now,
@@ -51,9 +47,8 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	return nil
 }
 
-// GetByID 根据ID获取订阅链接
 func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, error) {
-	query := `SELECT id, enable, name, description, url, created_at, updated_at
+	query := `SELECT id, enable, name, url, created_at, updated_at
 	          FROM subs WHERE id = ?`
 
 	var s sub.Data
@@ -62,7 +57,6 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 		&s.ID,
 		&enable,
 		&s.Name,
-		&s.Description,
 		&s.URL,
 		&s.CreatedAt,
 		&s.UpdatedAt,
@@ -80,12 +74,11 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 
 // Update 更新订阅链接
 func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
-	query := `UPDATE subs SET enable = ?, name = ?, description = ?, url = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE subs SET enable = ?, name = ?, url = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
-		true, // enable默认为true
+		link.Enable,
 		link.Name,
-		link.Description,
 		link.URL,
 		time.Now(),
 		link.ID,
@@ -98,7 +91,6 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 	return nil
 }
 
-// Delete 删除订阅链接
 func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 	query := `DELETE FROM subs WHERE id = ?`
 
@@ -110,9 +102,8 @@ func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 	return nil
 }
 
-// List 获取订阅链接列表
 func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Data, error) {
-	query := `SELECT id, enable, name, description, url, created_at, updated_at
+	query := `SELECT id, enable, name, url, created_at, updated_at
 	          FROM subs ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
@@ -129,7 +120,6 @@ func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Dat
 			&s.ID,
 			&enable,
 			&s.Name,
-			&s.Description,
 			&s.URL,
 			&s.CreatedAt,
 			&s.UpdatedAt,
@@ -147,7 +137,6 @@ func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Dat
 	return &subs, nil
 }
 
-// Count 获取订阅链接总数
 func (r *SubRepository) Count(ctx context.Context) (uint16, error) {
 	query := `SELECT COUNT(*) FROM subs`
 
@@ -160,7 +149,6 @@ func (r *SubRepository) Count(ctx context.Context) (uint16, error) {
 	return count, nil
 }
 
-// GetByTaskID 根据任务ID获取订阅ID
 func (r *SubRepository) GetByTaskID(ctx context.Context, taskID uint16) (uint16, error) {
 	query := `SELECT sub_id FROM sub_task_relations WHERE task_id = ?`
 
@@ -176,7 +164,6 @@ func (r *SubRepository) GetByTaskID(ctx context.Context, taskID uint16) (uint16,
 	return subID, nil
 }
 
-// GetByShareID 根据分享ID获取订阅ID列表
 func (r *SubRepository) GetByShareID(ctx context.Context, shareID uint16) ([]uint16, error) {
 	query := `SELECT sub_id FROM share_sub_relations WHERE share_id = ?`
 
@@ -203,7 +190,6 @@ func (r *SubRepository) GetByShareID(ctx context.Context, shareID uint16) ([]uin
 	return subIDs, nil
 }
 
-// GetBySaveID 根据保存ID获取订阅ID列表
 func (r *SubRepository) GetBySaveID(ctx context.Context, saveID uint16) ([]uint16, error) {
 	query := `SELECT sub_id FROM save_sub_relations WHERE save_id = ?`
 
@@ -230,7 +216,6 @@ func (r *SubRepository) GetBySaveID(ctx context.Context, saveID uint16) ([]uint1
 	return subIDs, nil
 }
 
-// AddTaskRelation 添加任务与订阅的关联
 func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID uint16) error {
 	query := `INSERT OR IGNORE INTO sub_task_relations (sub_id, task_id) VALUES (?, ?)`
 
@@ -242,7 +227,6 @@ func (r *SubRepository) AddTaskRelation(ctx context.Context, subID, taskID uint1
 	return nil
 }
 
-// AddSaveRelation 添加保存配置与订阅的关联
 func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID uint16) error {
 	query := `INSERT OR IGNORE INTO save_sub_relations (sub_id, save_id) VALUES (?, ?)`
 
@@ -254,7 +238,6 @@ func (r *SubRepository) AddSaveRelation(ctx context.Context, subID, saveID uint1
 	return nil
 }
 
-// AddShareRelation 添加分享链接与订阅的关联
 func (r *SubRepository) AddShareRelation(ctx context.Context, subID, shareID uint16) error {
 	query := `INSERT OR IGNORE INTO share_sub_relations (sub_id, share_id) VALUES (?, ?)`
 

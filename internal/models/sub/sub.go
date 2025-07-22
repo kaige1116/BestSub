@@ -1,32 +1,27 @@
 package sub
 
 import (
-	"github.com/bestruirui/bestsub/internal/models/common"
-	"github.com/bestruirui/bestsub/internal/models/task"
+	"time"
 )
 
-// Sub 订阅基础模型（数据库模型）
 type Data struct {
-	common.BaseDbModel
-	URL string `json:"url"`
+	ID        uint16    `db:"id" json:"id"`
+	Enable    bool      `db:"enable" json:"enable"`
+	Name      string    `db:"name" json:"name"`
+	URL       string    `json:"url"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
-// CreateRequest 创建订阅链接请求模型
 type CreateRequest struct {
-	common.BaseRequestModel
-	URL  string               `json:"url"`
-	Task []task.CreateRequest `json:"task"`
+	Enable bool   `db:"enable" json:"enable"`
+	Name   string `db:"name" json:"name"`
+	URL    string `json:"url"`
 }
 
-// UpdateRequest 更新订阅链接请求模型
 type UpdateRequest struct {
-	common.BaseUpdateRequestModel
-	URL  string               `json:"url"`
-	Task []task.UpdateRequest `json:"task"`
-}
-
-// Response 订阅链接响应模型
-type Response struct {
-	Data
-	Task []task.Data `json:"task"`
+	ID     uint16 `db:"id" json:"id"`
+	Enable bool   `db:"enable" json:"enable"`
+	Name   string `db:"name" json:"name"`
+	URL    string `json:"url"`
 }

@@ -46,21 +46,18 @@ CREATE TABLE IF NOT EXISTS "tasks" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL,
 	"name" TEXT,
-	"description" TEXT,
-	"is_sys_task" BOOLEAN,
+	"system" BOOLEAN,
 	"cron" TEXT,
 	"timeout" INTEGER NOT NULL,
-	"type" TEXT NOT NULL,
 	"log_level" TEXT,
-	"config" TEXT,
 	"retry" INTEGER,
+	"type" TEXT NOT NULL,
+	"config" TEXT,
 	"last_run_result" TEXT,
 	"last_run_time" DATETIME,
 	"last_run_duration" INTEGER,
 	"success_count" INTEGER,
 	"failed_count" INTEGER,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
@@ -68,38 +65,25 @@ CREATE TABLE IF NOT EXISTS "storage_configs" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"name" TEXT,
-	"description" TEXT,
 	"type" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
-	"test_result" TEXT,
-	"last_test" DATETIME,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
 CREATE TABLE IF NOT EXISTS "sub_output_templates" (
 	"id" INTEGER,
-	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"name" TEXT,
-	"description" TEXT,
 	"type" TEXT NOT NULL,
 	"template" TEXT NOT NULL,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
 CREATE TABLE IF NOT EXISTS "sub_node_filter_rules" (
 	"id" INTEGER,
-	"enable" BOOLEAN,
 	"name" TEXT,
-	"description" TEXT,
 	"field" TEXT NOT NULL,
 	"operator" TEXT NOT NULL,
 	"value" TEXT NOT NULL,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
@@ -107,7 +91,6 @@ CREATE TABLE IF NOT EXISTS "subs" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"name" TEXT,
-	"description" TEXT,
 	"url" TEXT NOT NULL,
 	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -121,23 +104,19 @@ CREATE TABLE IF NOT EXISTS "sub_save" (
 	"description" TEXT,
 	"rename" TEXT,
 	"file_name" TEXT NOT NULL,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
 CREATE TABLE IF NOT EXISTS "sub_share_links" (
-	"id" INTEGER,
+	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT false,
 	"name" TEXT NOT NULL,
-	"description" TEXT,
-	"rename" TEXT,
+	"subs" TEXT NOT NULL,
+	"rename" TEXT NOT NULL,
 	"access_count" INTEGER NOT NULL DEFAULT 0,
 	"max_access_count" INTEGER NOT NULL,
 	"token" TEXT NOT NULL UNIQUE,
 	"expires" DATETIME NOT NULL,
-	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
 );
 
@@ -181,41 +160,11 @@ CREATE TABLE IF NOT EXISTS "share_filter_relations" (
 	ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "share_sub_relations" (
-	"share_id" INTEGER NOT NULL,
-	"sub_id" INTEGER NOT NULL,
-	PRIMARY KEY("share_id", "sub_id"),
-	FOREIGN KEY ("share_id") REFERENCES "sub_share_links"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("sub_id") REFERENCES "subs"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS "save_sub_relations" (
 	"save_id" INTEGER NOT NULL,
 	"sub_id" INTEGER NOT NULL,
 	PRIMARY KEY("save_id", "sub_id"),
 	FOREIGN KEY ("sub_id") REFERENCES "subs"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "sub_task_relations" (
-	"sub_id" INTEGER NOT NULL,
-	"task_id" INTEGER NOT NULL,
-	PRIMARY KEY("sub_id", "task_id"),
-	FOREIGN KEY ("sub_id") REFERENCES "subs"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("task_id") REFERENCES "tasks"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "save_task_relations" (
-	"save_id" INTEGER NOT NULL,
-	"task_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "task_id"),
-	FOREIGN KEY ("task_id") REFERENCES "tasks"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE,
 	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
 	ON UPDATE NO ACTION ON DELETE CASCADE

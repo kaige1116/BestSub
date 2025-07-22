@@ -12,7 +12,4 @@ type Share struct {
 	MaxAccessCount int       `db:"max_access_count" json:"max_access_count"` // 最大访问次数（0表示无限制）
 	Token          string    `db:"token" json:"token"`                       // 随机复杂字符串（用于URL）
 	Expires        time.Time `db:"expires" json:"expires"`                   // 过期时间
-	Description    string    `db:"description" json:"description"`           // 配置描述
-	CreatedAt      time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 }

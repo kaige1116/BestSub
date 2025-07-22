@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/task"
@@ -22,28 +21,23 @@ func (db *DB) Task() interfaces.TaskRepository {
 
 // Create 创建任务
 func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (uint16, error) {
-	query := `INSERT INTO tasks (enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO tasks (enable, name, system, cron, type, log_level, timeout, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
-		t.Description,
-		t.IsSysTask,
+		t.System,
 		t.Cron,
 		t.Type,
 		t.LogLevel,
 		t.Timeout,
-		t.Retry,
 		t.Config,
 		t.LastRunResult,
 		t.LastRunTime,
 		t.LastRunDuration,
 		t.SuccessCount,
 		t.FailedCount,
-		now,
-		now,
 	)
 
 	if err != nil {
@@ -60,7 +54,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (uint16, erro
 
 // GetByID 根据ID获取任务
 func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	query := `SELECT id, enable, name, system, cron, type, log_level, timeout, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count
 	          FROM tasks WHERE id = ?`
 
 	var t task.Data
@@ -68,21 +62,17 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, er
 		&t.ID,
 		&t.Enable,
 		&t.Name,
-		&t.Description,
-		&t.IsSysTask,
+		&t.System,
 		&t.Cron,
 		&t.Type,
 		&t.LogLevel,
 		&t.Timeout,
-		&t.Retry,
 		&t.Config,
 		&t.LastRunResult,
 		&t.LastRunTime,
 		&t.LastRunDuration,
 		&t.SuccessCount,
 		&t.FailedCount,
-		&t.CreatedAt,
-		&t.UpdatedAt,
 	)
 
 	if err != nil {
@@ -97,26 +87,23 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, er
 
 // Update 更新任务
 func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
-	query := `UPDATE tasks SET enable = ?, name = ?, description = ?, is_sys_task = ?, cron = ?, type = ?, log_level = ?, timeout = ?, retry = ?, config = ?,
-	          last_run_result = ?, last_run_time = ?, last_run_duration = ?, success_count = ?, failed_count = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE tasks SET enable = ?, name = ?, system = ?, cron = ?, type = ?, log_level = ?, timeout = ?, config = ?,
+	          last_run_result = ?, last_run_time = ?, last_run_duration = ?, success_count = ?, failed_count = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
-		t.Description,
-		t.IsSysTask,
+		t.System,
 		t.Cron,
 		t.Type,
 		t.LogLevel,
 		t.Timeout,
-		t.Retry,
 		t.Config,
 		t.LastRunResult,
 		t.LastRunTime,
 		t.LastRunDuration,
 		t.SuccessCount,
 		t.FailedCount,
-		time.Now(),
 		t.ID,
 	)
 
@@ -141,7 +128,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id uint16) error {
 
 // List 获取任务列表
 func (r *TaskRepository) List(ctx context.Context, offset, limit int) (*[]task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
+	query := `SELECT id, enable, name, system, cron, type, log_level, timeout, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count
 	          FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
@@ -157,21 +144,17 @@ func (r *TaskRepository) List(ctx context.Context, offset, limit int) (*[]task.D
 			&t.ID,
 			&t.Enable,
 			&t.Name,
-			&t.Description,
-			&t.IsSysTask,
+			&t.System,
 			&t.Cron,
 			&t.Type,
 			&t.LogLevel,
 			&t.Timeout,
-			&t.Retry,
 			&t.Config,
 			&t.LastRunResult,
 			&t.LastRunTime,
 			&t.LastRunDuration,
 			&t.SuccessCount,
 			&t.FailedCount,
-			&t.CreatedAt,
-			&t.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
@@ -201,8 +184,8 @@ func (r *TaskRepository) Count(ctx context.Context) (uint16, error) {
 
 // GetSystemTasks 获取所有系统任务
 func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, error) {
-	query := `SELECT id, enable, name, description, is_sys_task, cron, type, log_level, timeout, retry, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count, created_at, updated_at
-	          FROM tasks WHERE is_sys_task = true ORDER BY created_at DESC`
+	query := `SELECT id, enable, name, system, cron, type, log_level, timeout, config, last_run_result, last_run_time, last_run_duration, success_count, failed_count
+	          FROM tasks WHERE system = true ORDER BY created_at DESC`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
@@ -217,21 +200,17 @@ func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, erro
 			&t.ID,
 			&t.Enable,
 			&t.Name,
-			&t.Description,
-			&t.IsSysTask,
+			&t.System,
 			&t.Cron,
 			&t.Type,
 			&t.LogLevel,
 			&t.Timeout,
-			&t.Retry,
 			&t.Config,
 			&t.LastRunResult,
 			&t.LastRunTime,
 			&t.LastRunDuration,
 			&t.SuccessCount,
 			&t.FailedCount,
-			&t.CreatedAt,
-			&t.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan system task: %w", err)
 		}
@@ -247,7 +226,7 @@ func (r *TaskRepository) GetSystemTasks(ctx context.Context) (*[]task.Data, erro
 
 // GetBySubID 根据订阅ID获取任务列表
 func (r *TaskRepository) GetBySubID(ctx context.Context, subID uint16) (*[]task.Data, error) {
-	query := `SELECT t.id, t.enable, t.name, t.description, t.is_sys_task, t.cron, t.type, t.log_level, t.timeout, t.retry, t.config, t.last_run_result, t.last_run_time, t.last_run_duration, t.success_count, t.failed_count, t.created_at, t.updated_at
+	query := `SELECT t.id, t.enable, t.name, t.system, t.cron, t.type, t.log_level, t.timeout, t.config, t.last_run_result, t.last_run_time, t.last_run_duration, t.success_count, t.failed_count
 	          FROM tasks t
 	          INNER JOIN sub_task_relations str ON t.id = str.task_id
 	          WHERE str.sub_id = ? ORDER BY t.created_at DESC`
@@ -265,21 +244,17 @@ func (r *TaskRepository) GetBySubID(ctx context.Context, subID uint16) (*[]task.
 			&t.ID,
 			&t.Enable,
 			&t.Name,
-			&t.Description,
-			&t.IsSysTask,
+			&t.System,
 			&t.Cron,
 			&t.Type,
 			&t.LogLevel,
 			&t.Timeout,
-			&t.Retry,
 			&t.Config,
 			&t.LastRunResult,
 			&t.LastRunTime,
 			&t.LastRunDuration,
 			&t.SuccessCount,
 			&t.FailedCount,
-			&t.CreatedAt,
-			&t.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
