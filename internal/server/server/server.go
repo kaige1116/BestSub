@@ -1,38 +1,36 @@
-// Package server provides the entry point for BestSub application.
+// Package server 提供 BestSub 应用程序的入口点。
 //
 // @title BestSub API
 // @version 1.0.0
-// @description BestSub - Best Subscription Manager API Documentation
+// @description BestSub -  API 文档
 // @description
-// @description This is the API documentation for BestSub, a subscription management system.
+// @description 这是 BestSub 的 API 文档
 // @description
-// @description ## Authentication
-// @description Most endpoints require authentication using JWT tokens.
-// @description To authenticate, include the JWT token in the Authorization header:
+// @description ## 认证
+// @description 大多数接口需要使用 JWT 令牌进行认证。
+// @description 认证时，请在 Authorization 头中包含 JWT 令牌：
 // @description `Authorization: Bearer <your-jwt-token>`
 // @description
-// @description ## Error Responses
-// @description All error responses follow a consistent format with code, message, and error fields.
+// @description ## 错误响应
+// @description 所有错误响应都遵循统一格式，包含 code、message 和 error 字段。
 // @description
-// @description ## Success Responses
-// @description All success responses follow a consistent format with code, message, and data fields.
-
-// @contact.name BestSub API Support
+// @description ## 成功响应
+// @description 所有成功响应都遵循统一格式，包含 code、message 和 data 字段。
+//
+// @contact.name BestSub API 支持
 // @contact.email support@bestsub.com
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
-// @BasePath /
-
+//
+// @license.name GPL-3.0
+// @license.url https://opensource.org/license/gpl-3-0
+//
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
-
+// @description 类型为 "Bearer"，后跟空格和 JWT 令牌。
+//
 // @tag.name 认证
 // @tag.description 用户认证相关接口
-
+//
 // @tag.name 系统
 // @tag.description 系统状态和健康检查接口
 package server

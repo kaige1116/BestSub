@@ -103,127 +103,8 @@
       ],
       "indices": [],
       "id": "hF4ht2l-iDSxl_J0icMuw",
-      "x": -69.66729764328636,
-      "y": 1167.887451998974
-    },
-    {
-      "name": "sessions",
-      "comment": "",
-      "color": "#175e7a",
-      "fields": [
-        {
-          "id": "YbEedEHBkDjQYKJMzLaey",
-          "name": "id",
-          "type": "INTEGER",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": false,
-          "primary": true,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "7HwY_qdwVqrPR7CEJcXDJ",
-          "name": "is_active",
-          "type": "BOOLEAN",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "true",
-          "check": ""
-        },
-        {
-          "id": "nBRhkD84GwFe4507qrRnl",
-          "name": "ip_address",
-          "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": false,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "G7lnYevFZ6nGimSJQv5Xi",
-          "name": "user_agent",
-          "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": false,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "EFpWFYZM-UYmmhbRg7zkz",
-          "name": "expires_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "J52iGtFIJZUpPnA8rjuew",
-          "name": "token_hash",
-          "type": "TEXT",
-          "comment": "",
-          "unique": true,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "z4HMF5blvdu86BZah62C_",
-          "name": "refresh_token",
-          "type": "TEXT",
-          "comment": "",
-          "unique": true,
-          "increment": false,
-          "notNull": false,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "yJAcO3iW80H5rdFLSoogk",
-          "name": "created_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
-        },
-        {
-          "id": "s1eQb-hXFx2wPcgJNBmV9",
-          "name": "updated_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
-        }
-      ],
-      "indices": [],
-      "id": "-gl0USPdbws-wRqlyb0Il",
-      "x": -626.6129030288394,
-      "y": 1169.690926962679
+      "x": -341.1497354395268,
+      "y": 1182.6620064368649
     },
     {
       "name": "system_config",
@@ -231,50 +112,14 @@
       "color": "#175e7a",
       "fields": [
         {
-          "id": "ciAUR5Zf0kRJhkVSjrRy_",
-          "name": "id",
-          "type": "INTEGER",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": false,
-          "primary": true,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "MgYZsd6163AJ4acC0do0i",
-          "name": "group_name",
-          "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "meGA7E4MDbpV-hBgXvheT",
-          "name": "type",
-          "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
           "id": "WJiVKLxG54Xa-mtapmhSF",
           "name": "key",
           "type": "TEXT",
           "comment": "",
-          "unique": false,
+          "unique": true,
           "increment": false,
           "notNull": true,
-          "primary": false,
+          "primary": true,
           "default": "",
           "check": ""
         },
@@ -289,48 +134,12 @@
           "primary": false,
           "default": "",
           "check": ""
-        },
-        {
-          "id": "qkqnYXt8onc2SUOyo_Ha9",
-          "name": "description",
-          "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": false,
-          "primary": false,
-          "default": "",
-          "check": ""
-        },
-        {
-          "id": "HBoQu5sH13HtVNYLO_X34",
-          "name": "created_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
-        },
-        {
-          "id": "FyK-t7eytze4TsP_e1CNh",
-          "name": "updated_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
         }
       ],
       "indices": [],
       "id": "ODgnCdTeSsLi2WzfdZBF4",
-      "x": -350.2881987053454,
-      "y": 1163.5655096238233
+      "x": -616.2301785873767,
+      "y": 1180.1868833664503
     },
     {
       "name": "notify_templates",
@@ -385,30 +194,6 @@
           "primary": false,
           "default": "",
           "check": ""
-        },
-        {
-          "id": "X-GlaDrbY7j1VGNI10Oqt",
-          "name": "created_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
-        },
-        {
-          "id": "Cj4pFfiQaTndCJrenqbuO",
-          "name": "updated_at",
-          "type": "DATETIME",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
-          "primary": false,
-          "default": "CURRENT_TIMESTAMP",
-          "check": ""
         }
       ],
       "indices": [],
@@ -450,19 +235,6 @@
           "values": []
         },
         {
-          "id": "Yrw8Y5TAq_bcj6xvWcLQM",
-          "name": "name",
-          "type": "TEXT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": "",
-          "size": ""
-        },
-        {
           "id": "bwC_Tt0-OYffcpy7f8Jd-",
           "name": "description",
           "type": "TEXT",
@@ -500,61 +272,6 @@
           "increment": false,
           "comment": "",
           "size": ""
-        },
-        {
-          "id": "TuuLP2XZ52uyLSOUsR8o6",
-          "name": "teat_result",
-          "type": "TEXT",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": "",
-          "size": ""
-        },
-        {
-          "id": "tU9czHHviT9k7WZbdcwhx",
-          "name": "last_test",
-          "type": "DATETIME",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": false,
-          "increment": false,
-          "comment": "",
-          "size": "",
-          "values": []
-        },
-        {
-          "id": "kM-EA0MkZQ7R0mVljBtJs",
-          "name": "creat_at",
-          "type": "DATETIME",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": true,
-          "increment": false,
-          "comment": "",
-          "size": "",
-          "values": []
-        },
-        {
-          "id": "eXG7mo4YFSvdsh-7PRfVs",
-          "name": "update_at",
-          "type": "DATETIME",
-          "default": "",
-          "check": "",
-          "primary": false,
-          "unique": false,
-          "notNull": true,
-          "increment": false,
-          "comment": "",
-          "size": "",
-          "values": []
         }
       ],
       "comment": "",
@@ -618,6 +335,20 @@
           "size": ""
         },
         {
+          "id": "CYhtGWIkWtwzgXgTdK5iK",
+          "name": "is_sys_task",
+          "type": "BOOLEAN",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": "",
+          "size": "",
+          "values": []
+        },
+        {
           "id": "6PWvuBnOjUP39y8RK_AMS",
           "name": "cron",
           "type": "TEXT",
@@ -629,6 +360,20 @@
           "increment": false,
           "comment": "",
           "size": ""
+        },
+        {
+          "id": "t7SkS18SfdKeHLuJQOJZA",
+          "name": "timeout",
+          "type": "INTEGER",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": true,
+          "increment": false,
+          "comment": "",
+          "size": "",
+          "values": []
         },
         {
           "id": "1QVltuCEAkMFV_kcVPX0P",
@@ -643,16 +388,17 @@
           "check": ""
         },
         {
-          "id": "2igkvEL79vf0cM-birpFD",
-          "name": "status",
+          "id": "WSWRlD7AQBYJeFSlH3RuC",
+          "name": "log_level",
           "type": "TEXT",
-          "comment": "",
-          "unique": false,
-          "increment": false,
-          "notNull": true,
+          "default": "",
+          "check": "",
           "primary": false,
-          "default": "pending",
-          "check": ""
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": "",
+          "size": ""
         },
         {
           "id": "WTa_5zJei10EArNOLeyfe",
@@ -665,6 +411,20 @@
           "primary": false,
           "default": "",
           "check": ""
+        },
+        {
+          "id": "Ig_JteUCxB0KlTCbyBXrz",
+          "name": "retry",
+          "type": "INTEGER",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": false,
+          "increment": false,
+          "comment": "",
+          "size": "",
+          "values": []
         },
         {
           "id": "z1O1kO8v7VOt_s0T6Bx7M",
@@ -1481,7 +1241,7 @@
       "y": 1841.222012849678
     },
     {
-      "name": "save_fitter_relations",
+      "name": "save_filter_relations",
       "comment": "",
       "color": "#175e7a",
       "fields": [
@@ -1499,7 +1259,7 @@
         },
         {
           "id": "sEO_YKXQyZ5NkWfh0Ab-T",
-          "name": "fitter_id",
+          "name": "filter_id",
           "type": "INTEGER",
           "comment": "",
           "unique": false,
@@ -1586,7 +1346,7 @@
       "y": 1600.7099947011416
     },
     {
-      "name": "share_fitter_relations",
+      "name": "share_filter_relations",
       "comment": "",
       "color": "#175e7a",
       "fields": [
@@ -1604,7 +1364,7 @@
         },
         {
           "id": "bsF7Utcvu9cm3JU-wTr7A",
-          "name": "fitter_id",
+          "name": "filter_id",
           "type": "INTEGER",
           "comment": "",
           "unique": false,
@@ -1835,6 +1595,72 @@
       "comment": "",
       "indices": [],
       "color": "#175e7a"
+    },
+    {
+      "id": "roCOQ7ump3CEzSfYBPF2C",
+      "name": "migrations",
+      "x": -875.8275682673755,
+      "y": 1175.4274693173534,
+      "locked": false,
+      "fields": [
+        {
+          "id": "Zf0jXqrh7EGzrK-YTcD9y",
+          "name": "date",
+          "type": "INTEGER",
+          "default": "",
+          "check": "",
+          "primary": true,
+          "unique": true,
+          "notNull": true,
+          "increment": false,
+          "comment": "",
+          "size": "",
+          "values": []
+        },
+        {
+          "name": "version",
+          "type": "TEXT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": true,
+          "increment": false,
+          "comment": "",
+          "id": "fTssDY0UWuiYM8lCi-qbF",
+          "size": ""
+        },
+        {
+          "id": "Yde2p87YyLTMpLv0QmfvD",
+          "name": "description",
+          "type": "TEXT",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": true,
+          "increment": false,
+          "comment": "",
+          "size": ""
+        },
+        {
+          "id": "sa0-U7ChrWjKZqEaP9vCP",
+          "name": "applied_at",
+          "type": "DATETIME",
+          "default": "",
+          "check": "",
+          "primary": false,
+          "unique": false,
+          "notNull": true,
+          "increment": false,
+          "comment": "",
+          "size": "",
+          "values": []
+        }
+      ],
+      "comment": "",
+      "indices": [],
+      "color": "#175e7a"
     }
   ],
   "relationships": [
@@ -2000,7 +1826,7 @@
       "startFieldId": "iq79Vr9mTWZ87bnlzZjDI",
       "updateConstraint": "No action",
       "deleteConstraint": "Cascade",
-      "cardinality": "many_to_one",
+      "cardinality": "one_to_many",
       "id": 14
     },
     {
