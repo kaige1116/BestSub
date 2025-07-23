@@ -21,6 +21,10 @@ func init() {
 	router.NewGroupRouter("/api/v1/notify").
 		Use(middleware.Auth()).
 		AddRoute(
+			router.NewRoute("/channel", router.GET).
+				Handle(getNotifyChannel),
+		).
+		AddRoute(
 			router.NewRoute("/config", router.GET).
 				Handle(getNotifyConfig),
 		).
@@ -54,8 +58,8 @@ func init() {
 		)
 }
 
-// getNotifyConfig 获取通知配置
-// @Summary 获取通知配置
+// getNotifyConfig 获取通知渠道
+// @Summary 获取通知渠道
 // @Tags 通知管理
 // @Accept json
 // @Produce json
@@ -64,9 +68,34 @@ func init() {
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/notify/channel [get]
+func getNotifyChannel(c *gin.Context) {
+	channels := make([]string, 0, len(notify.GetNotifyInfoMap()))
+	for channel := range notify.GetNotifyInfoMap() {
+		channels = append(channels, channel)
+	}
+	resp.Success(c, channels)
+}
+
+// getNotifyConfig 获取通知配置
+// @Summary 获取通知配置
+// @Tags 通知管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param channel query string false "渠道"
+// @Success 200 {object} resp.SuccessStruct{data=map[string][]notify.Desc} "获取成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify/config [get]
 func getNotifyConfig(c *gin.Context) {
-	resp.Success(c, notify.GetNotifyInfoMap())
+	channel := c.Query("channel")
+	if channel == "" {
+		resp.Success(c, notify.GetNotifyInfoMap())
+	} else {
+		resp.Success(c, notify.GetNotifyInfoMap()[channel])
+	}
 }
 
 // getNotifyList 获取通知列表
@@ -81,7 +110,7 @@ func getNotifyConfig(c *gin.Context) {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify/list [get]
 func getNotifyList(c *gin.Context) {
-	notifyList, err := op.GetNotifyList(c.Request.Context())
+	notifyList, err := op.GetNotifyList()
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -248,7 +277,7 @@ func deleteNotify(c *gin.Context) {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify/template [get]
 func getTemplates(c *gin.Context) {
-	notifyTemplateList, err := op.GetNotifyTemplateList(c.Request.Context())
+	notifyTemplateList, err := op.GetNotifyTemplateList()
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return

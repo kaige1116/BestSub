@@ -10,17 +10,14 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-// NotifyRepository 通知渠道数据访问实现
 type NotifyRepository struct {
 	db *DB
 }
 
-// newNotificationChannelRepository 创建通知渠道仓库
 func (db *DB) Notify() interfaces.NotifyRepository {
 	return &NotifyRepository{db: db}
 }
 
-// Create 创建通知渠道
 func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) error {
 	log.Debugf("Create notify")
 	query := `INSERT INTO notify (name, type, config )
@@ -46,7 +43,6 @@ func (r *NotifyRepository) Create(ctx context.Context, channel *notify.Data) err
 	return nil
 }
 
-// GetByID 根据ID获取通知渠道
 func (r *NotifyRepository) GetByID(ctx context.Context, id uint16) (*notify.Data, error) {
 	log.Debugf("Get notify by id")
 	query := `SELECT id, name, type, config
@@ -70,7 +66,6 @@ func (r *NotifyRepository) GetByID(ctx context.Context, id uint16) (*notify.Data
 	return &channel, nil
 }
 
-// Update 更新通知渠道
 func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) error {
 	log.Debugf("Update notify")
 	query := `UPDATE notify SET name = ?, type = ?, config = ? WHERE id = ?`
@@ -89,7 +84,6 @@ func (r *NotifyRepository) Update(ctx context.Context, channel *notify.Data) err
 	return nil
 }
 
-// Delete 删除通知渠道
 func (r *NotifyRepository) Delete(ctx context.Context, id uint16) error {
 	log.Debugf("Delete notify")
 	query := `DELETE FROM notify WHERE id = ?`
@@ -102,7 +96,6 @@ func (r *NotifyRepository) Delete(ctx context.Context, id uint16) error {
 	return nil
 }
 
-// List 获取通知渠道列表
 func (r *NotifyRepository) List(ctx context.Context) (*[]notify.Data, error) {
 	log.Debugf("List notify")
 	query := `SELECT id, name, type, config
@@ -136,18 +129,16 @@ func (r *NotifyRepository) List(ctx context.Context) (*[]notify.Data, error) {
 	return &channels, nil
 }
 
-// NotifyTemplateRepository 通知模板数据访问实现
 type NotifyTemplateRepository struct {
 	db *DB
 }
 
-// newNotifyTemplateRepository 创建通知模板仓库
 func (db *DB) NotifyTemplate() interfaces.NotifyTemplateRepository {
 	return &NotifyTemplateRepository{db: db}
 }
 
-// Create 创建通知模板
 func (r *NotifyTemplateRepository) Create(ctx context.Context, template *notify.Template) error {
+	log.Debugf("Create notify template")
 	query := `INSERT INTO notify_template (type, template)
 	          VALUES (?, ?)`
 
@@ -163,8 +154,8 @@ func (r *NotifyTemplateRepository) Create(ctx context.Context, template *notify.
 	return nil
 }
 
-// GetByType 根据类型获取通知模板
 func (r *NotifyTemplateRepository) GetByType(ctx context.Context, t string) (*notify.Template, error) {
+	log.Debugf("Get notify template by type")
 	query := `SELECT type, template
 	          FROM notify_template WHERE type = ?`
 
@@ -183,25 +174,22 @@ func (r *NotifyTemplateRepository) GetByType(ctx context.Context, t string) (*no
 
 	return &template, nil
 }
-
-// Update 更新通知模板
 func (r *NotifyTemplateRepository) Update(ctx context.Context, template *notify.Template) error {
-	query := `UPDATE notify_template SET type = ?, template = ? WHERE type = ?`
+	log.Debugf("Update Notify Template")
+	query := `UPDATE notify_template SET template = ? WHERE type = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
-		template.Type,
 		template.Template,
+		template.Type,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to update notify template: %w", err)
 	}
-
 	return nil
 }
 
-// List 获取通知模板列表
 func (r *NotifyTemplateRepository) List(ctx context.Context) (*[]notify.Template, error) {
+	log.Debugf("List notify template")
 	query := `SELECT type, template
 	          FROM notify_template ORDER BY type DESC`
 
