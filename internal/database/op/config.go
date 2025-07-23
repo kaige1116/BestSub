@@ -94,12 +94,11 @@ func UpdateConfig(ctx context.Context, config *[]config.UpdateAdvance) error {
 			return err
 		}
 	}
+	if err := ConfigRepo().Update(ctx, config); err != nil {
+		return err
+	}
 	for _, item := range *config {
 		configCache.Set(item.Key, item.Value)
-	}
-	err := ConfigRepo().Update(ctx, config)
-	if err != nil {
-		return err
 	}
 	return nil
 
@@ -131,6 +130,7 @@ func GetConfigBool(key string) bool {
 }
 
 func refreshConfigCache(ctx context.Context) error {
+	configCache.Clear()
 	configs, err := ConfigRepo().GetAll(ctx)
 	if err != nil {
 		return err

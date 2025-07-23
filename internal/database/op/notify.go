@@ -7,7 +7,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/notify"
 	"github.com/bestruirui/bestsub/internal/utils/cache"
-	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 var nr interfaces.NotifyRepository
@@ -56,8 +55,11 @@ func UpdateNotify(ctx context.Context, n *notify.Data) error {
 			return err
 		}
 	}
+	if err := notifyRepo().Update(ctx, n); err != nil {
+		return err
+	}
 	notifyCache.Set(n.ID, *n)
-	return notifyRepo().Update(ctx, n)
+	return nil
 }
 func CreateNotify(ctx context.Context, n *notify.Data) error {
 	if notifyCache.Len() == 0 {
@@ -66,8 +68,12 @@ func CreateNotify(ctx context.Context, n *notify.Data) error {
 			return err
 		}
 	}
+
+	if err := notifyRepo().Create(ctx, n); err != nil {
+		return err
+	}
 	notifyCache.Set(n.ID, *n)
-	return notifyRepo().Create(ctx, n)
+	return nil
 }
 func DeleteNotify(ctx context.Context, id uint16) error {
 	if notifyCache.Len() == 0 {
@@ -76,10 +82,14 @@ func DeleteNotify(ctx context.Context, id uint16) error {
 			return err
 		}
 	}
+	if err := notifyRepo().Delete(ctx, id); err != nil {
+		return err
+	}
 	notifyCache.Del(id)
-	return notifyRepo().Delete(ctx, id)
+	return nil
 }
 func refreshNotifyCache(ctx context.Context) error {
+	notifyCache.Clear()
 	notifyList, err := notifyRepo().List(ctx)
 	if err != nil {
 		return err
@@ -129,9 +139,11 @@ func UpdateNotifyTemplate(ctx context.Context, nt *notify.Template) error {
 	if notifyTemplateCache.Len() == 0 {
 		refreshNotifyTemplate(context.Background())
 	}
-	log.Debugf("Update Notify Template Len: %v", notifyTemplateCache.Len())
+	if err := NotifyTemplateRepo().Update(ctx, nt); err != nil {
+		return err
+	}
 	notifyTemplateCache.Set(nt.Type, nt.Template)
-	return NotifyTemplateRepo().Update(ctx, nt)
+	return nil
 }
 func refreshNotifyTemplate(ctx context.Context) error {
 	notifyTemplateCache.Clear()
