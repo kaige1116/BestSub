@@ -42,7 +42,6 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
-	"github.com/bestruirui/bestsub/internal/models/system"
 	_ "github.com/bestruirui/bestsub/internal/server/handlers"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
 	"github.com/bestruirui/bestsub/internal/server/router"
@@ -60,16 +59,12 @@ const (
 
 var server *Server
 
-// Server HTTP服务器
 type Server struct {
 	httpServer *http.Server
 	router     *gin.Engine
-	config     system.Config
 }
 
-// 初始化HTTP服务器
 func Initialize() error {
-	cfg := config.Base()
 
 	r, routerErr := setRouter()
 	if routerErr != nil {
@@ -78,7 +73,7 @@ func Initialize() error {
 
 	server = &Server{
 		httpServer: &http.Server{
-			Addr:           fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+			Addr:           fmt.Sprintf("%s:%d", config.Base().Server.Host, config.Base().Server.Port),
 			Handler:        r,
 			ReadTimeout:    defaultReadTimeout,
 			WriteTimeout:   defaultWriteTimeout,
@@ -86,14 +81,12 @@ func Initialize() error {
 			MaxHeaderBytes: defaultMaxHeaderBytes,
 		},
 		router: r,
-		config: cfg,
 	}
 
 	log.Debugf("HTTP 服务器初始化成功 %s", server.httpServer.Addr)
 	return nil
 }
 
-// 启动HTTP服务器
 func Start() error {
 	if server == nil {
 		return fmt.Errorf("HTTP 服务器未初始化, 请先调用 Initialize()")
@@ -110,7 +103,6 @@ func Start() error {
 	return nil
 }
 
-// 关闭HTTP服务器
 func Close() error {
 	if server == nil {
 		return fmt.Errorf("HTTP 服务器未初始化")
@@ -128,12 +120,10 @@ func Close() error {
 	return nil
 }
 
-// 检查服务器是否已初始化
 func IsInitialized() bool {
 	return server != nil
 }
 
-// 设置路由
 func setRouter() (*gin.Engine, error) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

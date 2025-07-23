@@ -1,7 +1,7 @@
-package system
+package config
 
-// Config 全局配置
-type Config struct {
+// Base 全局配置
+type Base struct {
 	Server   ServerConfig   `json:"server"`
 	Database DatabaseConfig `json:"database"`
 	Log      LogConfig      `json:"log"`

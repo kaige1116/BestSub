@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/models/config"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -17,7 +17,8 @@ type SystemConfigRepository struct {
 	db *DB
 }
 
-func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]system.Data) error {
+func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.Advance) error {
+	log.Debugf("Create: %v", configs)
 	if configs == nil || len(*configs) == 0 {
 		return nil
 	}
@@ -54,7 +55,8 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]system.D
 	return nil
 }
 
-func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]system.Data, error) {
+func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]config.Advance, error) {
+	log.Debugf("GetAll")
 	query := `SELECT key, value
 	          FROM config ORDER BY key`
 
@@ -64,9 +66,9 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]system.Data, er
 	}
 	defer rows.Close()
 
-	var configs []system.Data
+	var configs []config.Advance
 	for rows.Next() {
-		var config system.Data
+		var config config.Advance
 		if err := rows.Scan(
 			&config.Key,
 			&config.Value,
@@ -83,10 +85,10 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]system.Data, er
 	return &configs, nil
 }
 
-func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*[]system.Data, error) {
+func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*[]config.Advance, error) {
 	log.Debugf("GetByKey: %v", keys)
 	if len(keys) == 0 {
-		return &[]system.Data{}, nil
+		return &[]config.Advance{}, nil
 	}
 
 	args := make([]interface{}, len(keys))
@@ -107,9 +109,9 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 	}
 	defer rows.Close()
 
-	var configs []system.Data
+	var configs []config.Advance
 	for rows.Next() {
-		var config system.Data
+		var config config.Advance
 		if err := rows.Scan(
 			&config.Key,
 			&config.Value,
@@ -126,7 +128,8 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 	return &configs, nil
 }
 
-func (r *SystemConfigRepository) Update(ctx context.Context, data *[]system.UpdateData) error {
+func (r *SystemConfigRepository) Update(ctx context.Context, data *[]config.UpdateAdvance) error {
+	log.Debugf("Update: %v", data)
 	if data == nil || len(*data) == 0 {
 		return nil
 	}

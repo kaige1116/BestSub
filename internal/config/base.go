@@ -12,24 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/models/config"
 	"github.com/bestruirui/bestsub/internal/utils"
 )
 
-var config system.Config
-var defaultConfig = system.Config{
-	Server: system.ServerConfig{
-		Port: 8080,
-		Host: "0.0.0.0",
-	},
-	Database: system.DatabaseConfig{
-		Type: "sqlite",
-	},
-	Log: system.LogConfig{
-		Level:  "debug",
-		Output: "console",
-	},
-}
+var baseConfig = config.DefaultBase()
 
 func init() {
 	execPath, err := os.Executable()
@@ -45,12 +32,12 @@ func init() {
 		*configPath = defaultConfigPath
 	}
 
-	if err := loadFromFile(&config, *configPath); err != nil {
+	if err := loadFromFile(&baseConfig, *configPath); err != nil {
 		if os.IsNotExist(err) {
 			if err := createDefaultConfig(*configPath); err != nil {
 				panic(fmt.Errorf("创建默认配置文件失败: %v", err))
 			}
-			if err := loadFromFile(&config, *configPath); err != nil {
+			if err := loadFromFile(&baseConfig, *configPath); err != nil {
 				panic(fmt.Errorf("加载默认配置文件失败: %v", err))
 			}
 		} else {
@@ -58,20 +45,20 @@ func init() {
 		}
 	}
 
-	setupPaths(&config, *configPath)
+	setupPaths(&baseConfig, *configPath)
 
-	loadFromEnv(&config)
+	loadFromEnv(&baseConfig)
 
-	if err := validateConfig(&config); err != nil {
+	if err := validateConfig(&baseConfig); err != nil {
 		panic(fmt.Errorf("配置验证失败: %v", err))
 	}
 }
 
-func Base() system.Config {
-	return config
+func Base() config.Base {
+	return baseConfig
 }
 
-func setupPaths(config *system.Config, configPath string) {
+func setupPaths(config *config.Base, configPath string) {
 	configDir := filepath.Dir(configPath)
 
 	if config.Database.Path == "" {
@@ -87,7 +74,7 @@ func setupPaths(config *system.Config, configPath string) {
 	}
 }
 
-func loadFromFile(config *system.Config, filePath string) error {
+func loadFromFile(config *config.Base, filePath string) error {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return err
 	}
@@ -102,7 +89,7 @@ func loadFromFile(config *system.Config, filePath string) error {
 	return nil
 }
 
-func loadFromEnv(config *system.Config) {
+func loadFromEnv(config *config.Base) {
 	if port := os.Getenv("BESTSUB_SERVER_PORT"); port != "" {
 		if p, err := parsePort(port); err == nil {
 			config.Server.Port = p
@@ -153,9 +140,9 @@ func createDefaultConfig(filePath string) error {
 
 	bytes := make([]byte, 32)
 	rand.Read(bytes)
-	defaultConfig.JWT.Secret = hex.EncodeToString(bytes)
+	baseConfig.JWT.Secret = hex.EncodeToString(bytes)
 
-	data, err := json.MarshalIndent(defaultConfig, "", "    ")
+	data, err := json.MarshalIndent(baseConfig, "", "    ")
 	if err != nil {
 		return fmt.Errorf("序列化默认配置失败: %v", err)
 	}
@@ -167,7 +154,7 @@ func createDefaultConfig(filePath string) error {
 	return nil
 }
 
-func validateConfig(config *system.Config) error {
+func validateConfig(config *config.Base) error {
 	if err := validateServerConfig(&config.Server); err != nil {
 		return fmt.Errorf("服务器配置验证失败: %v", err)
 	}
@@ -191,7 +178,7 @@ func validateConfig(config *system.Config) error {
 	return nil
 }
 
-func validateServerConfig(config *system.ServerConfig) error {
+func validateServerConfig(config *config.ServerConfig) error {
 	if config.Port <= 0 || config.Port > 65535 {
 		return fmt.Errorf("端口号必须在1-65535范围内，当前值: %d", config.Port)
 	}
@@ -207,7 +194,7 @@ func validateServerConfig(config *system.ServerConfig) error {
 	return nil
 }
 
-func validateDatabaseConfig(config *system.DatabaseConfig) error {
+func validateDatabaseConfig(config *config.DatabaseConfig) error {
 	if config.Type == "" {
 		return fmt.Errorf("数据库类型不能为空")
 	}
@@ -224,7 +211,7 @@ func validateDatabaseConfig(config *system.DatabaseConfig) error {
 	return nil
 }
 
-func validateLogConfig(config *system.LogConfig) error {
+func validateLogConfig(config *config.LogConfig) error {
 	validLevels := []string{"debug", "info", "warn", "error"}
 	if !utils.Contains(validLevels, strings.ToLower(config.Level)) {
 		return fmt.Errorf("无效的日志等级: %s，支持的等级: %v", config.Level, validLevels)
@@ -253,7 +240,7 @@ func validateLogConfig(config *system.LogConfig) error {
 	return nil
 }
 
-func validateJWTConfig(config *system.JWTConfig) error {
+func validateJWTConfig(config *config.JWTConfig) error {
 	if config.Secret == "" {
 		return fmt.Errorf("JWT密钥不能为空")
 	}
@@ -269,7 +256,7 @@ func validateJWTConfig(config *system.JWTConfig) error {
 	return nil
 }
 
-func validateSessionConfig(config *system.SessionConfig) error {
+func validateSessionConfig(config *config.SessionConfig) error {
 	if config.Path == "" {
 		return fmt.Errorf("会话文件路径不能为空")
 	}

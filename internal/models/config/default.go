@@ -1,9 +1,23 @@
-package system
+package config
 
-var systemConfigData = GroupData{
+var defaultBase = Base{
+	Server: ServerConfig{
+		Port: 8080,
+		Host: "0.0.0.0",
+	},
+	Database: DatabaseConfig{
+		Type: "sqlite",
+	},
+	Log: LogConfig{
+		Level:  "debug",
+		Output: "console",
+	},
+}
+
+var system = GroupAdvance{
 	GroupName:   "system",
 	Description: "系统配置",
-	Data: []Data{
+	Data: []Advance{
 		{
 			Type:        "bool",
 			Key:         "proxy.enable",
@@ -44,15 +58,19 @@ var systemConfigData = GroupData{
 			Type:        "number",
 			Key:         "notify.id",
 			Value:       "0",
-			Description: "系统默认通知渠道ID",
+			Description: "系统默认通知渠道",
 		},
 	},
 }
 
-var defaultDbConfigData = []GroupData{
-	systemConfigData,
+var defaultAdvance = []GroupAdvance{
+	system,
 }
 
-func DefaultDbConfig() []GroupData {
-	return defaultDbConfigData
+func DefaultAdvance() []GroupAdvance {
+	return defaultAdvance
+}
+
+func DefaultBase() Base {
+	return defaultBase
 }

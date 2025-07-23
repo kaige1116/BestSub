@@ -2,15 +2,16 @@ package op
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
-	"github.com/VictoriaMetrics/fastcache"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/models/system"
+	"github.com/bestruirui/bestsub/internal/models/config"
+	"github.com/bestruirui/bestsub/internal/utils/cache"
 )
 
 var configRepo interfaces.ConfigRepository
-var cache = fastcache.New(1024 * 1024)
+var configCache = cache.New[string, string](4)
 
 func ConfigRepo() interfaces.ConfigRepository {
 	if configRepo == nil {
@@ -18,37 +19,21 @@ func ConfigRepo() interfaces.ConfigRepository {
 	}
 	return configRepo
 }
-func GetAllConfig(ctx context.Context) ([]system.GroupData, error) {
-	sysConf := system.DefaultDbConfig()
-	notExistConfig := make([]string, 0)
-
-	for i := range sysConf {
-		for j := range sysConf[i].Data {
-			if value, ok := cache.HasGet(nil, []byte(sysConf[i].Data[j].Key)); ok {
-				sysConf[i].Data[j].Value = string(value)
-			} else {
-				notExistConfig = append(notExistConfig, sysConf[i].Data[j].Key)
-			}
-		}
-	}
-
-	if len(notExistConfig) > 0 {
-		configs, err := ConfigRepo().GetByKey(ctx, notExistConfig)
+func GetAllConfig(ctx context.Context) ([]config.GroupAdvance, error) {
+	sysConf := config.DefaultAdvance()
+	sysConfCache := configCache.GetAll()
+	if len(sysConfCache) == 0 {
+		err := refreshConfigCache(context.Background())
 		if err != nil {
 			return nil, err
 		}
-
-		configMap := make(map[string]string)
-		for _, config := range *configs {
-			configMap[config.Key] = config.Value
-			cache.Set([]byte(config.Key), []byte(config.Value))
-		}
-
-		for i := range sysConf {
-			for j := range sysConf[i].Data {
-				if value, exists := configMap[sysConf[i].Data[j].Key]; exists {
-					sysConf[i].Data[j].Value = value
-				}
+		sysConfCache = configCache.GetAll()
+	}
+	for i := range sysConf {
+		for j := range sysConf[i].Data {
+			value, ok := sysConfCache[sysConf[i].Data[j].Key]
+			if ok {
+				sysConf[i].Data[j].Value = value
 			}
 		}
 	}
@@ -56,60 +41,61 @@ func GetAllConfig(ctx context.Context) ([]system.GroupData, error) {
 	return sysConf, nil
 }
 func GetConfigByKey(key string) (string, error) {
-	if value, ok := cache.HasGet(nil, []byte(key)); ok {
-		return string(value), nil
+	if value, ok := configCache.Get(key); ok {
+		return value, nil
 	}
-	configs, err := ConfigRepo().GetByKey(context.Background(), []string{key})
+	err := refreshConfigCache(context.Background())
 	if err != nil {
 		return "", err
 	}
-	cache.Set([]byte(key), []byte((*configs)[0].Value))
-	return (*configs)[0].Value, nil
-}
-func GetConfigByGroup(groupName string) ([]system.Data, error) {
-	sysConf := system.DefaultDbConfig()
-	var result []system.Data
-	notExistConfig := make([]string, 0)
-
-	for _, group := range sysConf {
-		if group.GroupName == groupName {
-			for _, data := range group.Data {
-				if value, ok := cache.HasGet(nil, []byte(data.Key)); ok {
-					data.Value = string(value)
-					result = append(result, data)
-				} else {
-					notExistConfig = append(notExistConfig, data.Key)
-					result = append(result, data)
-				}
-			}
-			break
-		}
+	if value, ok := configCache.Get(key); ok {
+		return value, nil
 	}
-
-	if len(notExistConfig) > 0 {
-		configs, err := ConfigRepo().GetByKey(context.Background(), notExistConfig)
+	return "", fmt.Errorf("config not found")
+}
+func GetConfigByGroup(groupName string) ([]config.GroupAdvance, error) {
+	sysConf := config.DefaultAdvance()
+	var result []config.Advance
+	var description string
+	sysConfCache := configCache.GetAll()
+	if len(sysConfCache) == 0 {
+		err := refreshConfigCache(context.Background())
 		if err != nil {
 			return nil, err
 		}
-
-		configMap := make(map[string]string)
-		for _, config := range *configs {
-			configMap[config.Key] = config.Value
-			cache.Set([]byte(config.Key), []byte(config.Value))
-		}
-
-		for i := range result {
-			if value, exists := configMap[result[i].Key]; exists {
-				result[i].Value = value
+		sysConfCache = configCache.GetAll()
+	}
+	for _, group := range sysConf {
+		if group.GroupName == groupName {
+			for _, data := range group.Data {
+				value, ok := sysConfCache[data.Key]
+				if ok {
+					result = append(result, config.Advance{
+						Key:   data.Key,
+						Value: value,
+					})
+				}
 			}
+			description = group.Description
 		}
 	}
-
-	return result, nil
+	return []config.GroupAdvance{
+		{
+			GroupName:   groupName,
+			Description: description,
+			Data:        result,
+		},
+	}, nil
 }
-func UpdateConfig(ctx context.Context, config *[]system.UpdateData) error {
+func UpdateConfig(ctx context.Context, config *[]config.UpdateAdvance) error {
+	if configCache.Len() == 0 {
+		err := refreshConfigCache(context.Background())
+		if err != nil {
+			return err
+		}
+	}
 	for _, item := range *config {
-		cache.Set([]byte(item.Key), []byte(item.Value))
+		configCache.Set(item.Key, item.Value)
 	}
 	err := ConfigRepo().Update(ctx, config)
 	if err != nil {
@@ -142,4 +128,15 @@ func GetConfigBool(key string) bool {
 		return false
 	}
 	return value == "true"
+}
+
+func refreshConfigCache(ctx context.Context) error {
+	configs, err := ConfigRepo().GetAll(ctx)
+	if err != nil {
+		return err
+	}
+	for _, config := range *configs {
+		configCache.Set(config.Key, config.Value)
+	}
+	return nil
 }
