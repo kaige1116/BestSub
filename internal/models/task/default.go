@@ -2,20 +2,18 @@ package task
 
 var taskConfigData = []Data{
 	{
-		Name:    "GC垃圾回收",
-		Enable:  true,
-		Cron:    "0 */1 * * *",
-		Timeout: 10,
-		System:  true,
-		Type:    TypeGC,
+		Enable: true,
+		Name:   "GC垃圾回收",
+		System: true,
+		Config: `{"cron":"0 */1 * * *","type":"gc","log_level":"info","timeout":10,"notify":false,"notify_channel":""}`,
+		Extra:  `{"force":"false"}`,
 	},
 	{
-		Name:    "日志清理",
-		Enable:  true,
-		Cron:    "0 0 */1 * *",
-		Timeout: 10,
-		System:  true,
-		Type:    TypeLogClean,
+		Enable: true,
+		Name:   "日志清理",
+		System: true,
+		Config: `{"cron":"0 0 */1 * *","type":"log_clean","log_level":"info","timeout":10,"notify":false,"notify_channel":""}`,
+		Extra:  "",
 	},
 }
 

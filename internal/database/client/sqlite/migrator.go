@@ -38,7 +38,7 @@ func (db *DB) Migrate() error {
 
 func (db *DB) ensureMigrationsTable() error {
 	migrationTable := `
-	CREATE TABLE IF NOT EXISTS "migrations" (
+	CREATE TABLE IF NOT EXISTS "migration" (
 		"date" INTEGER NOT NULL UNIQUE,
 		"version" TEXT NOT NULL,
 		"description" TEXT NOT NULL,
@@ -48,7 +48,7 @@ func (db *DB) ensureMigrationsTable() error {
 
 	_, err := db.db.Exec(migrationTable)
 	if err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return fmt.Errorf("failed to create migration table: %w", err)
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ func (db *DB) ensureMigrationsTable() error {
 func (db *DB) getAppliedMigrations() (map[uint64]bool, error) {
 	appliedDates := make(map[uint64]bool)
 
-	rows, err := db.db.Query("SELECT date FROM migrations")
+	rows, err := db.db.Query("SELECT date FROM migration")
 	if err != nil {
 		return appliedDates, err
 	}
@@ -84,7 +84,7 @@ func (db *DB) applyMigrations(migrations []*migModel.Info) error {
 	}
 	defer tx.Rollback()
 
-	insertStmt, err := tx.Prepare("INSERT INTO migrations (date, version, description, applied_at) VALUES (?, ?, ?, ?)")
+	insertStmt, err := tx.Prepare("INSERT INTO migration (date, version, description, applied_at) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}

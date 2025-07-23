@@ -5,16 +5,6 @@ import "github.com/bestruirui/bestsub/internal/database/migration"
 // Migration001Table 初始数据库架构
 func Migration001Table() string {
 	return `
-CREATE TABLE IF NOT EXISTS "save_template_relations" (
-	"save_id" INTEGER NOT NULL,
-	"template_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "template_id"),
-	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("template_id") REFERENCES "sub_output_templates"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS "auth" (
 	"id" INTEGER,
 	"username" TEXT NOT NULL UNIQUE,
@@ -22,19 +12,19 @@ CREATE TABLE IF NOT EXISTS "auth" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "system_config" (
+CREATE TABLE IF NOT EXISTS "config" (
 	"key" TEXT NOT NULL UNIQUE,
 	"value" TEXT,
 	PRIMARY KEY("key")
 );
 
-CREATE TABLE IF NOT EXISTS "notify_templates" (
+CREATE TABLE IF NOT EXISTS "notify_template" (
 	"type" TEXT NOT NULL,
-	"templates" TEXT NOT NULL,
+	"template" TEXT NOT NULL,
 	PRIMARY KEY("type")
 );
 
-CREATE TABLE IF NOT EXISTS "notify_config" (
+CREATE TABLE IF NOT EXISTS "notify" (
 	"id" INTEGER NOT NULL UNIQUE,
 	"name" TEXT NOT NULL,
 	"type" TEXT NOT NULL,
@@ -42,35 +32,26 @@ CREATE TABLE IF NOT EXISTS "notify_config" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "tasks" (
+CREATE TABLE IF NOT EXISTS "task" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL,
 	"name" TEXT,
 	"system" BOOLEAN,
-	"cron" TEXT,
-	"timeout" INTEGER NOT NULL,
-	"log_level" TEXT,
-	"retry" INTEGER,
-	"type" TEXT NOT NULL,
 	"config" TEXT,
-	"last_run_result" TEXT,
-	"last_run_time" DATETIME,
-	"last_run_duration" INTEGER,
-	"success_count" INTEGER,
-	"failed_count" INTEGER,
+	"extra" TEXT,
+	"result" TEXT,
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "storage_configs" (
+CREATE TABLE IF NOT EXISTS "storage" (
 	"id" INTEGER,
-	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"name" TEXT,
 	"type" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "sub_output_templates" (
+CREATE TABLE IF NOT EXISTS "sub_template" (
 	"id" INTEGER,
 	"name" TEXT,
 	"type" TEXT NOT NULL,
@@ -78,16 +59,7 @@ CREATE TABLE IF NOT EXISTS "sub_output_templates" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "sub_node_filter_rules" (
-	"id" INTEGER,
-	"name" TEXT,
-	"field" TEXT NOT NULL,
-	"operator" TEXT NOT NULL,
-	"value" TEXT NOT NULL,
-	PRIMARY KEY("id")
-);
-
-CREATE TABLE IF NOT EXISTS "subs" (
+CREATE TABLE IF NOT EXISTS "sub" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"name" TEXT,
@@ -97,90 +69,15 @@ CREATE TABLE IF NOT EXISTS "subs" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "sub_save" (
-	"id" INTEGER,
-	"enable" BOOLEAN NOT NULL DEFAULT false,
-	"name" TEXT,
-	"description" TEXT,
-	"rename" TEXT,
-	"file_name" TEXT NOT NULL,
-	PRIMARY KEY("id")
-);
-
-CREATE TABLE IF NOT EXISTS "sub_share_links" (
+CREATE TABLE IF NOT EXISTS "sub_share" (
 	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT false,
 	"name" TEXT NOT NULL,
-	"subs" TEXT NOT NULL,
-	"rename" TEXT NOT NULL,
-	"access_count" INTEGER NOT NULL DEFAULT 0,
-	"max_access_count" INTEGER NOT NULL,
-	"token" TEXT NOT NULL UNIQUE,
-	"expires" DATETIME NOT NULL,
+	"config" TEXT NOT NULL,
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "save_filter_relations" (
-	"save_id" INTEGER NOT NULL,
-	"filter_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "filter_id"),
-	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("filter_id") REFERENCES "sub_node_filter_rules"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "save_storage_relations" (
-	"save_id" INTEGER NOT NULL,
-	"storage_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "storage_id"),
-	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("storage_id") REFERENCES "storage_configs"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "share_template_relations" (
-	"share_id" INTEGER NOT NULL,
-	"template_id" INTEGER NOT NULL,
-	PRIMARY KEY("share_id", "template_id"),
-	FOREIGN KEY ("share_id") REFERENCES "sub_share_links"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("template_id") REFERENCES "sub_output_templates"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "share_filter_relations" (
-	"share_id" INTEGER NOT NULL,
-	"filter_id" INTEGER NOT NULL,
-	PRIMARY KEY("share_id", "filter_id"),
-	FOREIGN KEY ("share_id") REFERENCES "sub_share_links"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("filter_id") REFERENCES "sub_node_filter_rules"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "save_sub_relations" (
-	"save_id" INTEGER NOT NULL,
-	"sub_id" INTEGER NOT NULL,
-	PRIMARY KEY("save_id", "sub_id"),
-	FOREIGN KEY ("sub_id") REFERENCES "subs"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("save_id") REFERENCES "sub_save"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "notify_task_relations" (
-	"task_id" INTEGER NOT NULL,
-	"notify_id" INTEGER NOT NULL,
-	PRIMARY KEY("task_id", "notify_id"),
-	FOREIGN KEY ("task_id") REFERENCES "tasks"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE,
-	FOREIGN KEY ("notify_id") REFERENCES "notify_config"("id")
-	ON UPDATE NO ACTION ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "migrations" (
+CREATE TABLE IF NOT EXISTS "migration" (
 	"date" INTEGER NOT NULL UNIQUE,
 	"version" TEXT NOT NULL,
 	"description" TEXT NOT NULL,

@@ -2,51 +2,50 @@ package task
 
 import (
 	"time"
-
-	"github.com/bestruirui/bestsub/internal/models/common"
 )
 
-// 任务状态枚举
-const (
-	StatusPending   = "pending"   // 等待执行
-	StatusRunning   = "running"   // 正在执行
-	StatusCompleted = "completed" // 执行完成
-	StatusFailed    = "failed"    // 执行失败
-	StatusCancelled = "cancelled" // 已取消
-)
-
-// Task 任务基础模型（数据库模型）
 type Data struct {
-	common.BaseDbModel
-	IsSysTask       bool       `db:"is_sys_task" json:"is_sys_task"`             // 是否系统任务
-	Cron            string     `db:"cron" json:"cron" example:"0 */6 * * *"`     // Cron表达式
-	Type            string     `db:"type" json:"type" example:"sub_fetch"`       // 任务类型
-	LogLevel        string     `db:"log_level" json:"log_level" default:"error"` // 日志级别
-	Timeout         int        `db:"timeout" json:"timeout" example:"60"`        // 任务超时时间（秒）
-	Retry           int        `db:"retry" json:"retry" example:"3"`             // 任务重试次数
-	Config          string     `db:"config" json:"config"`                       // 任务配置（JSON格式）
-	Status          string     `db:"-" json:"status" example:"pending"`          // 任务状态
-	SuccessCount    int        `db:"success_count" json:"success_count"`         // 成功次数
-	FailedCount     int        `db:"failed_count" json:"failed_count"`           // 失败次数
-	LastRunResult   string     `db:"last_run_result" json:"last_run_result"`     // 上次执行结果
-	LastRunTime     *time.Time `db:"last_run_time" json:"last_run_time"`         // 上次执行时间
-	LastRunDuration *int       `db:"last_run_duration" json:"last_run_duration"` // 上次执行耗时（毫秒）
+	ID     uint16 `db:"id"`
+	Name   string `db:"name"`
+	Enable bool   `db:"enable"`
+	System bool   `db:"system"`
+	Config string `db:"config"` // 以json格式存储
+	Extra  string `db:"extra"`  // 以json格式存储
+	Result string `db:"result"` // 以json格式存储
+}
+
+type Config struct {
+	Cron          string `json:"cron"`
+	Type          string `json:"type"`
+	LogLevel      string `json:"log_level"`
+	Timeout       int    `json:"timeout"`
+	Notify        bool   `json:"notify"`
+	NotifyChannel string `json:"notify_channel"`
+}
+
+type Result struct {
+	Success         int       `json:"success"`
+	Failed          int       `json:"failed"`
+	LastRunResult   string    `json:"last_run_result"`
+	LastRunTime     time.Time `json:"last_run_time"`
+	LastRunDuration int       `json:"last_run_duration"`
+}
+
+type Response struct {
+	ID     uint16 `json:"id"`
+	Enable bool   `json:"enable"`
+	Config Config `json:"config"`
+	Extra  string `json:"extra"`
+	Status string `json:"status"`
+	Result Result `json:"result"`
 }
 
 type CreateRequest struct {
-	common.BaseRequestModel
-	Cron     string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
-	Type     string `json:"type" example:"sub_fetch"`                                                                                                                         // 任务类型
-	LogLevel string `json:"log_level" example:"error"`                                                                                                                        // 日志级别
-	Config   string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
-	Timeout  int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
-	Retry    int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
+	Config
+	Extra string
 }
 type UpdateRequest struct {
-	common.BaseUpdateRequestModel
-	Cron     string `json:"cron" example:"0 */6 * * *"`                                                                                                                       // Cron表达式
-	LogLevel string `json:"log_level" example:"error"`                                                                                                                        // 日志级别
-	Config   string `json:"config" example:"{\"proxy_enable\":false,\"retries\":3,\"sub_id\":1,\"timeout\":30,\"type\":\"auto\",\"url\":\"\",\"user_agent\":\"clash.meta\"}"` // 任务配置（JSON格式）
-	Timeout  int    `db:"timeout" json:"timeout" example:"60"`                                                                                                                // 任务超时时间（秒）
-	Retry    int    `db:"retry" json:"retry" example:"3"`                                                                                                                     // 任务重试次数
+	ID uint16 `json:"id"`
+	Config
+	Extra string
 }

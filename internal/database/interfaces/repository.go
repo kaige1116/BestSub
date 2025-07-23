@@ -12,11 +12,10 @@ type Repository interface {
 	Task() TaskRepository
 
 	Sub() SubRepository
-	SubSave() SubSaveRepository
 	SubShare() SubShareRepository
-	SubStorage() SubStorageConfigRepository
-	SubOutputTemplate() SubOutputTemplateRepository
-	SubNodeFilterRule() SubNodeFilterRuleRepository
+	SubTemplate() SubTemplateRepository
+
+	Storage() StorageRepository
 
 	Close() error
 	Migrate() error

@@ -21,17 +21,5 @@ type SubShareRepository interface {
 	Delete(ctx context.Context, id uint16) error
 
 	// List 获取分享链接列表
-	List(ctx context.Context, offset, limit int) ([]*sub.Share, error)
-
-	// Count 获取分享链接总数
-	Count(ctx context.Context) (uint16, error)
-
-	// 添加分享链接与输出模板的关联
-	AddOutputTemplateRelation(ctx context.Context, shareID, templateID uint16) error
-
-	// 添加分享链接与过滤配置的关联
-	AddFilterConfigRelation(ctx context.Context, shareID, configID uint16) error
-
-	// 添加分享链接与订阅的关联
-	AddSubRelation(ctx context.Context, shareID, subID uint16) error
+	List(ctx context.Context) ([]*sub.Share, error)
 }

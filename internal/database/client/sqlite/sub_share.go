@@ -21,17 +21,13 @@ func (db *DB) SubShare() interfaces.SubShareRepository {
 
 // Create 创建分享链接
 func (r *SubShareRepository) Create(ctx context.Context, shareLink *sub.Share) error {
-	query := `INSERT INTO sub_share_links (enable, name, rename, access_count, max_access_count, token, expires)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO sub_share (enable, name, config)
+	          VALUES (?, ?, ?)`
 
 	result, err := r.db.db.ExecContext(ctx, query,
 		shareLink.Enable,
 		shareLink.Name,
-		shareLink.Rename,
-		shareLink.AccessCount,
-		shareLink.MaxAccessCount,
-		shareLink.Token,
-		shareLink.Expires,
+		shareLink.Config,
 	)
 
 	if err != nil {
@@ -50,19 +46,15 @@ func (r *SubShareRepository) Create(ctx context.Context, shareLink *sub.Share) e
 
 // GetByID 根据ID获取分享链接
 func (r *SubShareRepository) GetByID(ctx context.Context, id uint16) (*sub.Share, error) {
-	query := `SELECT id, enable, name, rename, access_count, max_access_count, token, expires
-	          FROM sub_share_links WHERE id = ?`
+	query := `SELECT id, enable, name, config
+	          FROM sub_share WHERE id = ?`
 
 	var shareLink sub.Share
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&shareLink.ID,
 		&shareLink.Enable,
 		&shareLink.Name,
-		&shareLink.Rename,
-		&shareLink.AccessCount,
-		&shareLink.MaxAccessCount,
-		&shareLink.Token,
-		&shareLink.Expires,
+		&shareLink.Config,
 	)
 
 	if err != nil {
@@ -77,16 +69,12 @@ func (r *SubShareRepository) GetByID(ctx context.Context, id uint16) (*sub.Share
 
 // Update 更新分享链接
 func (r *SubShareRepository) Update(ctx context.Context, shareLink *sub.Share) error {
-	query := `UPDATE sub_share_links SET enable = ?, name = ?, rename = ?, access_count = ?, max_access_count = ?, token = ?, expires = ? WHERE id = ?`
+	query := `UPDATE sub_share SET enable = ?, name = ?, config = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		shareLink.Enable,
 		shareLink.Name,
-		shareLink.Rename,
-		shareLink.AccessCount,
-		shareLink.MaxAccessCount,
-		shareLink.Token,
-		shareLink.Expires,
+		shareLink.Config,
 		shareLink.ID,
 	)
 
@@ -99,7 +87,7 @@ func (r *SubShareRepository) Update(ctx context.Context, shareLink *sub.Share) e
 
 // Delete 删除分享链接
 func (r *SubShareRepository) Delete(ctx context.Context, id uint16) error {
-	query := `DELETE FROM sub_share_links WHERE id = ?`
+	query := `DELETE FROM sub_share WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -110,11 +98,11 @@ func (r *SubShareRepository) Delete(ctx context.Context, id uint16) error {
 }
 
 // List 获取分享链接列表
-func (r *SubShareRepository) List(ctx context.Context, offset, limit int) ([]*sub.Share, error) {
-	query := `SELECT id, enable, name, rename, access_count, max_access_count, token, expires
-	          FROM sub_share_links ORDER BY created_at DESC LIMIT ? OFFSET ?`
+func (r *SubShareRepository) List(ctx context.Context) ([]*sub.Share, error) {
+	query := `SELECT id, enable, name, config
+	          FROM sub_share`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list share links: %w", err)
 	}
@@ -127,11 +115,7 @@ func (r *SubShareRepository) List(ctx context.Context, offset, limit int) ([]*su
 			&shareLink.ID,
 			&shareLink.Enable,
 			&shareLink.Name,
-			&shareLink.Rename,
-			&shareLink.AccessCount,
-			&shareLink.MaxAccessCount,
-			&shareLink.Token,
-			&shareLink.Expires,
+			&shareLink.Config,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan share link: %w", err)
@@ -144,53 +128,4 @@ func (r *SubShareRepository) List(ctx context.Context, offset, limit int) ([]*su
 	}
 
 	return shareLinks, nil
-}
-
-// Count 获取分享链接总数
-func (r *SubShareRepository) Count(ctx context.Context) (uint16, error) {
-	query := `SELECT COUNT(*) FROM sub_share_links`
-
-	var count uint16
-	err := r.db.db.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("failed to count share links: %w", err)
-	}
-
-	return count, nil
-}
-
-// AddOutputTemplateRelation 添加分享链接与输出模板的关联
-func (r *SubShareRepository) AddOutputTemplateRelation(ctx context.Context, shareID, templateID uint16) error {
-	query := `INSERT OR IGNORE INTO share_template_relations (share_id, template_id) VALUES (?, ?)`
-
-	_, err := r.db.db.ExecContext(ctx, query, shareID, templateID)
-	if err != nil {
-		return fmt.Errorf("failed to add output template relation: %w", err)
-	}
-
-	return nil
-}
-
-// AddFilterConfigRelation 添加分享链接与过滤配置的关联
-func (r *SubShareRepository) AddFilterConfigRelation(ctx context.Context, shareID, configID uint16) error {
-	query := `INSERT OR IGNORE INTO share_fitter_relations (share_id, fitter_id) VALUES (?, ?)`
-
-	_, err := r.db.db.ExecContext(ctx, query, shareID, configID)
-	if err != nil {
-		return fmt.Errorf("failed to add filter config relation: %w", err)
-	}
-
-	return nil
-}
-
-// AddSubRelation 添加分享链接与订阅的关联
-func (r *SubShareRepository) AddSubRelation(ctx context.Context, shareID, subID uint16) error {
-	query := `INSERT OR IGNORE INTO share_sub_relations (share_id, sub_id) VALUES (?, ?)`
-
-	_, err := r.db.db.ExecContext(ctx, query, shareID, subID)
-	if err != nil {
-		return fmt.Errorf("failed to add sub relation: %w", err)
-	}
-
-	return nil
 }

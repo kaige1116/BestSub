@@ -16,8 +16,8 @@ type CreateRequest struct {
 }
 
 type Template struct {
-	Type     string `db:"type" json:"type"`           // 模板类型
-	Template string `db:"templates" json:"templates"` // 模板内容
+	Type     string `db:"type" json:"type"`         // 模板类型
+	Template string `db:"template" json:"template"` // 模板内容
 }
 
 type Instance interface {

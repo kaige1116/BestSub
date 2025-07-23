@@ -28,7 +28,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]system.D
 	}
 	defer tx.Rollback()
 
-	query := `INSERT INTO system_config (key, value)
+	query := `INSERT INTO config (key, value)
 	          VALUES (?, ?)`
 
 	stmt, err := tx.PrepareContext(ctx, query)
@@ -56,7 +56,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]system.D
 
 func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]system.Data, error) {
 	query := `SELECT key, value
-	          FROM system_config ORDER BY key`
+	          FROM config ORDER BY key`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]system.Data, er
 }
 
 func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*[]system.Data, error) {
-	log.Info("GetByKey", "keys", keys)
+	log.Debugf("GetByKey: %v", keys)
 	if len(keys) == 0 {
 		return &[]system.Data{}, nil
 	}
@@ -99,7 +99,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 		args[i] = key
 	}
 	query := `SELECT key, value
-	          FROM system_config WHERE key IN (` + inClause + `) ORDER BY key`
+	          FROM config WHERE key IN (` + inClause + `) ORDER BY key`
 
 	rows, err := r.db.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -137,7 +137,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, data *[]system.Upda
 	}
 	defer tx.Rollback()
 
-	query := `UPDATE system_config SET value = ? WHERE key = ?`
+	query := `UPDATE config SET value = ? WHERE key = ?`
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
