@@ -52,10 +52,9 @@ var fileEncoder = zapcore.EncoderConfig{
 	EncodeCaller:  zapcore.ShortCallerEncoder,
 }
 
-// Logger 日志记录器
 type Logger struct {
 	*zap.SugaredLogger
-	file *os.File
+	bufferedWriter *zapcore.BufferedWriteSyncer
 }
 type Config struct {
 	Level      string
@@ -66,7 +65,6 @@ type Config struct {
 	CallerSkip int
 }
 
-// webSocketHook 发送日志到WebSocket通道
 func webSocketHook(entry zapcore.Entry) error {
 	if wsChannel == nil {
 		return nil
@@ -136,7 +134,7 @@ func Initialize(level, path, method string) error {
 func GetDefaultLogger() *Logger {
 	return logger
 }
-func NewTaskLogger(taskid uint16, level string) (*Logger, error) {
+func NewTaskLogger(taskid uint16, level string, writeFile bool) (*Logger, error) {
 	taskidstr := strconv.FormatUint(uint64(taskid), 10)
 	name := "task_" + taskidstr
 	path := filepath.Join(basePath, "task", taskidstr, time.Now().Format("20060102150405")+".log")
@@ -144,18 +142,16 @@ func NewTaskLogger(taskid uint16, level string) (*Logger, error) {
 		Level:      level,
 		Path:       path,
 		UseConsole: utils.IsDebug(),
-		UseFile:    useFile,
+		UseFile:    writeFile,
 		Name:       name,
 		CallerSkip: 1,
 	})
 }
 
-// GetWSChannel 获取全局WebSocket通道
 func GetWSChannel() <-chan LogEntry {
 	return wsChannel
 }
 
-// NewLogger 创建日志记录器
 func NewLogger(config Config) (*Logger, error) {
 	parsedLevel, err := zapcore.ParseLevel(config.Level)
 	if err != nil {
@@ -163,7 +159,7 @@ func NewLogger(config Config) (*Logger, error) {
 	}
 
 	var cores []zapcore.Core
-	var file *os.File
+	var bufferedWriter *zapcore.BufferedWriteSyncer
 
 	if config.UseConsole {
 		consoleCore := zapcore.NewCore(
@@ -175,13 +171,16 @@ func NewLogger(config Config) (*Logger, error) {
 	}
 
 	if config.UseFile && config.Path != "" {
-		file, err = createLogFile(config.Path)
+		file, err := createLogFile(config.Path)
 		if err != nil {
 			return nil, err
 		}
+		bufferedWriter = &zapcore.BufferedWriteSyncer{
+			WS: zapcore.AddSync(file),
+		}
 		fileCore := zapcore.NewCore(
 			zapcore.NewJSONEncoder(fileEncoder),
-			zapcore.AddSync(file),
+			bufferedWriter,
 			parsedLevel,
 		)
 		cores = append(cores, fileCore)
@@ -209,12 +208,11 @@ func NewLogger(config Config) (*Logger, error) {
 	logger.Named(config.Name)
 
 	return &Logger{
-		SugaredLogger: logger.Sugar(),
-		file:          file,
+		SugaredLogger:  logger.Sugar(),
+		bufferedWriter: bufferedWriter,
 	}, nil
 }
 
-// createLogFile 创建日志文件
 func createLogFile(path string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
@@ -231,11 +229,13 @@ func createLogFile(path string) (*os.File, error) {
 func (l *Logger) Close() error {
 	l.SugaredLogger.Sync()
 
-	if l.file != nil {
-		err := l.file.Close()
-		l.file = nil
-		return err
+	if l.bufferedWriter != nil {
+		if err := l.bufferedWriter.Sync(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to flush buffered writer: %v\n", err)
+		}
+		l.bufferedWriter = nil
 	}
+
 	return nil
 }
 
