@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS "auth" (
 
 CREATE TABLE IF NOT EXISTS "config" (
 	"key" TEXT NOT NULL UNIQUE,
-	"value" TEXT,
+	"value" TEXT NOT NULL,
 	PRIMARY KEY("key")
 );
 
@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS "task" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL,
 	"name" TEXT,
-	"system" BOOLEAN,
-	"config" TEXT,
+	"config" TEXT NOT NULL,
 	"extra" TEXT,
 	"result" TEXT,
 	PRIMARY KEY("id")
@@ -62,8 +61,10 @@ CREATE TABLE IF NOT EXISTS "sub_template" (
 CREATE TABLE IF NOT EXISTS "sub" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
+	"cron_expr" TEXT,
 	"name" TEXT,
-	"url" TEXT NOT NULL,
+	"config" TEXT NOT NULL,
+	"result" TEXT,
 	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")
@@ -73,14 +74,14 @@ CREATE TABLE IF NOT EXISTS "sub_share" (
 	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT false,
 	"name" TEXT NOT NULL,
-	"config" TEXT NOT NULL,
+	"config" TEXT,
 	PRIMARY KEY("id")
 );
 
 CREATE TABLE IF NOT EXISTS "migration" (
 	"date" INTEGER NOT NULL UNIQUE,
 	"version" TEXT NOT NULL,
-	"description" TEXT NOT NULL,
+	"description" TEXT,
 	"applied_at" DATETIME NOT NULL,
 	PRIMARY KEY("date")
 );

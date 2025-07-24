@@ -7,47 +7,45 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/task"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-// TaskRepository 任务数据访问实现
 type TaskRepository struct {
 	db *DB
 }
 
-// newTaskRepository 创建任务仓库
 func (db *DB) Task() interfaces.TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-// Create 创建任务
-func (r *TaskRepository) Create(ctx context.Context, t *task.Data) (uint16, error) {
-	query := `INSERT INTO task (enable, name, system, config, extra, result)
-	          VALUES (?, ?, ?, ?, ?, ?)`
+func (r *TaskRepository) Create(ctx context.Context, t *task.Data) error {
+	log.Debugf("Create task")
+	query := `INSERT INTO task (enable, name, config, extra, result)
+	          VALUES (?, ?, ?, ?, ?)`
 
 	result, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
-		t.System,
 		t.Config,
 		t.Extra,
 		t.Result,
 	)
 
 	if err != nil {
-		return 0, fmt.Errorf("failed to create task: %w", err)
+		return fmt.Errorf("failed to create task: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("failed to get task id: %w", err)
+		return fmt.Errorf("failed to get task id: %w", err)
 	}
 	t.ID = uint16(id)
-	return t.ID, nil
+	return nil
 }
 
-// GetByID 根据ID获取任务
 func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, error) {
-	query := `SELECT id, enable, name, system, config, extra, result
+	log.Debugf("Get task by id")
+	query := `SELECT id, enable, name, config, extra, result
 	          FROM task WHERE id = ?`
 
 	var t task.Data
@@ -55,7 +53,6 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, er
 		&t.ID,
 		&t.Enable,
 		&t.Name,
-		&t.System,
 		&t.Config,
 		&t.Extra,
 		&t.Result,
@@ -71,14 +68,13 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint16) (*task.Data, er
 	return &t, nil
 }
 
-// Update 更新任务
 func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
-	query := `UPDATE task SET enable = ?, name = ?, system = ?, config = ?, extra = ?, result = ? WHERE id = ?`
+	log.Debugf("Update task")
+	query := `UPDATE task SET enable = ?, name = ?, config = ?, extra = ?, result = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		t.Enable,
 		t.Name,
-		t.System,
 		t.Config,
 		t.Extra,
 		t.Result,
@@ -92,8 +88,8 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Data) error {
 	return nil
 }
 
-// Delete 删除任务
 func (r *TaskRepository) Delete(ctx context.Context, id uint16) error {
+	log.Debugf("Delete task")
 	query := `DELETE FROM task WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -104,9 +100,9 @@ func (r *TaskRepository) Delete(ctx context.Context, id uint16) error {
 	return nil
 }
 
-// List 获取任务列表
 func (r *TaskRepository) List(ctx context.Context) (*[]task.Data, error) {
-	query := `SELECT id, enable, name, system, config, extra, result
+	log.Debugf("List task")
+	query := `SELECT id, enable, name, config, extra, result
 	          FROM task ORDER BY id DESC`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
@@ -122,7 +118,6 @@ func (r *TaskRepository) List(ctx context.Context) (*[]task.Data, error) {
 			&t.ID,
 			&t.Enable,
 			&t.Name,
-			&t.System,
 			&t.Config,
 			&t.Extra,
 			&t.Result,
