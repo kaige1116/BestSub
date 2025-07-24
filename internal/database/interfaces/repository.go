@@ -9,7 +9,7 @@ type Repository interface {
 	Notify() NotifyRepository
 	NotifyTemplate() NotifyTemplateRepository
 
-	Task() TaskRepository
+	Check() CheckRepository
 
 	Sub() SubRepository
 	SubShare() SubShareRepository

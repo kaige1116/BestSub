@@ -32,12 +32,12 @@ CREATE TABLE IF NOT EXISTS "notify" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "task" (
+CREATE TABLE IF NOT EXISTS "check_task" (
 	"id" INTEGER,
 	"enable" BOOLEAN NOT NULL,
 	"name" TEXT,
-	"config" TEXT NOT NULL,
-	"extra" TEXT,
+	"task" TEXT NOT NULL,
+	"config" TEXT,
 	"result" TEXT,
 	PRIMARY KEY("id")
 );

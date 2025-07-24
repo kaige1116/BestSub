@@ -134,16 +134,16 @@ func Initialize(level, path, method string) error {
 func GetDefaultLogger() *Logger {
 	return logger
 }
-func NewTaskLogger(taskid uint16, level string, writeFile bool) (*Logger, error) {
+func NewTaskLogger(name string, taskid uint16, level string, writeFile bool) (*Logger, error) {
 	taskidstr := strconv.FormatUint(uint64(taskid), 10)
-	name := "task_" + taskidstr
-	path := filepath.Join(basePath, "task", taskidstr, time.Now().Format("20060102150405")+".log")
+	loggerName := "task_" + name + "_" + taskidstr
+	path := filepath.Join(basePath, name, taskidstr, time.Now().Format("20060102150405")+".log")
 	return NewLogger(Config{
 		Level:      level,
 		Path:       path,
 		UseConsole: utils.IsDebug(),
 		UseFile:    writeFile,
-		Name:       name,
+		Name:       loggerName,
 		CallerSkip: 1,
 	})
 }

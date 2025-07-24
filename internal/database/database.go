@@ -31,9 +31,6 @@ func Initialize(sqltype, path string) error {
 	if err := initSystemConfig(context.Background(), op.ConfigRepo()); err != nil {
 		log.Fatalf("failed to initialize system config: %v", err)
 	}
-	if err := initTask(context.Background(), op.TaskRepo()); err != nil {
-		log.Fatalf("failed to initialize tasks: %v", err)
-	}
 	if err := initNotifyTemplate(context.Background(), op.NotifyTemplateRepo()); err != nil {
 		log.Fatalf("failed to initialize notify templates: %v", err)
 	}
