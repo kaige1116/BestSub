@@ -5,20 +5,13 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-)
 
-type Desc struct {
-	Name    string `json:"name,omitempty"`
-	Type    string `json:"type,omitempty"`
-	Default string `json:"default,omitempty"`
-	Options string `json:"options,omitempty"`
-	Require bool   `json:"require,omitempty"`
-	Desc    string `json:"desc,omitempty"`
-}
+	"github.com/bestruirui/bestsub/internal/utils/desc"
+)
 
 type registerInfo struct {
 	im  map[string]any
-	aim map[string][]Desc
+	aim map[string][]desc.Data
 }
 
 var registers = map[string]*registerInfo{}
@@ -28,13 +21,13 @@ func register(t string, i any) {
 	if !exists {
 		r = &registerInfo{
 			im:  make(map[string]any),
-			aim: make(map[string][]Desc),
+			aim: make(map[string][]desc.Data),
 		}
 		registers[t] = r
 	}
-	m := reflect.TypeOf(i).Elem().Name()
+	m := strings.ToLower(reflect.TypeOf(i).Elem().Name())
 	r.im[m] = i
-	r.aim[m] = genDesc(reflect.TypeOf(i).Elem())
+	r.aim[m] = desc.Gen(i)
 }
 
 func Get[T any](t string, m string, c string) (T, error) {
@@ -73,36 +66,10 @@ func GetList(t string) []string {
 	return keys
 }
 
-func GetInfoMap(t string) map[string][]Desc {
+func GetInfoMap(t string) map[string][]desc.Data {
 	ri, exists := registers[t]
 	if !exists {
 		return nil
 	}
 	return ri.aim
-}
-
-func genDesc(t reflect.Type) []Desc {
-	var items []Desc
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		if field.Type.Kind() == reflect.Struct {
-			items = append(items, genDesc(field.Type)...)
-			continue
-		}
-		tag := field.Tag
-		name, ok := tag.Lookup("desc")
-		if !ok {
-			continue
-		}
-		item := Desc{
-			Name:    name,
-			Type:    strings.ToLower(field.Type.Name()),
-			Default: tag.Get("default"),
-			Options: tag.Get("options"),
-			Require: tag.Get("require") == "true",
-			Desc:    tag.Get("description"),
-		}
-		items = append(items, item)
-	}
-	return items
 }

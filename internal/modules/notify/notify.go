@@ -2,64 +2,64 @@ package notify
 
 import (
 	"bytes"
-	"context"
 	"html/template"
 
 	"github.com/bestruirui/bestsub/internal/database/op"
 	notifyModel "github.com/bestruirui/bestsub/internal/models/notify"
 	_ "github.com/bestruirui/bestsub/internal/modules/notify/channel"
 	"github.com/bestruirui/bestsub/internal/modules/register"
+	"github.com/bestruirui/bestsub/internal/utils/desc"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-type Desc = register.Desc
+type Desc = desc.Data
 
 func SendSystemNotify(operation uint16, title string, content any) error {
 	if operation&uint16(op.GetConfigInt("notify.operation")) == 0 {
 		return nil
 	}
 
-	nt, err := op.GetNotifyTemplate(context.Background(), operation)
+	nt, err := op.GetNotifyTemplateByType(notifyModel.TypeMap[operation])
 	if err != nil {
-		log.Errorf("Failed to get notify template: %v", err)
+		log.Errorf("failed to get notify template: %v", operation)
 		return err
 	}
 
 	t, err := template.New("notify").Parse(nt)
 	if err != nil {
-		log.Errorf("Failed to parse notify template: %v", err)
+		log.Errorf("failed to parse notify template: %v", err)
 		return err
 	}
 
 	var buf bytes.Buffer
 	err = t.Execute(&buf, content)
 	if err != nil {
-		log.Errorf("Failed to execute notify template: %v", err)
+		log.Errorf("failed to execute notify template: %v", err)
 		return err
 	}
 
 	sysNotifyID := op.GetConfigInt("notify.id")
 	notifyConfig, err := op.GetNotifyByID(uint16(sysNotifyID))
 	if err != nil {
-		log.Errorf("Failed to get notify config: %v", err)
+		log.Errorf("failed to get notify config: %v", sysNotifyID)
 		return err
 	}
 
 	notify, err := GetNotify(notifyConfig.Type, notifyConfig.Config)
 	if err != nil {
-		log.Errorf("Failed to get notify: %v", err)
+		log.Errorf("failed to get notify: %v", err)
 		return err
 	}
 
 	err = notify.Init()
 	if err != nil {
-		log.Errorf("Failed to init notify: %v", err)
+		log.Errorf("failed to init notify: %v", err)
 		return err
 	}
 
 	err = notify.Send(title, &buf)
 	if err != nil {
-		log.Errorf("Failed to send notify: %v", err)
+		log.Errorf("failed to send notify: %v", err)
 		return err
 	}
 
@@ -74,6 +74,6 @@ func GetNotifyTypes() []string {
 	return register.GetList("notify")
 }
 
-func GetNotifyInfoMap() map[string][]Desc {
+func GetNotifyInfoMap() map[string][]desc.Data {
 	return register.GetInfoMap("notify")
 }
