@@ -45,7 +45,7 @@ func SendSystemNotify(operation uint16, title string, content any) error {
 		return err
 	}
 
-	notify, err := GetNotify(notifyConfig.Type, notifyConfig.Config)
+	notify, err := Get(notifyConfig.Type, notifyConfig.Config)
 	if err != nil {
 		log.Errorf("failed to get notify: %v", err)
 		return err
@@ -66,14 +66,14 @@ func SendSystemNotify(operation uint16, title string, content any) error {
 	return nil
 }
 
-func GetNotify(m string, c string) (notifyModel.Instance, error) {
+func Get(m string, c string) (notifyModel.Instance, error) {
 	return register.Get[notifyModel.Instance]("notify", m, c)
 }
 
-func GetNotifyTypes() []string {
+func GetChannels() []string {
 	return register.GetList("notify")
 }
 
-func GetNotifyInfoMap() map[string][]desc.Data {
+func GetInfoMap() map[string][]desc.Data {
 	return register.GetInfoMap("notify")
 }

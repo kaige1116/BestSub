@@ -25,23 +25,23 @@ func init() {
 				Handle(getNotifyChannel),
 		).
 		AddRoute(
-			router.NewRoute("/config", router.GET).
-				Handle(getNotifyConfig),
+			router.NewRoute("/channel/config", router.GET).
+				Handle(getNotifyChannelConfig),
 		).
 		AddRoute(
-			router.NewRoute("/list", router.GET).
+			router.NewRoute("/", router.GET).
 				Handle(getNotifyList),
 		).
 		AddRoute(
-			router.NewRoute("/config", router.POST).
+			router.NewRoute("/", router.POST).
 				Handle(createNotify),
 		).
 		AddRoute(
-			router.NewRoute("/config", router.PUT).
+			router.NewRoute("/", router.PUT).
 				Handle(updateNotify),
 		).
 		AddRoute(
-			router.NewRoute("/config", router.DELETE).
+			router.NewRoute("/", router.DELETE).
 				Handle(deleteNotify),
 		).
 		AddRoute(
@@ -64,21 +64,17 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]notify.Desc} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=[]string} "获取成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify/channel [get]
 func getNotifyChannel(c *gin.Context) {
-	channels := make([]string, 0, len(notify.GetNotifyInfoMap()))
-	for channel := range notify.GetNotifyInfoMap() {
-		channels = append(channels, channel)
-	}
-	resp.Success(c, channels)
+	resp.Success(c, notify.GetChannels())
 }
 
-// getNotifyConfig 获取通知配置
-// @Summary 获取通知配置
+// getNotifyChannelConfig 获取渠道配置
+// @Summary 获取渠道配置
 // @Tags 通知
 // @Accept json
 // @Produce json
@@ -88,18 +84,18 @@ func getNotifyChannel(c *gin.Context) {
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/notify/config [get]
-func getNotifyConfig(c *gin.Context) {
+// @Router /api/v1/notify/channel/config [get]
+func getNotifyChannelConfig(c *gin.Context) {
 	channel := c.Query("channel")
 	if channel == "" {
-		resp.Success(c, notify.GetNotifyInfoMap())
+		resp.Success(c, notify.GetInfoMap())
 	} else {
-		resp.Success(c, notify.GetNotifyInfoMap()[channel])
+		resp.Success(c, notify.GetInfoMap()[channel])
 	}
 }
 
-// getNotifyList 获取通知列表
-// @Summary 获取通知列表
+// getNotifyList 获取通知
+// @Summary 获取通知
 // @Tags 通知
 // @Accept json
 // @Produce json
@@ -108,7 +104,7 @@ func getNotifyConfig(c *gin.Context) {
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/notify/list [get]
+// @Router /api/v1/notify [get]
 func getNotifyList(c *gin.Context) {
 	notifyList, err := op.GetNotifyList()
 	if err != nil {
@@ -118,19 +114,19 @@ func getNotifyList(c *gin.Context) {
 	resp.Success(c, notifyList)
 }
 
-// createNotify 创建通知配置
-// @Summary 创建通知配置
-// @Description 创建单个通知配置
+// createNotify 创建通知
+// @Summary 创建通知
+// @Description 创建单个通知
 // @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.CreateRequest true "创建通知配置请求"
+// @Param request body notifyModel.CreateRequest true "创建通知请求"
 // @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "创建成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/notify/config [post]
+// @Router /api/v1/notify [post]
 func createNotify(c *gin.Context) {
 	var req notifyModel.CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -141,7 +137,7 @@ func createNotify(c *gin.Context) {
 		Type:   req.Type,
 		Config: req.Config,
 	}
-	types := notify.GetNotifyTypes()
+	types := notify.GetChannels()
 	if !slices.Contains(types, req.Type) {
 		resp.Error(c, http.StatusBadRequest, fmt.Sprintf("通知类型 %s 不存在", req.Type))
 		return
@@ -154,14 +150,14 @@ func createNotify(c *gin.Context) {
 	resp.Success(c, notifyData)
 }
 
-// testNotify 测试通知配置
-// @Summary 测试通知配置
-// @Description 测试单个通知配置
+// testNotify 测试通知
+// @Summary 测试通知
+// @Description 测试单个通知
 // @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.CreateRequest true "测试通知配置请求"
+// @Param request body notifyModel.CreateRequest true "测试通知请求"
 // @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "测试成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
@@ -173,12 +169,12 @@ func testNotify(c *gin.Context) {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	types := notify.GetNotifyTypes()
+	types := notify.GetChannels()
 	if !slices.Contains(types, req.Type) {
 		resp.Error(c, http.StatusBadRequest, fmt.Sprintf("通知类型 %s 不存在", req.Type))
 		return
 	}
-	notify, err := notify.GetNotify(req.Type, req.Config)
+	notify, err := notify.Get(req.Type, req.Config)
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -199,20 +195,20 @@ func testNotify(c *gin.Context) {
 	resp.Success(c, nil)
 }
 
-// updateNotify 更新通知配置
-// @Summary 更新通知配置
-// @Description 根据请求体中的ID更新通知配置信息
+// updateNotify 更新通知
+// @Summary 更新通知
+// @Description 根据请求体中的ID更新通知信息
 // @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.Data true "更新通知配置请求"
+// @Param request body notifyModel.Data true "更新通知请求"
 // @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "更新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 404 {object} resp.ErrorStruct "通知配置不存在"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/notify/config [put]
+// @Router /api/v1/notify [put]
 func updateNotify(c *gin.Context) {
 	var req notifyModel.Data
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -228,20 +224,20 @@ func updateNotify(c *gin.Context) {
 	resp.Success(c, req)
 }
 
-// deleteNotify 删除通知配置
-// @Summary 删除通知配置
-// @Description 根据ID删除单个通知配置
+// deleteNotify 删除通知
+// @Summary 删除通知
+// @Description 根据ID删除单个通知
 // @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id query int true "通知配置ID"
+// @Param id query int true "通知ID"
 // @Success 200 {object} resp.SuccessStruct "删除成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "通知配置不存在"
+// @Failure 404 {object} resp.ErrorStruct "通知不存在"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/notify/config [delete]
+// @Router /api/v1/notify [delete]
 func deleteNotify(c *gin.Context) {
 	// 获取查询参数中的ID
 	idParam := c.Query("id")
