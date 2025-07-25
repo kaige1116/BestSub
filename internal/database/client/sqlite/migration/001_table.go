@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "sub_template" (
 );
 
 CREATE TABLE IF NOT EXISTS "sub" (
-	"id" INTEGER,
+	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
 	"cron_expr" TEXT,
 	"name" TEXT,
@@ -70,11 +70,13 @@ CREATE TABLE IF NOT EXISTS "sub" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE IF NOT EXISTS "sub_share" (
+CREATE TABLE IF NOT EXISTS "share" (
 	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT false,
 	"name" TEXT NOT NULL,
-	"config" TEXT,
+	"token" TEXT NOT NULL UNIQUE,
+	"access_count" INTEGER NOT NULL,
+	"config" TEXT NOT NULL,
 	PRIMARY KEY("id")
 );
 

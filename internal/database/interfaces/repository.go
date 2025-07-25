@@ -12,7 +12,7 @@ type Repository interface {
 	Check() CheckRepository
 
 	Sub() SubRepository
-	SubShare() SubShareRepository
+	Share() ShareRepository
 	SubTemplate() SubTemplateRepository
 
 	Storage() StorageRepository

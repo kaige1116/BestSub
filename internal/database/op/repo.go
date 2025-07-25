@@ -10,5 +10,6 @@ func SetRepo(repository interfaces.Repository) {
 	repo = repository
 }
 func Close() error {
+	updateAccessCount()
 	return repo.Close()
 }
