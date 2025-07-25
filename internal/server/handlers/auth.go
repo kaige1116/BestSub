@@ -20,10 +20,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// init 函数用于自动注册路由
 func init() {
 
-	// 公开的认证路由（无需认证）
 	router.NewGroupRouter("/api/v1/auth").
 		AddRoute(
 			router.NewRoute("/login", router.POST).
@@ -34,7 +32,6 @@ func init() {
 				Handle(refreshToken),
 		)
 
-	// 需要认证的路由
 	router.NewGroupRouter("/api/v1/auth").
 		Use(middleware.Auth()).
 		AddRoute(

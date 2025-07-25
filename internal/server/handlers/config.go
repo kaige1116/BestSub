@@ -13,10 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// init 函数用于自动注册路由
 func init() {
 
-	// 需要认证的配置路由
 	router.NewGroupRouter("/api/v1/config").
 		Use(middleware.Auth()).
 		AddRoute(
@@ -32,7 +30,7 @@ func init() {
 // getConfigItems 获取配置项
 // @Summary 获取配置项
 // @Description 获取系统所有配置项，支持按分组过滤和关键字搜索
-// @Tags 配置管理
+// @Tags 配置
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -67,7 +65,7 @@ func getConfigItems(c *gin.Context) {
 // updateConfigItem 更新配置项
 // @Summary 更新配置项
 // @Description 根据请求数据中的ID批量更新配置项的值和描述
-// @Tags 配置管理
+// @Tags 配置
 // @Accept json
 // @Produce json
 // @Security BearerAuth

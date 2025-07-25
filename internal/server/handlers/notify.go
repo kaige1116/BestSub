@@ -60,7 +60,7 @@ func init() {
 
 // getNotifyConfig 获取通知渠道
 // @Summary 获取通知渠道
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -79,7 +79,7 @@ func getNotifyChannel(c *gin.Context) {
 
 // getNotifyConfig 获取通知配置
 // @Summary 获取通知配置
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -100,7 +100,7 @@ func getNotifyConfig(c *gin.Context) {
 
 // getNotifyList 获取通知列表
 // @Summary 获取通知列表
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -121,7 +121,7 @@ func getNotifyList(c *gin.Context) {
 // createNotify 创建通知配置
 // @Summary 创建通知配置
 // @Description 创建单个通知配置
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -157,7 +157,7 @@ func createNotify(c *gin.Context) {
 // testNotify 测试通知配置
 // @Summary 测试通知配置
 // @Description 测试单个通知配置
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -202,7 +202,7 @@ func testNotify(c *gin.Context) {
 // updateNotify 更新通知配置
 // @Summary 更新通知配置
 // @Description 根据请求体中的ID更新通知配置信息
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -231,7 +231,7 @@ func updateNotify(c *gin.Context) {
 // deleteNotify 删除通知配置
 // @Summary 删除通知配置
 // @Description 根据ID删除单个通知配置
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -267,7 +267,7 @@ func deleteNotify(c *gin.Context) {
 
 // getTemplates 获取通知模板
 // @Summary 获取通知模板
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -288,7 +288,7 @@ func getTemplates(c *gin.Context) {
 // updateTemplate 更新通知模板
 // @Summary 更新通知模板
 // @Description 根据请求体中的ID更新通知模板信息
-// @Tags 通知管理
+// @Tags 通知
 // @Accept json
 // @Produce json
 // @Security BearerAuth

@@ -45,7 +45,7 @@ func init() {
 // createSub 创建订阅链接
 // @Summary 创建订阅链接
 // @Description 创建单个订阅链接
-// @Tags 订阅管理
+// @Tags 订阅
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -116,7 +116,7 @@ func createSub(c *gin.Context) {
 
 // getSubs 获取订阅链接
 // @Summary 获取订阅链接
-// @Tags 订阅管理
+// @Tags 订阅
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -195,7 +195,7 @@ func getSubs(c *gin.Context) {
 // updateSub 更新订阅链接
 // @Summary 更新订阅链接
 // @Description 根据请求体中的ID更新订阅链接信息
-// @Tags 订阅管理
+// @Tags 订阅
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -268,7 +268,7 @@ func updateSub(c *gin.Context) {
 // deleteSub 删除订阅链接
 // @Summary 删除订阅链接
 // @Description 根据ID删除单个订阅链接
-// @Tags 订阅管理
+// @Tags 订阅
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -300,7 +300,7 @@ func deleteSub(c *gin.Context) {
 // refreshSub 手动刷新订阅
 // @Summary 手动刷新订阅
 // @Description 根据ID手动刷新单个订阅
-// @Tags 订阅管理
+// @Tags 订阅
 // @Accept json
 // @Produce json
 // @Security BearerAuth

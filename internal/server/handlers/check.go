@@ -59,7 +59,7 @@ func init() {
 // getCheckTypes 获取检测类型
 // @Summary 获取检测类型
 // @Description 获取检测类型
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -75,7 +75,7 @@ func getCheckTypes(c *gin.Context) {
 // getCheckTypeConfig 获取检测类型对应的配置项
 // @Summary 获取检测类型对应的配置项
 // @Description 获取检测类型对应的配置项
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -97,7 +97,7 @@ func getCheckTypeConfig(c *gin.Context) {
 // createCheck 创建检测
 // @Summary 创建检测
 // @Description 创建单个检测
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -157,7 +157,7 @@ func createCheck(c *gin.Context) {
 
 // getCheck 获取检测列表
 // @Summary 获取检测列表
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -246,7 +246,7 @@ func getCheck(c *gin.Context) {
 // updateCheck 更新检测
 // @Summary 更新检测
 // @Description 根据请求体中的ID更新检测信息
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -335,7 +335,7 @@ func updateCheck(c *gin.Context) {
 // deleteCheck 删除检测
 // @Summary 删除检测
 // @Description 根据ID删除单个检测
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -377,7 +377,7 @@ func deleteCheck(c *gin.Context) {
 // runCheck 手动运行检测
 // @Summary 手动运行检测
 // @Description 手动触发检测执行
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -414,7 +414,7 @@ func runCheck(c *gin.Context) {
 // stopCheck 停止检测
 // @Summary 停止检测
 // @Description 停止正在运行的检测
-// @Tags 检测管理
+// @Tags 检测
 // @Accept json
 // @Produce json
 // @Security BearerAuth
