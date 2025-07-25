@@ -1,10 +1,13 @@
 package log
 
 import (
+	"bufio"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +34,8 @@ var (
 	useFile bool
 
 	logger *Logger
+
+	separator = []byte(",")
 )
 var consoleEncoder = zapcore.EncoderConfig{
 	TimeKey:       "time",
@@ -43,14 +48,11 @@ var consoleEncoder = zapcore.EncoderConfig{
 	EncodeCaller:  zapcore.ShortCallerEncoder,
 }
 var fileEncoder = zapcore.EncoderConfig{
-	TimeKey:       "time",
-	LevelKey:      "level",
-	MessageKey:    "msg",
-	CallerKey:     "caller",
-	StacktraceKey: "stacktrace",
-	EncodeLevel:   zapcore.LowercaseLevelEncoder,
-	EncodeTime:    zapcore.RFC3339TimeEncoder,
-	EncodeCaller:  zapcore.ShortCallerEncoder,
+	TimeKey:     "time",
+	LevelKey:    "level",
+	MessageKey:  "msg",
+	EncodeLevel: zapcore.LowercaseLevelEncoder,
+	EncodeTime:  zapcore.RFC3339TimeEncoder,
 }
 
 type Logger struct {
@@ -205,6 +207,8 @@ func NewLogger(config Config) (*Logger, error) {
 		core,
 		zap.Hooks(webSocketHook),
 		zap.AddStacktrace(zapcore.ErrorLevel),
+		zap.AddCallerSkip(config.CallerSkip),
+		zap.AddCaller(),
 	)
 	logger.Named(config.Name)
 
@@ -241,7 +245,7 @@ func (l *Logger) Close() error {
 }
 
 func Debug(args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Debug(args...)
+	logger.Debug(args...)
 }
 func Info(args ...interface{}) {
 	logger.Info(args...)
@@ -250,14 +254,14 @@ func Warn(args ...interface{}) {
 	logger.Warn(args...)
 }
 func Error(args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Error(args...)
+	logger.Error(args...)
 }
 func Fatal(args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Fatal(args...)
+	logger.Fatal(args...)
 }
 
 func Debugf(template string, args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Debugf(template, args...)
+	logger.Debugf(template, args...)
 }
 
 func Infof(template string, args ...interface{}) {
@@ -269,11 +273,11 @@ func Warnf(template string, args ...interface{}) {
 }
 
 func Errorf(template string, args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Errorf(template, args...)
+	logger.Errorf(template, args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
-	logger.WithOptions(zap.AddCallerSkip(1), zap.AddCaller()).Fatalf(template, args...)
+	logger.Fatalf(template, args...)
 }
 func Close() error {
 	return logger.Close()
@@ -310,4 +314,110 @@ func CleanupOldLogs(retentionDays int) error {
 
 		return nil
 	})
+}
+
+func GetLogFileList(path string) ([]uint64, error) {
+	var timestamps []uint64
+
+	fullPath := filepath.Join(basePath, path)
+
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return timestamps, nil
+	}
+
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory %s: %w", fullPath, err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		filename := entry.Name()
+		if !strings.HasSuffix(filename, ".log") {
+			continue
+		}
+
+		timeStr := strings.TrimSuffix(filename, ".log")
+
+		if len(timeStr) != 14 {
+			continue
+		}
+
+		timestamp, err := strconv.ParseUint(timeStr, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		if _, err := time.Parse("20060102150405", timeStr); err != nil {
+			continue
+		}
+
+		timestamps = append(timestamps, timestamp)
+	}
+
+	sort.Slice(timestamps, func(i, j int) bool {
+		return timestamps[i] > timestamps[j]
+	})
+	return timestamps, nil
+}
+func StreamLogToHTTP(path string, timestamp uint64, writer io.Writer) error {
+	timeStr := strconv.FormatUint(timestamp, 10)
+	if len(timeStr) != 14 {
+		return fmt.Errorf("invalid timestamp format: %d", timestamp)
+	}
+
+	if _, err := time.Parse("20060102150405", timeStr); err != nil {
+		return fmt.Errorf("invalid timestamp: %d", timestamp)
+	}
+
+	filename := timeStr + ".log"
+	fullPath := filepath.Join(basePath, path, filename)
+
+	file, err := os.Open(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("log file not found: %s", filename)
+		}
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
+	flusher, canFlush := writer.(http.Flusher)
+
+	isFirstLine := true
+
+	for scanner.Scan() {
+		lineBytes := scanner.Bytes()
+		if len(lineBytes) == 0 {
+			continue
+		}
+
+		if !isFirstLine {
+			if _, err := writer.Write(separator); err != nil {
+				return fmt.Errorf("failed to write separator: %w", err)
+			}
+		}
+
+		if _, err := writer.Write(lineBytes); err != nil {
+			return fmt.Errorf("failed to write log line: %w", err)
+		}
+
+		if canFlush {
+			flusher.Flush()
+		}
+
+		isFirstLine = false
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	return nil
 }
