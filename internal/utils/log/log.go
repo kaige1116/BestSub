@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/utils"
@@ -276,4 +277,37 @@ func Fatalf(template string, args ...interface{}) {
 }
 func Close() error {
 	return logger.Close()
+}
+
+func CleanupOldLogs(retentionDays int) error {
+	if retentionDays <= 0 {
+		return fmt.Errorf("retention days must be greater than 0")
+	}
+
+	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
+
+	return filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			Warnf("Error accessing path %s: %v", path, err)
+			return nil
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(info.Name(), ".log") {
+			return nil
+		}
+
+		if info.ModTime().Before(cutoffTime) {
+			if err := os.Remove(path); err != nil {
+				Warnf("Failed to remove old log file %s: %v", path, err)
+			} else {
+				Infof("Removed old log file: %s", path)
+			}
+		}
+
+		return nil
+	})
 }
