@@ -8,6 +8,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 type SubRepository struct {
@@ -19,14 +20,17 @@ func (db *DB) Sub() interfaces.SubRepository {
 }
 
 func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
-	query := `INSERT INTO sub (enable, name, url, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?)`
+	log.Debugf("Create sub")
+	query := `INSERT INTO sub (enable, cron_expr, name, config, result, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		link.Enable,
+		link.CronExpr,
 		link.Name,
-		link.URL,
+		link.Config,
+		link.Result,
 		now,
 		now,
 	)
@@ -48,7 +52,8 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 }
 
 func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, error) {
-	query := `SELECT id, enable, name, url, created_at, updated_at
+	log.Debugf("Get sub by id")
+	query := `SELECT id, enable, cron_expr, name, config, result, created_at, updated_at
 	          FROM sub WHERE id = ?`
 
 	var s sub.Data
@@ -56,8 +61,10 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&s.ID,
 		&enable,
+		&s.CronExpr,
 		&s.Name,
-		&s.URL,
+		&s.Config,
+		&s.Result,
 		&s.CreatedAt,
 		&s.UpdatedAt,
 	)
@@ -72,14 +79,16 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 	return &s, nil
 }
 
-// Update 更新订阅链接
 func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
-	query := `UPDATE sub SET enable = ?, name = ?, url = ?, updated_at = ? WHERE id = ?`
+	log.Debugf("Update sub")
+	query := `UPDATE sub SET enable = ?, cron_expr = ?, name = ?, config = ?, result = ?, updated_at = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		link.Enable,
+		link.CronExpr,
 		link.Name,
-		link.URL,
+		link.Config,
+		link.Result,
 		time.Now(),
 		link.ID,
 	)
@@ -92,6 +101,7 @@ func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
 }
 
 func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
+	log.Debugf("Delete sub")
 	query := `DELETE FROM sub WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -102,11 +112,12 @@ func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 	return nil
 }
 
-func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Data, error) {
-	query := `SELECT id, enable, name, url, created_at, updated_at
-	          FROM sub ORDER BY created_at DESC LIMIT ? OFFSET ?`
+func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
+	log.Debugf("List sub")
+	query := `SELECT id, enable, cron_expr, name, config, result, created_at, updated_at
+	          FROM sub ORDER BY created_at DESC`
 
-	rows, err := r.db.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list sub: %w", err)
 	}
@@ -119,8 +130,10 @@ func (r *SubRepository) List(ctx context.Context, offset, limit int) (*[]sub.Dat
 		err := rows.Scan(
 			&s.ID,
 			&enable,
+			&s.CronExpr,
 			&s.Name,
-			&s.URL,
+			&s.Config,
+			&s.Result,
 			&s.CreatedAt,
 			&s.UpdatedAt,
 		)

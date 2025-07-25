@@ -21,5 +21,5 @@ type SubRepository interface {
 	Delete(ctx context.Context, id uint16) error
 
 	// List 获取订阅链接列表
-	List(ctx context.Context, offset, limit int) (*[]sub.Data, error)
+	List(ctx context.Context) (*[]sub.Data, error)
 }
