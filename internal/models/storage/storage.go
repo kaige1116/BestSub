@@ -1,8 +1,37 @@
 package storage
 
+import (
+	"context"
+)
+
 type Data struct {
 	ID     uint16 `db:"id" json:"id"`
-	Name   string `db:"name" json:"name"`     // 存储配置名称
-	Type   string `db:"type" json:"type"`     // 存储类型：webdav, local, ftp, sftp, s3, oss
-	Config string `db:"config" json:"config"` // 存储配置（JSON格式）
+	Name   string `db:"name" json:"name"`
+	Type   string `db:"type" json:"type"`
+	Config string `db:"config" json:"config"`
+}
+
+type CreateRequest struct {
+	Name   string `json:"name" example:"webdav"`
+	Type   string `json:"type" example:"webdav"`
+	Config any    `json:"config"`
+}
+
+type UpdateRequest struct {
+	ID     uint16 `json:"id"`
+	Name   string `json:"name" example:"webdav"`
+	Type   string `json:"type" example:"webdav"`
+	Config any    `json:"config"`
+}
+
+type Response struct {
+	ID     uint16 `json:"id"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Config any    `json:"config"`
+}
+
+type Instance interface {
+	Init() error
+	Upload(ctx context.Context) error
 }
