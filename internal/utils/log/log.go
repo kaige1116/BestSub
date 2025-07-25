@@ -421,3 +421,21 @@ func StreamLogToHTTP(path string, timestamp uint64, writer io.Writer) error {
 
 	return nil
 }
+func DeleteLog(path string) error {
+	if path == "" {
+		return fmt.Errorf("path cannot be empty")
+	}
+
+	fullPath := filepath.Join(basePath, path)
+
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return fmt.Errorf("directory does not exist: %s", path)
+	}
+
+	if err := os.RemoveAll(fullPath); err != nil {
+		return fmt.Errorf("failed to remove directory %s: %w", path, err)
+	}
+
+	Debugf("Successfully removed log dir: %s", path)
+	return nil
+}

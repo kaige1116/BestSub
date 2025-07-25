@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -142,22 +143,12 @@ func createCheck(c *gin.Context) {
 	if req.Enable {
 		task.Check.Enable(checkData.ID)
 	}
-	var taskConfig taskModel.Config
-	if err := json.Unmarshal([]byte(checkData.Task), &taskConfig); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	var config any
-	if err := json.Unmarshal([]byte(checkData.Config), &config); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
 	respCheckData := checkModel.Response{
 		ID:     checkData.ID,
 		Name:   checkData.Name,
 		Enable: checkData.Enable,
-		Task:   taskConfig,
-		Config: config,
+		Task:   req.Task,
+		Config: req.Config,
 		Status: task.Check.Status(checkData.ID),
 	}
 
@@ -324,12 +315,18 @@ func updateCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	var result taskModel.DBResult
+	if err := json.Unmarshal([]byte(checkData.Result), &result); err != nil {
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	respCheckData := checkModel.Response{
 		ID:     req.ID,
 		Name:   req.Name,
 		Enable: req.Enable,
 		Task:   taskConfig,
 		Config: config,
+		Result: result,
 		Status: task.Check.Status(req.ID),
 	}
 	resp.Success(c, respCheckData)
@@ -370,7 +367,10 @@ func deleteCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
+	if err := log.DeleteLog(fmt.Sprintf("check/%d", id)); err != nil {
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	resp.Success(c, nil)
 }
 
