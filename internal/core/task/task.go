@@ -148,6 +148,9 @@ func (ct *CronTask) StopTask(taskId uint16) error {
 
 func (ct *CronTask) Remove(taskId uint16) error {
 	if info, ok := ct.cron.Load(taskId); ok {
+		if cancel, ok := ct.running.Load(taskId); ok {
+			cancel()
+		}
 		ct.instance.Remove(info.EntryID)
 		log.Infof("task %d %s removed", taskId, info.Name)
 		ct.cron.Delete(taskId)
