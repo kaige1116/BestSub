@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -158,5 +157,4 @@ func registerRoute(group *gin.RouterGroup, method Method, path string, handlers 
 	default:
 		group.GET(path, handlers...)
 	}
-	log.Debugf("注册路由 %-7s %s", method, group.BasePath()+path)
 }

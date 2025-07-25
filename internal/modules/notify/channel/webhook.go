@@ -7,7 +7,7 @@ import (
 )
 
 type WebHook struct {
-	Url string `desc:"url" type:"string" required:"true" description:"WebHook地址"`
+	Url string `json:"url" type:"string" required:"true" description:"WebHook地址"`
 }
 
 func (e *WebHook) Init() error {

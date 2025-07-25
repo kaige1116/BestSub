@@ -28,11 +28,16 @@ func main() {
 		panic(err)
 	}
 
-	task.StartCron()
+	task.Check.Start()
+	task.Fetch.Start()
+	task.Load()
+
 	server.Start()
+	log.CleanupOldLogs(5)
 
 	shutdown.Register(server.Close)      // 关闭顺序
-	shutdown.Register(task.StopCron)     //   ↓↓
+	shutdown.Register(task.Check.Stop)   //   ↓↓
+	shutdown.Register(task.Fetch.Stop)   //   ↓↓
 	shutdown.Register(database.Close)    //   ↓↓
 	shutdown.Register(auth.CloseSession) //   ↓↓
 	shutdown.Register(log.Close)         //   ↓↓

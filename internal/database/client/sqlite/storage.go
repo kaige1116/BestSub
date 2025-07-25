@@ -7,6 +7,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/storage"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 // StorageRepository 存储配置数据访问实现
@@ -21,6 +22,7 @@ func (db *DB) Storage() interfaces.StorageRepository {
 
 // Create 创建存储配置
 func (r *StorageRepository) Create(ctx context.Context, config *storage.Data) error {
+	log.Debugf("Create storage config")
 	query := `INSERT INTO storage (name, type, config)
 	          VALUES (?, ?, ?)`
 
@@ -46,6 +48,7 @@ func (r *StorageRepository) Create(ctx context.Context, config *storage.Data) er
 
 // GetByID 根据ID获取存储配置
 func (r *StorageRepository) GetByID(ctx context.Context, id uint16) (*storage.Data, error) {
+	log.Debugf("Get storage config by id")
 	query := `SELECT id, name, type, config
 	          FROM storage WHERE id = ?`
 
@@ -69,6 +72,7 @@ func (r *StorageRepository) GetByID(ctx context.Context, id uint16) (*storage.Da
 
 // Update 更新存储配置
 func (r *StorageRepository) Update(ctx context.Context, config *storage.Data) error {
+	log.Debugf("Update storage config")
 	query := `UPDATE storage SET name = ?, type = ?, config = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
@@ -87,6 +91,7 @@ func (r *StorageRepository) Update(ctx context.Context, config *storage.Data) er
 
 // Delete 删除存储配置
 func (r *StorageRepository) Delete(ctx context.Context, id uint16) error {
+	log.Debugf("Delete storage config")
 	query := `DELETE FROM storage WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -99,6 +104,7 @@ func (r *StorageRepository) Delete(ctx context.Context, id uint16) error {
 
 // List 获取存储配置列表
 func (r *StorageRepository) List(ctx context.Context) (*[]storage.Data, error) {
+	log.Debugf("List storage configs")
 	query := `SELECT id, name, type, config
 	          FROM storage`
 

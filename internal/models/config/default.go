@@ -44,7 +44,7 @@ var system = GroupAdvance{
 		},
 		{
 			Type:        "number",
-			Key:         "log.max_days",
+			Key:         "log.retention_days",
 			Value:       "7",
 			Description: "日志保留天数",
 		},

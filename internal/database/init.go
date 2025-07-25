@@ -5,9 +5,8 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	authModel "github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/models/config"
 	"github.com/bestruirui/bestsub/internal/models/notify"
-	"github.com/bestruirui/bestsub/internal/models/system"
-	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,9 +31,9 @@ func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 	return nil
 }
 func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigRepository) error {
-	defaultSystemConfig := system.DefaultDbConfig()
+	defaultSystemConfig := config.DefaultAdvance()
 	existingSystemConfig, err := systemConfig.GetAll(ctx)
-	notExistConfig := make([]system.Data, 0)
+	notExistConfig := make([]config.Advance, 0)
 	if err != nil {
 		log.Fatalf("failed to get existing system config: %v", err)
 	}
@@ -55,34 +54,6 @@ func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigReposit
 	if len(notExistConfig) > 0 {
 		if err := systemConfig.Create(ctx, &notExistConfig); err != nil {
 			log.Fatalf("failed to create missing system config: %v", err)
-		}
-	}
-
-	return nil
-}
-func initTask(ctx context.Context, taskRepo interfaces.TaskRepository) error {
-	defaultTasks := task.Default()
-
-	existingTasks, err := taskRepo.GetSystemTasks(ctx)
-	if err != nil {
-		log.Fatalf("failed to get existing system tasks: %v", err)
-	}
-
-	existingTasksMap := make(map[string]bool)
-	for _, task := range *existingTasks {
-		existingTasksMap[task.Type] = true
-	}
-
-	defaultTasksMap := make(map[string]task.Data)
-	for _, task := range defaultTasks {
-		defaultTasksMap[task.Type] = task
-	}
-
-	for taskType, defaultTask := range defaultTasksMap {
-		if !existingTasksMap[taskType] {
-			if _, err := taskRepo.Create(ctx, &defaultTask); err != nil {
-				log.Fatalf("failed to create missing system task %s: %v", taskType, err)
-			}
 		}
 	}
 

@@ -20,11 +20,11 @@ func init() {
 	router.NewGroupRouter("/api/v1/config").
 		Use(middleware.Auth()).
 		AddRoute(
-			router.NewRoute("/items", router.GET).
+			router.NewRoute("/item", router.GET).
 				Handle(getConfigItems),
 		).
 		AddRoute(
-			router.NewRoute("/items", router.PATCH).
+			router.NewRoute("/item", router.PUT).
 				Handle(updateConfigItem),
 		)
 }
@@ -40,7 +40,7 @@ func init() {
 // @Success 200 {object} resp.SuccessStruct{data=[]config.GroupAdvance} "获取成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/config/items [get]
+// @Router /api/v1/config/item [get]
 func getConfigItems(c *gin.Context) {
 	group := c.Query("group")
 	var dbConfig []config.GroupAdvance
@@ -76,7 +76,7 @@ func getConfigItems(c *gin.Context) {
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/config/items [patch]
+// @Router /api/v1/config/item [put]
 func updateConfigItem(c *gin.Context) {
 	var req []config.UpdateAdvance
 	if err := c.ShouldBindJSON(&req); err != nil {

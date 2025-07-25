@@ -11,13 +11,13 @@ import (
 )
 
 type Email struct {
-	Server   string `desc:"server" type:"string" required:"true" description:"SMTP服务器地址"`
-	Port     int    `desc:"port" type:"int" required:"true" description:"SMTP服务器端口"`
-	Username string `desc:"username" type:"string" required:"true" description:"SMTP服务器用户名"`
-	Password string `desc:"password" type:"string" required:"true" description:"SMTP服务器密码"`
-	From     string `desc:"from" type:"string" required:"true" description:"发件人邮箱地址"`
-	To       string `desc:"to" type:"string" required:"true" description:"发送给"`
-	TLS      bool   `desc:"tls" type:"bool" required:"true" description:"是否启用TLS"`
+	Server   string `json:"server" type:"string" required:"true" description:"SMTP服务器地址"`
+	Port     int    `json:"port" type:"int" required:"true" description:"SMTP服务器端口"`
+	Username string `json:"username" type:"string" required:"true" description:"SMTP服务器用户名"`
+	Password string `json:"password" type:"string" required:"true" description:"SMTP服务器密码"`
+	From     string `json:"from" type:"string" required:"true" description:"发件人邮箱地址"`
+	To       string `json:"to" type:"string" required:"true" description:"发送给"`
+	TLS      bool   `json:"tls" type:"bool" required:"true" description:"是否启用TLS"`
 
 	addr       string
 	auth       smtp.Auth

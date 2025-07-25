@@ -15,7 +15,7 @@ func init() {
 		).
 		AddRoute(
 			router.NewRoute("/api.json", router.GET).
-				Handle(json),
+				Handle(apidata),
 		)
 }
 
@@ -50,6 +50,6 @@ var scalarHTML = []byte(`
 func scalar(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", scalarHTML)
 }
-func json(c *gin.Context) {
+func apidata(c *gin.Context) {
 	c.File("docs/api/swagger.json")
 }

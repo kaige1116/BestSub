@@ -7,6 +7,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/auth"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 // Get 获取认证信息
@@ -21,6 +22,7 @@ type AuthRepository struct {
 
 // Get 获取认证信息
 func (db *AuthRepository) Get(ctx context.Context) (*auth.Data, error) {
+	log.Debugf("Get auth")
 	query := `SELECT id, username, password FROM auth LIMIT 1`
 
 	var authData auth.Data
@@ -42,6 +44,7 @@ func (db *AuthRepository) Get(ctx context.Context) (*auth.Data, error) {
 
 // UpdateName 更新用户名
 func (r *AuthRepository) UpdateName(ctx context.Context, name string) error {
+	log.Debugf("UpdateName: %s", name)
 	query := `UPDATE auth SET username = ? WHERE id = (SELECT id FROM auth LIMIT 1)`
 
 	result, err := r.db.db.ExecContext(ctx, query, name)
@@ -63,6 +66,7 @@ func (r *AuthRepository) UpdateName(ctx context.Context, name string) error {
 
 // UpdatePassword 更新密码
 func (r *AuthRepository) UpdatePassword(ctx context.Context, hashPassword string) error {
+	log.Debugf("UpdatePassword: %s", hashPassword)
 	query := `UPDATE auth SET password = ? WHERE id = (SELECT id FROM auth LIMIT 1)`
 
 	result, err := r.db.db.ExecContext(ctx, query, hashPassword)
@@ -84,6 +88,7 @@ func (r *AuthRepository) UpdatePassword(ctx context.Context, hashPassword string
 
 // Initialize 初始化认证信息
 func (r *AuthRepository) Initialize(ctx context.Context, authData *auth.Data) error {
+	log.Debugf("Initialize: %s", authData.UserName)
 	query := `INSERT INTO auth (username, password) VALUES (?, ?)`
 	_, err := r.db.db.ExecContext(ctx, query, authData.UserName, authData.Password)
 	if err != nil {
@@ -95,6 +100,7 @@ func (r *AuthRepository) Initialize(ctx context.Context, authData *auth.Data) er
 
 // IsInitialized 验证是否已初始化
 func (r *AuthRepository) IsInitialized(ctx context.Context) (bool, error) {
+	log.Debugf("IsInitialized")
 	query := `SELECT EXISTS(SELECT 1 FROM auth LIMIT 1)`
 
 	var exists bool
