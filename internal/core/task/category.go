@@ -30,6 +30,8 @@ func Load() {
 		}
 		taskConfig.ID = sub.ID
 		taskConfig.Name = sub.Name
+		taskConfig.Type = "fetch"
+		taskConfig.Timeout = 60
 		Fetch.Add(&taskConfig, sub.Config)
 		if sub.Enable {
 			Fetch.Enable(sub.ID)
