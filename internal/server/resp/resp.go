@@ -28,7 +28,7 @@ type ResponsePaginationStruct struct {
 	Data     interface{} `json:"data"`                   // 数据列表
 }
 
-func Success(c *gin.Context, data interface{}) {
+func Success(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, SuccessStruct{
 		Code:    http.StatusOK,
 		Message: "success",
