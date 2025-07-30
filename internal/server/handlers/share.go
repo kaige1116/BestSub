@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/core/nodepool"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/share"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
@@ -27,7 +29,7 @@ func init() {
 				Handle(getShare),
 		).
 		AddRoute(
-			router.NewRoute("", router.PUT).
+			router.NewRoute("/:id", router.PUT).
 				Handle(updateShare),
 		).
 		AddRoute(
@@ -47,42 +49,24 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param data body share.CreateRequest true "分享数据"
+// @Param data body share.Request true "分享数据"
 // @Success 200 {object} resp.SuccessStruct{data=share.Response} "创建成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/share [post]
 func createShare(c *gin.Context) {
-	var req share.CreateRequest
+	var req share.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Errorf("createShare: %v", err)
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	configStr := string(configBytes)
-	data := share.Data{
-		Enable: req.Enable,
-		Name:   req.Name,
-		Token:  req.Token,
-		Config: configStr,
-	}
+	data := req.GenData()
 	if err := op.CreateShare(c.Request.Context(), &data); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp.Success(c, share.Response{
-		ID:          data.ID,
-		Name:        data.Name,
-		Token:       data.Token,
-		Enable:      data.Enable,
-		AccessCount: data.AccessCount,
-		Config:      req.Config,
-	})
+	resp.Success(c, data.GenResponse())
 }
 
 // @Summary 获取分享链接
@@ -103,19 +87,7 @@ func getShare(c *gin.Context) {
 	}
 	var result = make([]share.Response, 0, len(shares))
 	for _, v := range shares {
-		var config share.Config
-		if err := json.Unmarshal([]byte(v.Config), &config); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		result = append(result, share.Response{
-			ID:          v.ID,
-			Name:        v.Name,
-			Token:       v.Token,
-			Enable:      v.Enable,
-			AccessCount: v.AccessCount,
-			Config:      config,
-		})
+		result = append(result, v.GenResponse())
 	}
 	resp.Success(c, result)
 }
@@ -126,42 +98,31 @@ func getShare(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param data body share.UpdateRequest true "分享数据"
+// @Param id path string true "分享ID"
+// @Param data body share.Request true "分享数据"
 // @Success 200 {object} resp.SuccessStruct{data=share.Response} "更新成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/share [put]
+// @Router /api/v1/share/{id} [put]
 func updateShare(c *gin.Context) {
-	var req share.UpdateRequest
+	var req share.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configBytes, err := json.Marshal(req.Config)
+	id := c.Param("id")
+	idUint, err := strconv.ParseUint(id, 10, 16)
 	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
+		resp.ErrorBadRequest(c)
 		return
 	}
-	configStr := string(configBytes)
-	data := share.Data{
-		ID:     req.ID,
-		Enable: req.Enable,
-		Name:   req.Name,
-		Token:  req.Token,
-		Config: configStr,
-	}
+	data := req.GenData()
+	data.ID = uint16(idUint)
 	if err := op.UpdateShare(c.Request.Context(), &data); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp.Success(c, share.Response{
-		ID:          data.ID,
-		Name:        data.Name,
-		Token:       data.Token,
-		Enable:      data.Enable,
-		AccessCount: data.AccessCount,
-		Config:      req.Config,
-	})
+	resp.Success(c, data.GenResponse())
 }
 
 // @Summary 删除分享链接
@@ -193,9 +154,9 @@ func deleteShare(c *gin.Context) {
 // @Description 获取订阅内容
 // @Tags 分享
 // @Accept json
-// @Produce json
+// @Produce plain
 // @Param token path string true "分享token"
-// @Success 200 {object} resp.SuccessStruct "获取成功"
+// @Success 200 {string} string "获取成功，内容为yaml/plain格式"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/share/{token} [get]
 func getShareContent(c *gin.Context) {
@@ -214,7 +175,7 @@ func getShareContent(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if config.Expires.Before(time.Now()) {
+	if config.Expires < uint64(time.Now().Unix()) {
 		resp.Error(c, http.StatusInternalServerError, "share expired")
 		return
 	}
@@ -223,6 +184,15 @@ func getShareContent(c *gin.Context) {
 		return
 	}
 	op.UpdateShareAccessCount(c.Request.Context(), shareData.ID)
-	// TODO: 获取订阅内容
-	resp.Success(c, config)
+	var result strings.Builder
+	result.WriteString("proxies:\n")
+	for _, subID := range config.SubID {
+		subStorage := nodepool.GetPoolBySubID(subID, 0)
+		subStorage.FilterNode(config.Filter, func(node []byte) {
+			result.WriteString(" - ")
+			result.Write(node)
+			result.WriteString("\n")
+		})
+	}
+	c.Data(http.StatusOK, "text/plain", []byte(result.String()))
 }
