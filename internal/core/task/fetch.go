@@ -50,6 +50,9 @@ func FetchAdd(data *subModel.Data) error {
 		},
 		cronExpr: data.CronExpr,
 	})
+	if data.Enable {
+		FetchEnable(data.ID)
+	}
 	return nil
 }
 
@@ -131,9 +134,6 @@ func FetchStop(subID uint16) error {
 func FetchUpdate(data *subModel.Data) error {
 	FetchRemove(data.ID)
 	FetchAdd(data)
-	if data.Enable {
-		FetchEnable(data.ID)
-	}
 	return nil
 }
 func FetchStatus(subID uint16) string {

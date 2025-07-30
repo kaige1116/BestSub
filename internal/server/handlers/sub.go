@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/bestruirui/bestsub/internal/core/nodepool"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/sub"
@@ -130,6 +131,7 @@ func getSubs(c *gin.Context) {
 				Config:    config,
 				Status:    task.FetchStatus(subList[i].ID),
 				Result:    result,
+				NodeInfo:  nodepool.GetPoolBySubID(subList[i].ID, 0).Info,
 				CreatedAt: subList[i].CreatedAt,
 				UpdatedAt: subList[i].UpdatedAt,
 			}
@@ -165,6 +167,7 @@ func getSubs(c *gin.Context) {
 			Config:    config,
 			Status:    task.FetchStatus(subData.ID),
 			Result:    result,
+			NodeInfo:  nodepool.GetPoolBySubID(subData.ID, 0).Info,
 			CreatedAt: subData.CreatedAt,
 			UpdatedAt: subData.UpdatedAt,
 		}
@@ -228,6 +231,7 @@ func updateSub(c *gin.Context) {
 		Config:    req.Config,
 		Status:    task.FetchStatus(subData.ID),
 		Result:    result,
+		NodeInfo:  nodepool.GetPoolBySubID(subData.ID, 0).Info,
 		CreatedAt: subData.CreatedAt,
 		UpdatedAt: subData.UpdatedAt,
 	})
@@ -262,6 +266,7 @@ func deleteSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	nodepool.DeletePool(uint16(id))
 	resp.Success(c, nil)
 }
 
