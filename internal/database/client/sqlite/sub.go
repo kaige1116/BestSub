@@ -21,14 +21,14 @@ func (db *DB) Sub() interfaces.SubRepository {
 
 func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	log.Debugf("Create sub")
-	query := `INSERT INTO sub (enable, cron_expr, name, config, result, created_at, updated_at)
+	query := `INSERT INTO sub (enable, name, cron_expr, config, result, created_at, updated_at)
 	          VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
 		link.Enable,
-		link.CronExpr,
 		link.Name,
+		link.CronExpr,
 		link.Config,
 		link.Result,
 		now,
@@ -53,7 +53,7 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 
 func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, error) {
 	log.Debugf("Get sub by id")
-	query := `SELECT id, enable, cron_expr, name, config, result, created_at, updated_at
+	query := `SELECT id, enable, name, cron_expr, config, result, created_at, updated_at
 	          FROM sub WHERE id = ?`
 
 	var s sub.Data
@@ -61,8 +61,8 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&s.ID,
 		&enable,
-		&s.CronExpr,
 		&s.Name,
+		&s.CronExpr,
 		&s.Config,
 		&s.Result,
 		&s.CreatedAt,
@@ -79,18 +79,18 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 	return &s, nil
 }
 
-func (r *SubRepository) Update(ctx context.Context, link *sub.Data) error {
+func (r *SubRepository) Update(ctx context.Context, data *sub.Data) error {
 	log.Debugf("Update sub")
-	query := `UPDATE sub SET enable = ?, cron_expr = ?, name = ?, config = ?, result = ?, updated_at = ? WHERE id = ?`
-
+	query := `UPDATE sub SET enable = ?, name = ?, cron_expr = ?, config = ?, result = ?, updated_at = ? WHERE id = ?`
+	data.UpdatedAt = time.Now()
 	_, err := r.db.db.ExecContext(ctx, query,
-		link.Enable,
-		link.CronExpr,
-		link.Name,
-		link.Config,
-		link.Result,
-		time.Now(),
-		link.ID,
+		data.Enable,
+		data.Name,
+		data.CronExpr,
+		data.Config,
+		data.Result,
+		data.UpdatedAt,
+		data.ID,
 	)
 
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 
 func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
 	log.Debugf("List sub")
-	query := `SELECT id, enable, cron_expr, name, config, result, created_at, updated_at
+	query := `SELECT id, enable, name, cron_expr, config, result, created_at, updated_at
 	          FROM sub ORDER BY created_at DESC`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
@@ -130,8 +130,8 @@ func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
 		err := rows.Scan(
 			&s.ID,
 			&enable,
-			&s.CronExpr,
 			&s.Name,
+			&s.CronExpr,
 			&s.Config,
 			&s.Result,
 			&s.CreatedAt,

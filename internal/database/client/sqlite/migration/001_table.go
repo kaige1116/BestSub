@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS "sub_template" (
 CREATE TABLE IF NOT EXISTS "sub" (
 	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT true,
-	"cron_expr" TEXT,
 	"name" TEXT,
+	"cron_expr" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
 	"result" TEXT,
 	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

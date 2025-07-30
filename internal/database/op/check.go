@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/check"
-	"github.com/bestruirui/bestsub/internal/models/task"
 	"github.com/bestruirui/bestsub/internal/utils/cache"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -61,7 +61,7 @@ func UpdateCheck(ctx context.Context, t *check.Data) error {
 	checkCache.Set(t.ID, *t)
 	return nil
 }
-func UpdateCheckResult(ctx context.Context, id uint16, result task.ReturnResult) error {
+func UpdateCheckResult(ctx context.Context, id uint16, result check.Result) error {
 	if checkCache.Len() == 0 {
 		if err := refreshCheckCache(ctx); err != nil {
 			log.Errorf("failed to refresh check cache: %v", err)
@@ -73,21 +73,18 @@ func UpdateCheckResult(ctx context.Context, id uint16, result task.ReturnResult)
 		log.Errorf("check not found")
 		return fmt.Errorf("task not found")
 	}
-	var oldResult task.DBResult
+	var oldResult check.Result
 	if oldCheck.Result != "" {
 		if err := json.Unmarshal([]byte(oldCheck.Result), &oldResult); err != nil {
 			log.Errorf("failed to unmarshal check result: %v", err)
 			return err
 		}
 	}
-	if result.Status {
-		oldResult.Success++
-	} else {
-		oldResult.Failed++
-	}
-	oldResult.LastRunResult = result.LastRunResult
-	oldResult.LastRunTime = result.LastRunTime
-	oldResult.LastRunDuration = result.LastRunDuration
+	oldResult.Success += result.Success
+	oldResult.Fail += result.Fail
+	oldResult.Msg = result.Msg
+	oldResult.LastRun = time.Now()
+	oldResult.Duration = result.Duration
 	resultBytes, err := json.Marshal(oldResult)
 	if err != nil {
 		log.Errorf("failed to marshal check result: %v", err)

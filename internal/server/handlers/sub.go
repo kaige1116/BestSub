@@ -8,8 +8,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/sub"
-	taskModel "github.com/bestruirui/bestsub/internal/models/task"
-	execer "github.com/bestruirui/bestsub/internal/modules/exec/executor"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
@@ -61,11 +59,17 @@ func createSub(c *gin.Context) {
 		resp.ErrorBadRequest(c)
 		return
 	}
+	configBytes, err := json.Marshal(req.Config)
+	if err != nil {
+		resp.ErrorBadRequest(c)
+		return
+	}
+	configStr := string(configBytes)
 	subData := sub.Data{
 		Name:     req.Name,
-		Enable:   req.Enable,
 		CronExpr: req.CronExpr,
-		Config:   "",
+		Enable:   req.Enable,
+		Config:   configStr,
 		Result:   "{}",
 	}
 	if err := op.CreateSub(c.Request.Context(), &subData); err != nil {
@@ -73,44 +77,16 @@ func createSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	req.Config.SubID = subData.ID
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.ErrorBadRequest(c)
-		return
-	}
-	configStr := string(configBytes)
-	subData.Config = configStr
-	if err := op.UpdateSub(c.Request.Context(), &subData); err != nil {
-		log.Errorf("failed to update sub: %v", err)
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	var taskData = &taskModel.Config{
-		ID:       subData.ID,
-		Name:     subData.Name,
-		CronExpr: subData.CronExpr,
-		LogLevel: "info",
-		Timeout:  60,
-		Type:     "fetch",
-	}
-	task.Fetch.Add(taskData, configStr)
-	if subData.Enable {
-		task.Fetch.Enable(subData.ID)
-	} else {
-		task.Fetch.Disable(subData.ID)
-	}
+	task.FetchAdd(&subData)
 	resp.Success(c, sub.Response{
-		ID:       subData.ID,
-		Name:     subData.Name,
-		Enable:   subData.Enable,
-		CronExpr: subData.CronExpr,
-		Config: execer.Fetch{
-			SubUrl:    req.Config.SubUrl,
-			Proxy:     req.Config.Proxy,
-			FailTimes: req.Config.FailTimes,
-		},
-		Status: task.Fetch.Status(subData.ID),
+		ID:        subData.ID,
+		Name:      subData.Name,
+		Enable:    subData.Enable,
+		CronExpr:  subData.CronExpr,
+		Config:    req.Config,
+		Status:    task.FetchStatus(subData.ID),
+		CreatedAt: subData.CreatedAt,
+		UpdatedAt: subData.UpdatedAt,
 	})
 }
 
@@ -136,24 +112,26 @@ func getSubs(c *gin.Context) {
 		}
 		var respSubList = make([]sub.Response, len(subList))
 		for i := range subList {
-			var config execer.Fetch
+			var config sub.Config
 			if err := json.Unmarshal([]byte(subList[i].Config), &config); err != nil {
 				resp.Error(c, http.StatusInternalServerError, err.Error())
 				return
 			}
-			var result taskModel.DBResult
+			var result sub.Result
 			if err := json.Unmarshal([]byte(subList[i].Result), &result); err != nil {
 				resp.Error(c, http.StatusInternalServerError, err.Error())
 				return
 			}
 			respSubList[i] = sub.Response{
-				ID:       subList[i].ID,
-				Name:     subList[i].Name,
-				Enable:   subList[i].Enable,
-				CronExpr: subList[i].CronExpr,
-				Config:   config,
-				Status:   task.Fetch.Status(subList[i].ID),
-				Result:   result,
+				ID:        subList[i].ID,
+				Name:      subList[i].Name,
+				Enable:    subList[i].Enable,
+				CronExpr:  subList[i].CronExpr,
+				Config:    config,
+				Status:    task.FetchStatus(subList[i].ID),
+				Result:    result,
+				CreatedAt: subList[i].CreatedAt,
+				UpdatedAt: subList[i].UpdatedAt,
 			}
 		}
 		resp.Success(c, respSubList)
@@ -169,24 +147,26 @@ func getSubs(c *gin.Context) {
 			return
 		}
 		var respSub = [1]sub.Response{}
-		var config execer.Fetch
+		var config sub.Config
 		if err := json.Unmarshal([]byte(subData.Config), &config); err != nil {
 			resp.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		var result taskModel.DBResult
+		var result sub.Result
 		if err := json.Unmarshal([]byte(subData.Result), &result); err != nil {
 			resp.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		respSub[0] = sub.Response{
-			ID:       subData.ID,
-			Name:     subData.Name,
-			Enable:   subData.Enable,
-			CronExpr: subData.CronExpr,
-			Config:   config,
-			Result:   result,
-			Status:   task.Fetch.Status(subData.ID),
+			ID:        subData.ID,
+			Name:      subData.Name,
+			Enable:    subData.Enable,
+			CronExpr:  subData.CronExpr,
+			Config:    config,
+			Status:    task.FetchStatus(subData.ID),
+			Result:    result,
+			CreatedAt: subData.CreatedAt,
+			UpdatedAt: subData.UpdatedAt,
 		}
 		resp.Success(c, respSub)
 	}
@@ -212,7 +192,6 @@ func updateSub(c *gin.Context) {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	req.Config.SubID = req.ID
 	configBytes, err := json.Marshal(req.Config)
 	if err != nil {
 		resp.ErrorBadRequest(c)
@@ -231,37 +210,26 @@ func updateSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var result taskModel.DBResult
+	if err := task.FetchUpdate(subData); err != nil {
+		log.Errorf("failed to update sub: %v", err)
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var result sub.Result
 	if err := json.Unmarshal([]byte(subData.Result), &result); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var taskData = &taskModel.Config{
-		ID:       subData.ID,
-		Name:     subData.Name,
-		CronExpr: subData.CronExpr,
-		LogLevel: "info",
-		Timeout:  60,
-		Type:     "fetch",
-	}
-	task.Fetch.Update(taskData, configStr)
-	if subData.Enable {
-		task.Fetch.Enable(subData.ID)
-	} else {
-		task.Fetch.Disable(subData.ID)
-	}
 	resp.Success(c, sub.Response{
-		ID:       subData.ID,
-		Name:     subData.Name,
-		Enable:   subData.Enable,
-		CronExpr: subData.CronExpr,
-		Config: execer.Fetch{
-			SubUrl:    req.Config.SubUrl,
-			Proxy:     req.Config.Proxy,
-			FailTimes: req.Config.FailTimes,
-		},
-		Status: task.Fetch.Status(subData.ID),
-		Result: result,
+		ID:        subData.ID,
+		Name:      subData.Name,
+		Enable:    subData.Enable,
+		CronExpr:  subData.CronExpr,
+		Config:    req.Config,
+		Status:    task.FetchStatus(subData.ID),
+		Result:    result,
+		CreatedAt: subData.CreatedAt,
+		UpdatedAt: subData.UpdatedAt,
 	})
 }
 
@@ -290,7 +258,7 @@ func deleteSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := task.Fetch.Remove(uint16(id)); err != nil {
+	if err := task.FetchRemove(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -305,7 +273,7 @@ func deleteSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "订阅链接ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
+// @Success 200 {object} resp.SuccessStruct{data=sub.Result} "刷新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
@@ -318,9 +286,6 @@ func refreshSub(c *gin.Context) {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	if err := task.Fetch.Run(uint16(id)); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	resp.Success(c, nil)
+	result := task.FetchRun(uint16(id))
+	resp.Success(c, result)
 }
