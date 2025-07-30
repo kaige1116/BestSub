@@ -23,7 +23,7 @@ func CheckRepo() interfaces.CheckRepository {
 }
 func GetCheckByID(id uint16) (check.Data, error) {
 	if checkCache.Len() == 0 {
-		if err := refreshCheckCache(context.Background()); err != nil {
+		if err := refreshCheckCache(); err != nil {
 			return check.Data{}, err
 		}
 	}
@@ -34,7 +34,7 @@ func GetCheckByID(id uint16) (check.Data, error) {
 }
 func CreateCheck(ctx context.Context, t *check.Data) error {
 	if checkCache.Len() == 0 {
-		if err := refreshCheckCache(context.Background()); err != nil {
+		if err := refreshCheckCache(); err != nil {
 			return err
 		}
 	}
@@ -46,7 +46,7 @@ func CreateCheck(ctx context.Context, t *check.Data) error {
 }
 func UpdateCheck(ctx context.Context, t *check.Data) error {
 	if checkCache.Len() == 0 {
-		if err := refreshCheckCache(context.Background()); err != nil {
+		if err := refreshCheckCache(); err != nil {
 			return err
 		}
 	}
@@ -61,9 +61,9 @@ func UpdateCheck(ctx context.Context, t *check.Data) error {
 	checkCache.Set(t.ID, *t)
 	return nil
 }
-func UpdateCheckResult(ctx context.Context, id uint16, result check.Result) error {
+func UpdateCheckResult(id uint16, result check.Result) error {
 	if checkCache.Len() == 0 {
-		if err := refreshCheckCache(ctx); err != nil {
+		if err := refreshCheckCache(); err != nil {
 			log.Errorf("failed to refresh check cache: %v", err)
 			return err
 		}
@@ -80,9 +80,8 @@ func UpdateCheckResult(ctx context.Context, id uint16, result check.Result) erro
 			return err
 		}
 	}
-	oldResult.Success += result.Success
-	oldResult.Fail += result.Fail
 	oldResult.Msg = result.Msg
+	oldResult.Extra = result.Extra
 	oldResult.LastRun = time.Now()
 	oldResult.Duration = result.Duration
 	resultBytes, err := json.Marshal(oldResult)
@@ -91,7 +90,7 @@ func UpdateCheckResult(ctx context.Context, id uint16, result check.Result) erro
 		return err
 	}
 	oldCheck.Result = string(resultBytes)
-	if err := CheckRepo().Update(ctx, &oldCheck); err != nil {
+	if err := CheckRepo().Update(context.Background(), &oldCheck); err != nil {
 		log.Errorf("failed to update check result: %v", err)
 		return err
 	}
@@ -100,7 +99,7 @@ func UpdateCheckResult(ctx context.Context, id uint16, result check.Result) erro
 }
 func DeleteCheck(ctx context.Context, id uint16) error {
 	if checkCache.Len() == 0 {
-		if err := refreshCheckCache(context.Background()); err != nil {
+		if err := refreshCheckCache(); err != nil {
 			return err
 		}
 	}
@@ -110,10 +109,10 @@ func DeleteCheck(ctx context.Context, id uint16) error {
 	checkCache.Del(id)
 	return nil
 }
-func GetCheckList(ctx context.Context) ([]check.Data, error) {
+func GetCheckList() ([]check.Data, error) {
 	taskList := checkCache.GetAll()
 	if len(taskList) == 0 {
-		err := refreshCheckCache(context.Background())
+		err := refreshCheckCache()
 		if err != nil {
 			return nil, err
 		}
@@ -125,9 +124,9 @@ func GetCheckList(ctx context.Context) ([]check.Data, error) {
 	}
 	return result, nil
 }
-func refreshCheckCache(ctx context.Context) error {
+func refreshCheckCache() error {
 	checkCache.Clear()
-	checks, err := CheckRepo().List(ctx)
+	checks, err := CheckRepo().List(context.Background())
 	if err != nil {
 		return err
 	}

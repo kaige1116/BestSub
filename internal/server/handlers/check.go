@@ -1,16 +1,15 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/bestruirui/bestsub/internal/core/check"
+	_ "github.com/bestruirui/bestsub/internal/core/check"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	checkModel "github.com/bestruirui/bestsub/internal/models/check"
-	taskModel "github.com/bestruirui/bestsub/internal/models/task"
-	"github.com/bestruirui/bestsub/internal/modules/exec"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
@@ -39,7 +38,7 @@ func init() {
 				Handle(getCheck),
 		).
 		AddRoute(
-			router.NewRoute("", router.PUT).
+			router.NewRoute("/:id", router.PUT).
 				Handle(updateCheck),
 		).
 		AddRoute(
@@ -69,7 +68,7 @@ func init() {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/check/type [get]
 func getCheckTypes(c *gin.Context) {
-	resp.Success(c, exec.GetTypes())
+	resp.Success(c, check.GetTypes())
 }
 
 // getCheckTypeConfig 获取检测类型对应的配置项
@@ -80,7 +79,7 @@ func getCheckTypes(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param type query string true "检测类型"
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]exec.Desc} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=map[string][]check.Desc} "获取成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
@@ -88,9 +87,9 @@ func getCheckTypes(c *gin.Context) {
 func getCheckTypeConfig(c *gin.Context) {
 	typ := c.Query("type")
 	if typ == "" {
-		resp.Success(c, exec.GetInfoMap())
+		resp.Success(c, check.GetInfoMap())
 	} else {
-		resp.Success(c, exec.GetInfoMap()[typ])
+		resp.Success(c, check.GetInfoMap()[typ])
 	}
 }
 
@@ -101,58 +100,26 @@ func getCheckTypeConfig(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body checkModel.CreateRequest true "创建检测请求"
+// @Param request body checkModel.Request true "创建检测请求"
 // @Success 200 {object} resp.SuccessStruct{data=checkModel.Response} "创建成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/check [post]
 func createCheck(c *gin.Context) {
-	var req checkModel.CreateRequest
+	var req checkModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	taskBytes, err := json.Marshal(req.Task)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	taskStr := string(taskBytes)
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	configStr := string(configBytes)
-	checkData := checkModel.Data{
-		Name:   req.Name,
-		Enable: req.Enable,
-		Task:   taskStr,
-		Config: configStr,
-		Result: "{}",
-	}
+	checkData := req.GenData()
 	if err := op.CreateCheck(c.Request.Context(), &checkData); err != nil {
 		log.Errorf("failed to create check: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	req.Task.ID = checkData.ID
-	req.Task.Name = checkData.Name
-	task.Check.Add(&req.Task, configStr)
-	if req.Enable {
-		task.Check.Enable(checkData.ID)
-	}
-	respCheckData := checkModel.Response{
-		ID:     checkData.ID,
-		Name:   checkData.Name,
-		Enable: checkData.Enable,
-		Task:   req.Task,
-		Config: req.Config,
-		Status: task.Check.Status(checkData.ID),
-	}
-
-	resp.Success(c, respCheckData)
+	task.CheckAdd(&checkData)
+	resp.Success(c, checkData.GenResponse(task.CheckStatus(checkData.ID)))
 }
 
 // getCheck 获取检测列表
@@ -170,37 +137,14 @@ func createCheck(c *gin.Context) {
 func getCheck(c *gin.Context) {
 	idStr := c.Query("id")
 	if idStr == "" {
-		checkList, err := op.GetCheckList(c.Request.Context())
+		checkList, err := op.GetCheckList()
 		if err != nil {
 			resp.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		var respCheckList = make([]checkModel.Response, len(checkList))
 		for i := range checkList {
-			var taskConfig taskModel.Config
-			if err := json.Unmarshal([]byte(checkList[i].Task), &taskConfig); err != nil {
-				resp.Error(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			var config any
-			if err := json.Unmarshal([]byte(checkList[i].Config), &config); err != nil {
-				resp.Error(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			var result taskModel.DBResult
-			if err := json.Unmarshal([]byte(checkList[i].Result), &result); err != nil {
-				resp.Error(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			respCheckList[i] = checkModel.Response{
-				ID:     checkList[i].ID,
-				Name:   checkList[i].Name,
-				Enable: checkList[i].Enable,
-				Task:   taskConfig,
-				Config: config,
-				Result: result,
-				Status: task.Check.Status(checkList[i].ID),
-			}
+			respCheckList[i] = checkList[i].GenResponse(task.CheckStatus(checkList[i].ID))
 		}
 		resp.Success(c, respCheckList)
 	} else {
@@ -215,30 +159,7 @@ func getCheck(c *gin.Context) {
 			return
 		}
 		var respCheck = make([]checkModel.Response, 1)
-		var taskConfig taskModel.Config
-		if err := json.Unmarshal([]byte(check.Task), &taskConfig); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		var config any
-		if err := json.Unmarshal([]byte(check.Config), &config); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		var result taskModel.DBResult
-		if err := json.Unmarshal([]byte(check.Result), &result); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		respCheck[0] = checkModel.Response{
-			ID:     check.ID,
-			Name:   check.Name,
-			Enable: check.Enable,
-			Task:   taskConfig,
-			Config: config,
-			Result: result,
-			Status: task.Check.Status(check.ID),
-		}
+		respCheck[0] = check.GenResponse(task.CheckStatus(check.ID))
 		resp.Success(c, respCheck)
 	}
 }
@@ -250,86 +171,43 @@ func getCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body checkModel.UpdateRequest true "更新检测请求"
+// @Param id path int true "检测ID"
+// @Param request body checkModel.Request true "更新检测请求"
 // @Success 200 {object} resp.SuccessStruct{data=checkModel.Response} "更新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 404 {object} resp.ErrorStruct "检测不存在"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/check [put]
+// @Router /api/v1/check/{id} [put]
 func updateCheck(c *gin.Context) {
-	var req checkModel.UpdateRequest
+	var req checkModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-
-	if req.ID == 0 {
-		resp.Error(c, http.StatusBadRequest, "check id is required")
+	idStr := c.Param("id")
+	if idStr == "" {
+		resp.ErrorBadRequest(c)
 		return
 	}
-
-	taskBytes, err := json.Marshal(req.Task)
+	id, err := strconv.ParseUint(idStr, 10, 16)
 	if err != nil {
+		resp.ErrorBadRequest(c)
+		return
+	}
+	checkData := req.GenData()
+	checkData.ID = uint16(id)
+	if err := op.UpdateCheck(c.Request.Context(), &checkData); err != nil {
+		log.Errorf("failed to update check: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	taskStr := string(taskBytes)
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
+	if err := task.CheckUpdate(&checkData); err != nil {
+		log.Errorf("failed to update check: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	configStr := string(configBytes)
-	checkData := &checkModel.Data{
-		ID:     req.ID,
-		Name:   req.Name,
-		Enable: req.Enable,
-		Task:   taskStr,
-		Config: configStr,
-	}
-	req.Task.ID = checkData.ID
-	req.Task.Name = checkData.Name
-	err = op.UpdateCheck(c.Request.Context(), checkData)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, "failed to update check")
-		return
-	}
-
-	task.Check.Update(&req.Task, configStr)
-	if req.Enable {
-		task.Check.Enable(req.ID)
-	} else {
-		task.Check.Disable(req.ID)
-	}
-
-	log.Infof("Check %d updated from %s", req.ID, c.ClientIP())
-
-	var taskConfig taskModel.Config
-	if err := json.Unmarshal([]byte(checkData.Task), &taskConfig); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	var config any
-	if err := json.Unmarshal([]byte(checkData.Config), &config); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	var result taskModel.DBResult
-	if err := json.Unmarshal([]byte(checkData.Result), &result); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	respCheckData := checkModel.Response{
-		ID:     req.ID,
-		Name:   req.Name,
-		Enable: req.Enable,
-		Task:   taskConfig,
-		Config: config,
-		Result: result,
-		Status: task.Check.Status(req.ID),
-	}
-	resp.Success(c, respCheckData)
+	resp.Success(c, checkData.GenResponse(task.CheckStatus(checkData.ID)))
 }
 
 // deleteCheck 删除检测
@@ -363,7 +241,7 @@ func deleteCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, "failed to delete check")
 		return
 	}
-	if err := task.Check.Remove(uint16(id)); err != nil {
+	if err := task.CheckRemove(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -401,7 +279,7 @@ func runCheck(c *gin.Context) {
 		return
 	}
 
-	if err := task.Check.Run(uint16(id)); err != nil {
+	if err := task.CheckRun(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -438,7 +316,7 @@ func stopCheck(c *gin.Context) {
 		return
 	}
 
-	if err := task.Check.StopTask(uint16(id)); err != nil {
+	if err := task.CheckStop(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}

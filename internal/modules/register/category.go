@@ -1,7 +1,7 @@
 package register
 
 import (
-	"github.com/bestruirui/bestsub/internal/models/exec"
+	"github.com/bestruirui/bestsub/internal/models/check"
 	"github.com/bestruirui/bestsub/internal/models/notify"
 	"github.com/bestruirui/bestsub/internal/models/storage"
 )
@@ -9,8 +9,8 @@ import (
 func Notify(i notify.Instance) {
 	register("notify", i)
 }
-func Exec(i exec.Instance) {
-	register("exec", i)
+func Check(i check.Instance) {
+	register("check", i)
 }
 func Storage(i storage.Instance) {
 	register("storage", i)
