@@ -3,29 +3,27 @@ package parser
 import (
 	"fmt"
 
-	modparser "github.com/bestruirui/bestsub/internal/models/parser"
+	"github.com/bestruirui/bestsub/internal/models/node"
+	parserModel "github.com/bestruirui/bestsub/internal/models/parser"
 	"github.com/bestruirui/bestsub/internal/modules/parser/mihomo"
 	"github.com/bestruirui/bestsub/internal/modules/parser/singbox"
 	"github.com/bestruirui/bestsub/internal/modules/parser/v2ray"
 )
 
-func Parse(content *[]byte, subType modparser.ParserType, sublinkID uint16) (modparser.ParserType, int, error) {
+func Parse(content *[]byte, subType parserModel.ParserType, sublinkID uint16) (*[]node.Data, error) {
 	if content == nil || len(*content) == 0 {
-		return "", 0, fmt.Errorf("content is empty")
+		return nil, fmt.Errorf("content is empty")
 	}
-	var addedCount int
-	var err error
 	switch subType {
-	case modparser.ParserTypeAuto:
+	case parserModel.ParserTypeAuto:
 		return auto(content, sublinkID)
-	case modparser.ParserTypeMihomo:
-		addedCount, err = mihomo.Parse(content, sublinkID)
-	case modparser.ParserTypeSingbox:
-		addedCount, err = singbox.Parse(content, sublinkID)
-	case modparser.ParserTypeV2ray:
-		addedCount, err = v2ray.Parse(content, sublinkID)
+	case parserModel.ParserTypeMihomo:
+		return mihomo.Parse(content, sublinkID)
+	case parserModel.ParserTypeSingbox:
+		return singbox.Parse(content, sublinkID)
+	case parserModel.ParserTypeV2ray:
+		return v2ray.Parse(content, sublinkID)
 	default:
-		return subType, 0, fmt.Errorf("unknown subscription format")
+		return nil, fmt.Errorf("unknown subscription format")
 	}
-	return subType, addedCount, err
 }

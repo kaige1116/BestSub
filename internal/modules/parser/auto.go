@@ -5,31 +5,27 @@ import (
 	"fmt"
 	"strings"
 
-	modparser "github.com/bestruirui/bestsub/internal/models/parser"
+	"github.com/bestruirui/bestsub/internal/models/node"
 	"github.com/bestruirui/bestsub/internal/modules/parser/mihomo"
 	"github.com/bestruirui/bestsub/internal/modules/parser/singbox"
 	"github.com/bestruirui/bestsub/internal/modules/parser/v2ray"
 	"github.com/bestruirui/bestsub/internal/utils"
 )
 
-func auto(content *[]byte, sublinkID uint16) (modparser.ParserType, int, error) {
-	var addedCount int
-	var err error
+func auto(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
 	utils.RemoveAllControlCharacters(content)
 
 	contentStr := strings.TrimSpace(string(*content))
 	if len(contentStr) == 0 {
-		return "", 0, fmt.Errorf("content is empty after cleaning")
+		return nil, fmt.Errorf("content is empty after cleaning")
 	}
 
 	if isSingBoxFormat(&contentStr) {
-		addedCount, err = singbox.Parse(content, sublinkID)
-		return modparser.ParserTypeSingbox, addedCount, err
+		return singbox.Parse(content, sublinkID)
 	}
 
 	if isMihomoFormat(&contentStr) {
-		addedCount, err = mihomo.Parse(content, sublinkID)
-		return modparser.ParserTypeMihomo, addedCount, err
+		return mihomo.Parse(content, sublinkID)
 	}
 
 	if isBase64Encoded(&contentStr) {
@@ -38,18 +34,16 @@ func auto(content *[]byte, sublinkID uint16) (modparser.ParserType, int, error) 
 			decodedStr := strings.TrimSpace(string(decoded))
 			if isV2rayFormat(&decodedStr) {
 				*content = decoded
-				addedCount, err = v2ray.Parse(content, sublinkID)
-				return modparser.ParserTypeV2ray, addedCount, err
+				return v2ray.Parse(content, sublinkID)
 			}
 		}
 	}
 
 	if isV2rayFormat(&contentStr) {
-		addedCount, err = v2ray.Parse(content, sublinkID)
-		return modparser.ParserTypeV2ray, addedCount, err
+		return v2ray.Parse(content, sublinkID)
 	}
 
-	return modparser.ParserTypeAuto, 0, fmt.Errorf("unknown subscription format")
+	return nil, fmt.Errorf("unknown subscription format")
 }
 
 func isSingBoxFormat(content *string) bool {

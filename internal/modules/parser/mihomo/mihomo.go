@@ -8,15 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/core/nodepool"
 	"github.com/bestruirui/bestsub/internal/models/node"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/cespare/xxhash/v2"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
-// Parse 解析mihomo配置内容
-func Parse(content *[]byte, sublinkID uint16) (int, error) {
+func Parse(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
 
 	var inProxiesSection bool
 	var yamlBuffer bytes.Buffer
@@ -79,14 +77,11 @@ func Parse(content *[]byte, sublinkID uint16) (int, error) {
 		}
 	}
 
-	addedCount := nodepool.Add(&nodes, sublinkID)
-
-	return addedCount, nil
+	return &nodes, nil
 }
 
-// parseProxyNode 解析单个代理节点
 func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Data) error {
-	mihomoConfig := node.MihomoConfig{}
+	mihomoConfig := map[string]any{}
 	if err := yaml.Unmarshal(*nodeYAML, &mihomoConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal to config struct: %v", err)
 	}
@@ -95,28 +90,26 @@ func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Data) error {
 		return fmt.Errorf("failed to convert to JSON: %v", err)
 	}
 	nodeData := &node.Data{
-		Config: jsonBytes,
+		Raw: jsonBytes,
 		Info: node.Info{
 			UniqueKey: generateUniqueKey(&mihomoConfig),
-			AddTime:   time.Now().Unix(),
+			AddTime:   uint64(time.Now().Unix()),
 		},
 	}
 	*nodes = append(*nodes, *nodeData)
-
 	return nil
 }
 
-// generateUniqueKey 根据节点配置生成唯一键
-func generateUniqueKey(mihomoConfig *node.MihomoConfig) uint64 {
+func generateUniqueKey(mihomoConfig *map[string]any) uint64 {
 	h := xxhash.New()
 	h.Write([]byte(fmt.Sprintf("%v%v%v%v%v%v%v",
-		mihomoConfig.Server,
-		mihomoConfig.Servername,
-		mihomoConfig.Port,
-		mihomoConfig.Type,
-		mihomoConfig.Uuid,
-		mihomoConfig.Username,
-		mihomoConfig.Password,
+		(*mihomoConfig)["server"],
+		(*mihomoConfig)["servername"],
+		(*mihomoConfig)["port"],
+		(*mihomoConfig)["type"],
+		(*mihomoConfig)["uuid"],
+		(*mihomoConfig)["username"],
+		(*mihomoConfig)["password"],
 	)))
 	return h.Sum64()
 }

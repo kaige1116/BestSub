@@ -7,6 +7,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/models/sub"
+	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 type SubTemplateRepository struct {
@@ -18,6 +19,7 @@ func (db *DB) SubTemplate() interfaces.SubTemplateRepository {
 }
 
 func (r *SubTemplateRepository) Create(ctx context.Context, template *sub.Template) error {
+	log.Debugf("Create sub template")
 	query := `INSERT INTO sub_template (name, type, template)
 	          VALUES (?, ?, ?)`
 
@@ -42,6 +44,7 @@ func (r *SubTemplateRepository) Create(ctx context.Context, template *sub.Templa
 }
 
 func (r *SubTemplateRepository) GetByID(ctx context.Context, id uint16) (*sub.Template, error) {
+	log.Debugf("Get sub template by id")
 	query := `SELECT id, name, type, template
 	          FROM sub_template WHERE id = ?`
 
@@ -64,6 +67,7 @@ func (r *SubTemplateRepository) GetByID(ctx context.Context, id uint16) (*sub.Te
 }
 
 func (r *SubTemplateRepository) Update(ctx context.Context, template *sub.Template) error {
+	log.Debugf("Update sub template")
 	query := `UPDATE sub_template SET name = ?, type = ?, template = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
@@ -81,6 +85,7 @@ func (r *SubTemplateRepository) Update(ctx context.Context, template *sub.Templa
 }
 
 func (r *SubTemplateRepository) Delete(ctx context.Context, id uint16) error {
+	log.Debugf("Delete sub template")
 	query := `DELETE FROM sub_template WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query, id)
@@ -92,6 +97,7 @@ func (r *SubTemplateRepository) Delete(ctx context.Context, id uint16) error {
 }
 
 func (r *SubTemplateRepository) List(ctx context.Context) (*[]sub.Template, error) {
+	log.Debugf("List sub template")
 	query := `SELECT id, name, type, template
 	          FROM sub_template`
 

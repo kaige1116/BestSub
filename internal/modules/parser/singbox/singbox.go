@@ -1,6 +1,8 @@
 package singbox
 
-func Parse(content *[]byte, sublinkID uint16) (int, error) {
+import "github.com/bestruirui/bestsub/internal/models/node"
 
-	return 0, nil
+func Parse(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
+
+	return nil, nil
 }
