@@ -1,5 +1,7 @@
 package node
 
+import "github.com/bestruirui/bestsub/internal/utils/generic"
+
 // AliveStatus 位字段常量定义
 const (
 	Alive        uint16 = 1 << 0 // 第0位：节点存活
@@ -13,21 +15,36 @@ const (
 )
 
 type Data struct {
-	Config []byte // 节点配置的JSON格式数据
-	Info   Info   // 节点Info结构体（值类型）
+	Raw  []byte // 节点配置的JSON格式数据
+	Info Info   // 节点Info结构体（值类型）
 }
 
 type Info struct {
-	Timestamp [5]int64  // 单位 ms
-	SpeedUp   [5]uint32 // 单位 KB/s
-	SpeedDown [5]uint32 // 单位 KB/s
-	Delay     [5]uint16 // 单位 ms
-
-	AddTime     int64  // 入库时间戳
-	UniqueKey   uint64 // 唯一键
-	IP          uint32
+	SpeedUp     generic.Queue[uint32] // 单位 KB/s
+	SpeedDown   generic.Queue[uint32] // 单位 KB/s
+	Delay       generic.Queue[uint16] // 单位 ms
+	Risk        uint8
 	AliveStatus uint16
+	IP          uint32
 	Country     uint16
 
-	Risk uint8
+	AddTime   uint64 // 入库时间戳
+	UniqueKey uint64 // 唯一键
+}
+
+type Filter struct {
+	SpeedUpMore   uint32 // 上传速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	SpeedDownMore uint32 // 下载速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	Country       uint16 // ISO 3166数字国家代码（0表示不筛选，>0表示具体国家，最大65535）
+	DelayLessThan uint16 // 延迟小于指定值（0表示不筛选，>0表示具体值，毫秒，最大65535ms）
+	AliveStatus   uint16 // 存活状态位字段筛选（0表示不筛选，其他值表示必须匹配的位）
+	RiskLessThan  uint8  // 风险等级小于指定值（0表示不筛选，>0表示具体值，百分比，最大255）
+}
+
+func (i *Info) SetAliveStatus(AliveStatus uint16, status bool) {
+	if status {
+		i.AliveStatus |= AliveStatus
+	} else {
+		i.AliveStatus &= ^AliveStatus
+	}
 }

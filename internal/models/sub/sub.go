@@ -32,10 +32,12 @@ type Result struct {
 }
 
 type NodeInfo struct {
-	SpeedUp   uint32 `json:"speed_up" description:"平均上行速度"`
-	SpeedDown uint32 `json:"speed_down" description:"平均下行速度"`
-	Delay     uint16 `json:"delay" description:"平均延迟"`
-	Risk      uint8  `json:"risk" description:"平均风险"`
+	RawCount   int32  `json:"raw_count" description:"原始节点数量"`
+	AliveCount int32  `json:"alive_count" description:"存活节点数量"`
+	SpeedUp    uint32 `json:"speed_up" description:"平均上行速度"`
+	SpeedDown  uint32 `json:"speed_down" description:"平均下行速度"`
+	Delay      uint16 `json:"delay" description:"平均延迟"`
+	Risk       uint8  `json:"risk" description:"平均风险"`
 }
 
 type CreateRequest struct {
