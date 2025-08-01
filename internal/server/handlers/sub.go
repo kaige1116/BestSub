@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -28,7 +27,7 @@ func init() {
 				Handle(getSubs),
 		).
 		AddRoute(
-			router.NewRoute("", router.PUT).
+			router.NewRoute("/:id", router.PUT).
 				Handle(updateSub),
 		).
 		AddRoute(
@@ -48,47 +47,27 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body sub.CreateRequest true "创建订阅链接请求"
+// @Param request body sub.Request true "创建订阅链接请求"
 // @Success 200 {object} resp.SuccessStruct{data=sub.Response} "创建成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [post]
 func createSub(c *gin.Context) {
-	var req sub.CreateRequest
+	var req sub.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.ErrorBadRequest(c)
-		return
-	}
-	configStr := string(configBytes)
-	subData := sub.Data{
-		Name:     req.Name,
-		CronExpr: req.CronExpr,
-		Enable:   req.Enable,
-		Config:   configStr,
-		Result:   "{}",
-	}
+	subData := req.GenData(0)
 	if err := op.CreateSub(c.Request.Context(), &subData); err != nil {
 		log.Errorf("failed to create sub: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	task.FetchAdd(&subData)
-	resp.Success(c, sub.Response{
-		ID:        subData.ID,
-		Name:      subData.Name,
-		Enable:    subData.Enable,
-		CronExpr:  subData.CronExpr,
-		Config:    req.Config,
-		Status:    task.FetchStatus(subData.ID),
-		CreatedAt: subData.CreatedAt,
-		UpdatedAt: subData.UpdatedAt,
-	})
+	respData := subData.GenResponse(task.FetchStatus(subData.ID), sub.NodeInfo{})
+	resp.Success(c, respData)
 }
 
 // getSubs 获取订阅链接
@@ -113,28 +92,7 @@ func getSubs(c *gin.Context) {
 		}
 		var respSubList = make([]sub.Response, len(subList))
 		for i := range subList {
-			var config sub.Config
-			if err := json.Unmarshal([]byte(subList[i].Config), &config); err != nil {
-				resp.Error(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			var result sub.Result
-			if err := json.Unmarshal([]byte(subList[i].Result), &result); err != nil {
-				resp.Error(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			respSubList[i] = sub.Response{
-				ID:        subList[i].ID,
-				Name:      subList[i].Name,
-				Enable:    subList[i].Enable,
-				CronExpr:  subList[i].CronExpr,
-				Config:    config,
-				Status:    task.FetchStatus(subList[i].ID),
-				Result:    result,
-				NodeInfo:  nodepool.GetPoolBySubID(subList[i].ID, 0).Info,
-				CreatedAt: subList[i].CreatedAt,
-				UpdatedAt: subList[i].UpdatedAt,
-			}
+			respSubList[i] = subList[i].GenResponse(task.FetchStatus(subList[i].ID), nodepool.GetPoolBySubID(subList[i].ID, 0).Info)
 		}
 		resp.Success(c, respSubList)
 	} else {
@@ -149,28 +107,7 @@ func getSubs(c *gin.Context) {
 			return
 		}
 		var respSub = [1]sub.Response{}
-		var config sub.Config
-		if err := json.Unmarshal([]byte(subData.Config), &config); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		var result sub.Result
-		if err := json.Unmarshal([]byte(subData.Result), &result); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		respSub[0] = sub.Response{
-			ID:        subData.ID,
-			Name:      subData.Name,
-			Enable:    subData.Enable,
-			CronExpr:  subData.CronExpr,
-			Config:    config,
-			Status:    task.FetchStatus(subData.ID),
-			Result:    result,
-			NodeInfo:  nodepool.GetPoolBySubID(subData.ID, 0).Info,
-			CreatedAt: subData.CreatedAt,
-			UpdatedAt: subData.UpdatedAt,
-		}
+		respSub[0] = subData.GenResponse(task.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
 		resp.Success(c, respSub)
 	}
 }
@@ -182,7 +119,7 @@ func getSubs(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body sub.UpdateRequest true "更新订阅链接请求"
+// @Param request body sub.Request true "更新订阅链接请求"
 // @Success 200 {object} resp.SuccessStruct{data=sub.Response} "更新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
@@ -190,51 +127,30 @@ func getSubs(c *gin.Context) {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/sub [put]
 func updateSub(c *gin.Context) {
-	var req sub.UpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		resp.ErrorBadRequest(c)
-		return
-	}
-	configBytes, err := json.Marshal(req.Config)
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 16)
 	if err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configStr := string(configBytes)
-	subData := &sub.Data{
-		ID:       req.ID,
-		Name:     req.Name,
-		Enable:   req.Enable,
-		CronExpr: req.CronExpr,
-		Config:   configStr,
+	var req sub.Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.ErrorBadRequest(c)
+		return
 	}
-	if err := op.UpdateSub(c.Request.Context(), subData); err != nil {
+	subData := req.GenData(uint16(id))
+	if err := op.UpdateSub(c.Request.Context(), &subData); err != nil {
 		log.Errorf("failed to update sub: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := task.FetchUpdate(subData); err != nil {
+	if err := task.FetchUpdate(&subData); err != nil {
 		log.Errorf("failed to update sub: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var result sub.Result
-	if err := json.Unmarshal([]byte(subData.Result), &result); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	resp.Success(c, sub.Response{
-		ID:        subData.ID,
-		Name:      subData.Name,
-		Enable:    subData.Enable,
-		CronExpr:  subData.CronExpr,
-		Config:    req.Config,
-		Status:    task.FetchStatus(subData.ID),
-		Result:    result,
-		NodeInfo:  nodepool.GetPoolBySubID(subData.ID, 0).Info,
-		CreatedAt: subData.CreatedAt,
-		UpdatedAt: subData.UpdatedAt,
-	})
+	respData := subData.GenResponse(task.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
+	resp.Success(c, respData)
 }
 
 // deleteSub 删除订阅链接

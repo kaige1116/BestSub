@@ -1,6 +1,7 @@
 package sub
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Config struct {
 	Url     string `json:"url" required:"true" description:"订阅地址"`
 	Proxy   bool   `json:"proxy" required:"false" description:"是否启用代理" example:"false"`
 	Timeout int    `json:"timeout" required:"false" description:"超时时间单位:秒" example:"10"`
+	Type    string `json:"type" required:"false" description:"订阅类型" example:"clash" optional:"clash,singbox,base64,v2ray,auto"`
 }
 
 type Result struct {
@@ -40,15 +42,7 @@ type NodeInfo struct {
 	Risk       uint8  `json:"risk" description:"平均风险"`
 }
 
-type CreateRequest struct {
-	Name     string `json:"name" description:"订阅任务名称"`
-	Enable   bool   `json:"enable" description:"是否启用"`
-	CronExpr string `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
-	Config   Config `json:"config" description:"订阅器配置"`
-}
-
-type UpdateRequest struct {
-	ID       uint16 `json:"id" description:"订阅任务ID"`
+type Request struct {
 	Name     string `json:"name" description:"订阅任务名称"`
 	Enable   bool   `json:"enable" description:"是否启用"`
 	CronExpr string `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
@@ -66,4 +60,40 @@ type Response struct {
 	NodeInfo  NodeInfo  `json:"node_info" description:"节点信息"`
 	CreatedAt time.Time `json:"created_at" description:"创建时间"`
 	UpdatedAt time.Time `json:"updated_at" description:"更新时间"`
+}
+
+func (c *Request) GenData(id uint16) Data {
+	configBytes, err := json.Marshal(c.Config)
+	if err != nil {
+		return Data{}
+	}
+	return Data{
+		ID:       id,
+		Name:     c.Name,
+		Enable:   c.Enable,
+		CronExpr: c.CronExpr,
+		Config:   string(configBytes),
+	}
+}
+func (d *Data) GenResponse(status string, nodeInfo NodeInfo) Response {
+	var config Config
+	if err := json.Unmarshal([]byte(d.Config), &config); err != nil {
+		return Response{}
+	}
+	var result Result
+	if err := json.Unmarshal([]byte(d.Result), &result); err != nil {
+		return Response{}
+	}
+	return Response{
+		ID:        d.ID,
+		Name:      d.Name,
+		Enable:    d.Enable,
+		CronExpr:  d.CronExpr,
+		Config:    config,
+		Status:    status,
+		Result:    result,
+		NodeInfo:  nodeInfo,
+		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
+	}
 }
