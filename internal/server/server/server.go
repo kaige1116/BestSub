@@ -131,15 +131,11 @@ func setRouter() (*gin.Engine, error) {
 	r.Use(middleware.Logging())
 	r.Use(middleware.Recovery())
 	r.Use(middleware.Cors())
+	r.Use(middleware.Static())
 
 	if err := router.RegisterAll(r); err != nil {
 		return nil, fmt.Errorf("注册路由失败: %w", err)
 	}
-
-	r.StaticFile("/", "static/index.html")
-	r.NoRoute(func(c *gin.Context) {
-		c.File("static" + c.Request.URL.Path)
-	})
 
 	log.Debugf("成功注册 %d 个路由", router.GetRouterCount())
 	return r, nil

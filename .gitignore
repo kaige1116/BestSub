@@ -1,6 +1,6 @@
 # web
-web/static/*
-!web/static/README.md
+static/out/*
+!static/out/README.md
 
 # api
 api/*
