@@ -6,6 +6,7 @@ import (
 
 type Data struct {
 	Name    string `json:"name,omitempty"`
+	Key     string `json:"key,omitempty"`
 	Type    string `json:"type,omitempty"`
 	Default string `json:"default,omitempty"`
 	Options string `json:"options,omitempty"`
@@ -30,7 +31,7 @@ func gen(t reflect.Type) []Data {
 			continue
 		}
 		tag := field.Tag
-		name, ok := tag.Lookup("json")
+		key, ok := tag.Lookup("json")
 		if !ok {
 			continue
 		}
@@ -39,7 +40,8 @@ func gen(t reflect.Type) []Data {
 			typeName = getType(field.Type.Name())
 		}
 		item := Data{
-			Name:    name,
+			Name:    tag.Get("name"),
+			Key:     key,
 			Type:    typeName,
 			Default: tag.Get("default"),
 			Options: tag.Get("options"),
