@@ -16,6 +16,11 @@ type Data struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type NameAndID struct {
+	ID   uint16 `json:"id"`
+	Name string `json:"name"`
+}
+
 type Config struct {
 	Url     string `json:"url" required:"true" description:"订阅地址"`
 	Proxy   bool   `json:"proxy" required:"false" description:"是否启用代理" example:"false"`

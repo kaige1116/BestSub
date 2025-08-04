@@ -37,6 +37,10 @@ func init() {
 		AddRoute(
 			router.NewRoute("/refresh/:id", router.POST).
 				Handle(refreshSub),
+		).
+		AddRoute(
+			router.NewRoute("/name", router.GET).
+				Handle(getSubNameAndID),
 		)
 }
 
@@ -110,6 +114,31 @@ func getSubs(c *gin.Context) {
 		respSub[0] = subData.GenResponse(task.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
 		resp.Success(c, respSub)
 	}
+}
+
+// getSubNameAndID 获取订阅链接名称和ID
+// @Summary 获取订阅链接名称和ID
+// @Tags 订阅
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} resp.SuccessStruct{data=[]sub.NameAndID} "获取成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/sub/name [get]
+func getSubNameAndID(c *gin.Context) {
+	subList, err := op.GetSubList(c.Request.Context())
+	if err != nil {
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var respSubList = make([]sub.NameAndID, len(subList))
+	for i, sub := range subList {
+		respSubList[i].ID = sub.ID
+		respSubList[i].Name = sub.Name
+	}
+	resp.Success(c, respSubList)
 }
 
 // updateSub 更新订阅链接
