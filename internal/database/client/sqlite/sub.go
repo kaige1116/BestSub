@@ -21,8 +21,8 @@ func (db *DB) Sub() interfaces.SubRepository {
 
 func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 	log.Debugf("Create sub")
-	query := `INSERT INTO sub (enable, name, cron_expr, config, result, created_at, updated_at)
-	          VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO sub (enable, name, cron_expr, config, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
 	result, err := r.db.db.ExecContext(ctx, query,
@@ -30,7 +30,6 @@ func (r *SubRepository) Create(ctx context.Context, link *sub.Data) error {
 		link.Name,
 		link.CronExpr,
 		link.Config,
-		link.Result,
 		now,
 		now,
 	)

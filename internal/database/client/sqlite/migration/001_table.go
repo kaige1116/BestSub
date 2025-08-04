@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS "sub" (
 	"name" TEXT,
 	"cron_expr" TEXT NOT NULL,
 	"config" TEXT NOT NULL,
-	"result" TEXT,
+	"result" TEXT DEFAULT '{}',
 	"created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id")

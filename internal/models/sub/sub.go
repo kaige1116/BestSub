@@ -82,13 +82,9 @@ func (c *Request) GenData(id uint16) Data {
 }
 func (d *Data) GenResponse(status string, nodeInfo NodeInfo) Response {
 	var config Config
-	if err := json.Unmarshal([]byte(d.Config), &config); err != nil {
-		return Response{}
-	}
+	json.Unmarshal([]byte(d.Config), &config)
 	var result Result
-	if err := json.Unmarshal([]byte(d.Result), &result); err != nil {
-		return Response{}
-	}
+	json.Unmarshal([]byte(d.Result), &result)
 	return Response{
 		ID:        d.ID,
 		Name:      d.Name,
