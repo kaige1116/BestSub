@@ -10,7 +10,7 @@ import (
 
 type Instance interface {
 	Init() error
-	Run(ctx context.Context, log *log.Logger) Result
+	Run(ctx context.Context, log *log.Logger, subID []uint16) Result
 }
 
 type Data struct {
@@ -23,13 +23,14 @@ type Data struct {
 }
 
 type Task struct {
-	CronExpr      string `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
-	Notify        bool   `json:"notify" example:"true" description:"是否通知"`
-	NotifyChannel int    `json:"notify_channel" example:"1" description:"通知渠道"`
-	LogWriteFile  bool   `json:"log_write_file" example:"true" description:"是否写入日志文件"`
-	LogLevel      string `json:"log_level" example:"info" description:"日志级别"`
-	Timeout       int    `json:"timeout" example:"60" description:"超时时间 分钟"`
-	Type          string `json:"type" example:"test" description:"任务类型"`
+	SubID         []uint16 `json:"sub_id" example:"1" description:"订阅ID"`
+	CronExpr      string   `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
+	Notify        bool     `json:"notify" example:"true" description:"是否通知"`
+	NotifyChannel int      `json:"notify_channel" example:"1" description:"通知渠道"`
+	LogWriteFile  bool     `json:"log_write_file" example:"true" description:"是否写入日志文件"`
+	LogLevel      string   `json:"log_level" example:"info" description:"日志级别"`
+	Timeout       int      `json:"timeout" example:"60" description:"超时时间 分钟"`
+	Type          string   `json:"type" example:"test" description:"任务类型"`
 }
 
 type Result struct {

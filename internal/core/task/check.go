@@ -64,7 +64,7 @@ func CheckAdd(data *checkModel.Data) error {
 				log.Errorf("failed to get execer: %v", err)
 				return
 			}
-			result := checker.Run(ctx, logger)
+			result := checker.Run(ctx, logger, taskConfig.SubID)
 			op.UpdateCheckResult(data.ID, result)
 		},
 		cronExpr: taskConfig.CronExpr,

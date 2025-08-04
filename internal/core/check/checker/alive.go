@@ -18,11 +18,10 @@ import (
 )
 
 type Alive struct {
-	URL         string   `json:"url" description:"URL"`
-	ExptectCode int      `json:"exptect_code" description:"期望状态码"`
-	SubID       []uint16 `json:"sub_id" description:"订阅ID"`
-	Thread      int      `json:"thread" description:"线程数"`
-	Timeout     int      `json:"timeout" description:"超时时间"`
+	URL         string `json:"url" name:"测试链接" default:"https://www.gstatic.com/generate_204" description:"测试链接"`
+	ExptectCode int    `json:"exptect_code" name:"期望状态码" default:"204" description:"期望状态码"`
+	Thread      int    `json:"thread" name:"线程数" default:"100"`
+	Timeout     int    `json:"timeout" name:"超时时间" default:"10"`
 }
 type Result struct {
 	AliveCount uint16 `json:"alive_count" description:"存活节点数量"`
@@ -34,12 +33,12 @@ func (e *Alive) Init() error {
 	return nil
 }
 
-func (e *Alive) Run(ctx context.Context, log *log.Logger) checkModel.Result {
-	log.Infof("alive %s 任务执行开始 %d", e.URL, e.SubID)
+func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkModel.Result {
+	log.Infof("alive %s 任务执行开始 %d", e.URL, subID)
 	pool, _ := ants.NewPool(e.Thread)
 	defer pool.Release()
 	var wg sync.WaitGroup
-	for _, subID := range e.SubID {
+	for _, subID := range subID {
 		subStorage := nodepool.GetPoolBySubID(subID, 0)
 		for _, node := range subStorage.GetAllNode() {
 			wg.Add(1)
