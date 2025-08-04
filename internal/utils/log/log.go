@@ -429,7 +429,7 @@ func DeleteLog(path string) error {
 	fullPath := filepath.Join(basePath, path)
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		return fmt.Errorf("directory does not exist: %s", path)
+		return nil
 	}
 
 	if err := os.RemoveAll(fullPath); err != nil {
