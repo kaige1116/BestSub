@@ -1,6 +1,9 @@
 package notify
 
-import "bytes"
+import (
+	"bytes"
+	"encoding/json"
+)
 
 type Data struct {
 	ID     uint16 `db:"id" json:"id"`
@@ -8,16 +11,26 @@ type Data struct {
 	Type   string `db:"type" json:"type"`
 	Config string `db:"config" json:"config"`
 }
+type NameAndID struct {
+	ID   uint16 `json:"id"`
+	Name string `json:"name"`
+}
+type Request struct {
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Config any    `json:"config"`
+}
 
-type CreateRequest struct {
-	Name   string `json:"name" binding:"required"`                                                                                                                                                                                           // 通知名称
-	Type   string `json:"type" binding:"required"`                                                                                                                                                                                           // 通知类型
-	Config string `json:"config" binding:"required" example:"{\"server\":\"smtp.example.com\",\"port\":587,\"username\":\"test@example.com\",\"password\":\"test\",\"from\":\"test@example.com\",\"tls\":true,\"to\":\"test@example.com\"}"` // 通知配置
+type Response struct {
+	ID     uint16 `json:"id"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Config any    `json:"config"`
 }
 
 type Template struct {
-	Type     string `db:"type" json:"type"`         // 模板类型
-	Template string `db:"template" json:"template"` // 模板内容
+	Type     string `db:"type" json:"type"`
+	Template string `db:"template" json:"template"`
 }
 
 type Instance interface {
@@ -33,4 +46,27 @@ const (
 var TypeMap = map[uint16]string{
 	TypeLoginSuccess: "login_success",
 	TypeLoginFailed:  "login_failed",
+}
+
+func (c *Request) GenData(id uint16) Data {
+	configBytes, err := json.Marshal(c.Config)
+	if err != nil {
+		return Data{}
+	}
+	return Data{
+		ID:     id,
+		Name:   c.Name,
+		Type:   c.Type,
+		Config: string(configBytes),
+	}
+}
+func (d *Data) GenResponse() Response {
+	var config any
+	json.Unmarshal([]byte(d.Config), &config)
+	return Response{
+		ID:     d.ID,
+		Name:   d.Name,
+		Type:   d.Type,
+		Config: config,
+	}
 }

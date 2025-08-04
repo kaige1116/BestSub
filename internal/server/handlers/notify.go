@@ -29,19 +29,23 @@ func init() {
 				Handle(getNotifyChannelConfig),
 		).
 		AddRoute(
-			router.NewRoute("/", router.GET).
+			router.NewRoute("/name", router.GET).
+				Handle(getNotifyNameAndID),
+		).
+		AddRoute(
+			router.NewRoute("", router.GET).
 				Handle(getNotifyList),
 		).
 		AddRoute(
-			router.NewRoute("/", router.POST).
+			router.NewRoute("", router.POST).
 				Handle(createNotify),
 		).
 		AddRoute(
-			router.NewRoute("/", router.PUT).
+			router.NewRoute("", router.PUT).
 				Handle(updateNotify),
 		).
 		AddRoute(
-			router.NewRoute("/", router.DELETE).
+			router.NewRoute("", router.DELETE).
 				Handle(deleteNotify),
 		).
 		AddRoute(
@@ -100,7 +104,7 @@ func getNotifyChannelConfig(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.Data} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.Response} "获取成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
@@ -114,6 +118,33 @@ func getNotifyList(c *gin.Context) {
 	resp.Success(c, notifyList)
 }
 
+// getNotifyNameAndID 获取通知名称和ID
+// @Summary 获取通知名称和ID
+// @Tags 通知
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.NameAndID} "获取成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/notify/name [get]
+func getNotifyNameAndID(c *gin.Context) {
+	notifyList, err := op.GetNotifyList()
+	if err != nil {
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	nameAndIDList := make([]notifyModel.NameAndID, len(notifyList))
+	for i, notify := range notifyList {
+		nameAndIDList[i] = notifyModel.NameAndID{
+			ID:   notify.ID,
+			Name: notify.Name,
+		}
+	}
+	resp.Success(c, nameAndIDList)
+}
+
 // createNotify 创建通知
 // @Summary 创建通知
 // @Description 创建单个通知
@@ -121,33 +152,30 @@ func getNotifyList(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.CreateRequest true "创建通知请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "创建成功"
+// @Param request body notifyModel.Request true "创建通知请求"
+// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Response} "创建成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify [post]
 func createNotify(c *gin.Context) {
-	var req notifyModel.CreateRequest
+	var req notifyModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	notifyData := &notifyModel.Data{
-		Type:   req.Type,
-		Config: req.Config,
-	}
+	notifyData := req.GenData(0)
 	types := notify.GetChannels()
 	if !slices.Contains(types, req.Type) {
 		resp.Error(c, http.StatusBadRequest, fmt.Sprintf("通知类型 %s 不存在", req.Type))
 		return
 	}
-	if err := op.CreateNotify(c.Request.Context(), notifyData); err != nil {
+	if err := op.CreateNotify(c.Request.Context(), &notifyData); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	log.Infof("Notify config %d created by from %s", notifyData.ID, c.ClientIP())
-	resp.Success(c, notifyData)
+	resp.Success(c, notifyData.GenResponse())
 }
 
 // testNotify 测试通知
@@ -157,14 +185,14 @@ func createNotify(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.CreateRequest true "测试通知请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "测试成功"
+// @Param request body notifyModel.Request true "测试通知请求"
+// @Success 200 {object} resp.SuccessStruct "测试成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify/test [post]
 func testNotify(c *gin.Context) {
-	var req notifyModel.CreateRequest
+	var req notifyModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
@@ -174,7 +202,8 @@ func testNotify(c *gin.Context) {
 		resp.Error(c, http.StatusBadRequest, fmt.Sprintf("通知类型 %s 不存在", req.Type))
 		return
 	}
-	notify, err := notify.Get(req.Type, req.Config)
+	notifyData := req.GenData(0)
+	notify, err := notify.Get(notifyData.Type, notifyData.Config)
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -191,7 +220,7 @@ func testNotify(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	log.Infof("Notify config %s tested by from %s", req.Type, c.ClientIP())
+	log.Infof("Notify config %s tested by from %s", notifyData.Type, c.ClientIP())
 	resp.Success(c, nil)
 }
 
@@ -202,26 +231,38 @@ func testNotify(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body notifyModel.Data true "更新通知请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Data} "更新成功"
+// @Param id query int true "通知ID"
+// @Param request body notifyModel.Request true "更新通知请求"
+// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Response} "更新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 404 {object} resp.ErrorStruct "通知配置不存在"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify [put]
 func updateNotify(c *gin.Context) {
-	var req notifyModel.Data
+	var req notifyModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	if err := op.UpdateNotify(c.Request.Context(), &req); err != nil {
-		log.Errorf("Update notify config %d failed: %v", req.ID, err)
+	idParam := c.Query("id")
+	if idParam == "" {
+		resp.ErrorBadRequest(c)
+		return
+	}
+	id, err := strconv.ParseUint(idParam, 10, 16)
+	if err != nil {
+		resp.ErrorBadRequest(c)
+		return
+	}
+	notifyData := req.GenData(uint16(id))
+	if err := op.UpdateNotify(c.Request.Context(), &notifyData); err != nil {
+		log.Errorf("Update notify config %d failed: %v", id, err)
 		resp.Error(c, http.StatusInternalServerError, "update notify config failed")
 		return
 	}
-	log.Infof("Notify config %d updated by from %s", req.ID, c.ClientIP())
-	resp.Success(c, req)
+	log.Infof("Notify config %d updated by from %s", id, c.ClientIP())
+	resp.Success(c, notifyData.GenResponse())
 }
 
 // deleteNotify 删除通知
@@ -239,7 +280,6 @@ func updateNotify(c *gin.Context) {
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/notify [delete]
 func deleteNotify(c *gin.Context) {
-	// 获取查询参数中的ID
 	idParam := c.Query("id")
 	if idParam == "" {
 		resp.ErrorBadRequest(c)
