@@ -1327,7 +1327,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Data"
+                                                "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Response"
                                             }
                                         }
                                     }
@@ -1374,12 +1374,19 @@
                 "summary": "更新通知",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "通知ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "更新通知请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Data"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Request"
                         }
                     }
                 ],
@@ -1395,7 +1402,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Data"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Response"
                                         }
                                     }
                                 }
@@ -1452,7 +1459,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.CreateRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Request"
                         }
                     }
                 ],
@@ -1468,7 +1475,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Data"
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Response"
                                         }
                                     }
                                 }
@@ -1686,6 +1693,66 @@
                 }
             }
         },
+        "/api/v1/notify/name": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "通知"
+                ],
+                "summary": "获取通知名称和ID",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.NameAndID"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/notify/template": {
             "get": {
                 "security": [
@@ -1844,7 +1911,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.CreateRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Request"
                         }
                     }
                 ],
@@ -1852,19 +1919,7 @@
                     "200": {
                         "description": "测试成功",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_notify.Data"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
                         }
                     },
                     "400": {
@@ -2213,67 +2268,6 @@
                     }
                 }
             },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "更新存储",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "存储"
-                ],
-                "summary": "更新存储",
-                "parameters": [
-                    {
-                        "description": "存储配置数据",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.UpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "更新成功",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.Response"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -2298,7 +2292,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.CreateRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.Request"
                         }
                     }
                 ],
@@ -2468,6 +2462,74 @@
             }
         },
         "/api/v1/storage/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新存储",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储"
+                ],
+                "summary": "更新存储",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "存储ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "存储配置数据",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_storage.Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -2608,7 +2670,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.UpdateRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Request"
                         }
                     }
                 ],
@@ -2681,7 +2743,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.CreateRequest"
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Request"
                         }
                     }
                 ],
@@ -2698,6 +2760,66 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sub/name": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅"
+                ],
+                "summary": "获取订阅链接名称和ID",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.NameAndID"
+                                            }
                                         }
                                     }
                                 }
@@ -3027,6 +3149,9 @@
                 "desc": {
                     "type": "string"
                 },
+                "key": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3251,6 +3376,15 @@
                     "type": "integer",
                     "example": 1
                 },
+                "sub_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1
+                    ]
+                },
                 "timeout": {
                     "type": "integer",
                     "example": 60
@@ -3346,35 +3480,33 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_notify.CreateRequest": {
+        "github_com_bestruirui_bestsub_internal_models_notify.NameAndID": {
             "type": "object",
-            "required": [
-                "config",
-                "name",
-                "type"
-            ],
             "properties": {
-                "config": {
-                    "description": "通知配置",
-                    "type": "string",
-                    "example": "{\"server\":\"smtp.example.com\",\"port\":587,\"username\":\"test@example.com\",\"password\":\"test\",\"from\":\"test@example.com\",\"tls\":true,\"to\":\"test@example.com\"}"
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
-                    "description": "通知名称",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "通知类型",
                     "type": "string"
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_notify.Data": {
+        "github_com_bestruirui_bestsub_internal_models_notify.Request": {
             "type": "object",
             "properties": {
-                "config": {
+                "config": {},
+                "name": {
                     "type": "string"
                 },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_notify.Response": {
+            "type": "object",
+            "properties": {
+                "config": {},
                 "id": {
                     "type": "integer"
                 },
@@ -3390,11 +3522,9 @@
             "type": "object",
             "properties": {
                 "template": {
-                    "description": "模板内容",
                     "type": "string"
                 },
                 "type": {
-                    "description": "模板类型",
                     "type": "string"
                 }
             }
@@ -3463,7 +3593,7 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_storage.CreateRequest": {
+        "github_com_bestruirui_bestsub_internal_models_storage.Request": {
             "type": "object",
             "properties": {
                 "config": {},
@@ -3492,23 +3622,6 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_storage.UpdateRequest": {
-            "type": "object",
-            "properties": {
-                "config": {},
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "webdav"
-                },
-                "type": {
-                    "type": "string",
-                    "example": "webdav"
-                }
-            }
-        },
         "github_com_bestruirui_bestsub_internal_models_sub.Config": {
             "type": "object",
             "properties": {
@@ -3520,23 +3633,20 @@
                     "type": "integer",
                     "example": 10
                 },
+                "type": {
+                    "type": "string",
+                    "example": "clash"
+                },
                 "url": {
                     "type": "string"
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_sub.CreateRequest": {
+        "github_com_bestruirui_bestsub_internal_models_sub.NameAndID": {
             "type": "object",
             "properties": {
-                "config": {
-                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Config"
-                },
-                "cron_expr": {
-                    "type": "string",
-                    "example": "0 0 * * *"
-                },
-                "enable": {
-                    "type": "boolean"
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -3563,6 +3673,24 @@
                 },
                 "speed_up": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_sub.Request": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Config"
+                },
+                "cron_expr": {
+                    "type": "string",
+                    "example": "0 0 * * *"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -3627,27 +3755,6 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_sub.UpdateRequest": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Config"
-                },
-                "cron_expr": {
-                    "type": "string",
-                    "example": "0 0 * * *"
-                },
-                "enable": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_bestruirui_bestsub_internal_models_system.HealthResponse": {
             "type": "object",
             "properties": {
@@ -3707,6 +3814,9 @@
                 "desc": {
                     "type": "string"
                 },
+                "key": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3728,6 +3838,9 @@
                     "type": "string"
                 },
                 "desc": {
+                    "type": "string"
+                },
+                "key": {
                     "type": "string"
                 },
                 "name": {
