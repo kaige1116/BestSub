@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/bestruirui/bestsub/internal/core/check"
-	_ "github.com/bestruirui/bestsub/internal/core/check"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	checkModel "github.com/bestruirui/bestsub/internal/models/check"
