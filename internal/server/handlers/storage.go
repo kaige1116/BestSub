@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -19,12 +18,20 @@ func init() {
 	router.NewGroupRouter("/api/v1/storage").
 		Use(middleware.Auth()).
 		AddRoute(
-			router.NewRoute("/", router.POST).
+			router.NewRoute("", router.POST).
 				Handle(createStorage),
 		).
 		AddRoute(
-			router.NewRoute("/", router.GET).
+			router.NewRoute("", router.GET).
 				Handle(getStorage),
+		).
+		AddRoute(
+			router.NewRoute("/:id", router.PUT).
+				Handle(updateStorage),
+		).
+		AddRoute(
+			router.NewRoute("/:id", router.DELETE).
+				Handle(deleteStorage),
 		).
 		AddRoute(
 			router.NewRoute("/channel", router.GET).
@@ -33,14 +40,6 @@ func init() {
 		AddRoute(
 			router.NewRoute("/channel/config", router.GET).
 				Handle(getStorageChannelConfig),
-		).
-		AddRoute(
-			router.NewRoute("/", router.PUT).
-				Handle(updateStorage),
-		).
-		AddRoute(
-			router.NewRoute("/:id", router.DELETE).
-				Handle(deleteStorage),
 		)
 }
 
@@ -50,39 +49,24 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param data body storageModel.CreateRequest true "存储配置数据"
+// @Param data body storageModel.Request true "存储配置数据"
 // @Success 200 {object} resp.SuccessStruct{data=storageModel.Response} "创建成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/storage [post]
 func createStorage(c *gin.Context) {
-	var req storageModel.CreateRequest
+	var req storageModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Errorf("createStorage: %v", err)
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	configStr := string(configBytes)
-	data := storageModel.Data{
-		Name:   req.Name,
-		Type:   req.Type,
-		Config: configStr,
-	}
+	data := req.GenData(0)
 	if err := op.CreateStorage(c.Request.Context(), &data); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp.Success(c, storageModel.Response{
-		ID:     data.ID,
-		Name:   data.Name,
-		Type:   data.Type,
-		Config: req.Config,
-	})
+	resp.Success(c, data.GenResponse())
 }
 
 // @Summary 获取存储
@@ -101,19 +85,9 @@ func getStorage(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var result = make([]storageModel.Response, 0, len(storages))
-	for _, v := range storages {
-		var config any
-		if err := json.Unmarshal([]byte(v.Config), &config); err != nil {
-			resp.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		result = append(result, storageModel.Response{
-			ID:     v.ID,
-			Name:   v.Name,
-			Type:   v.Type,
-			Config: config,
-		})
+	result := make([]storageModel.Response, len(storages))
+	for i, v := range storages {
+		result[i] = v.GenResponse()
 	}
 	resp.Success(c, result)
 }
@@ -164,39 +138,30 @@ func getStorageChannelConfig(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param data body storageModel.UpdateRequest true "存储配置数据"
+// @Param id path string true "存储ID"
+// @Param data body storageModel.Request true "存储配置数据"
 // @Success 200 {object} resp.SuccessStruct{data=storageModel.Response} "更新成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/storage [put]
+// @Router /api/v1/storage/{id} [put]
 func updateStorage(c *gin.Context) {
-	var req storageModel.UpdateRequest
+	idStr := c.Param("id")
+	idUint, err := strconv.ParseUint(idStr, 10, 16)
+	if err != nil {
+		resp.ErrorBadRequest(c)
+		return
+	}
+	var req storageModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	configBytes, err := json.Marshal(req.Config)
-	if err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	configStr := string(configBytes)
-	data := storageModel.Data{
-		ID:     req.ID,
-		Name:   req.Name,
-		Type:   req.Type,
-		Config: configStr,
-	}
+	data := req.GenData(uint16(idUint))
 	if err := op.UpdateStorage(c.Request.Context(), &data); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp.Success(c, storageModel.Response{
-		ID:     data.ID,
-		Name:   data.Name,
-		Type:   data.Type,
-		Config: req.Config,
-	})
+	resp.Success(c, data.GenResponse())
 }
 
 // @Summary 删除存储
