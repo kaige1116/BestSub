@@ -12,7 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils"
 )
 
-func auto(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
+func auto(content *[]byte ) (*[]node.Data, error) {
 	utils.RemoveAllControlCharacters(content)
 
 	contentStr := strings.TrimSpace(string(*content))
@@ -21,11 +21,11 @@ func auto(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
 	}
 
 	if isSingBoxFormat(&contentStr) {
-		return singbox.Parse(content, sublinkID)
+		return singbox.Parse(content)
 	}
 
 	if isMihomoFormat(&contentStr) {
-		return mihomo.Parse(content, sublinkID)
+		return mihomo.Parse(content)
 	}
 
 	if isBase64Encoded(&contentStr) {
@@ -34,13 +34,13 @@ func auto(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
 			decodedStr := strings.TrimSpace(string(decoded))
 			if isV2rayFormat(&decodedStr) {
 				*content = decoded
-				return v2ray.Parse(content, sublinkID)
+				return v2ray.Parse(content)
 			}
 		}
 	}
 
 	if isV2rayFormat(&contentStr) {
-		return v2ray.Parse(content, sublinkID)
+		return v2ray.Parse(content)
 	}
 
 	return nil, fmt.Errorf("unknown subscription format")

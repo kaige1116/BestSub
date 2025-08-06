@@ -75,7 +75,7 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 		return createFailureResult(err.Error(), startTime)
 	}
 
-	nodes, err := parser.Parse(&content, parserModel.ParserTypeMihomo, subID)
+	nodes, err := parser.Parse(&content, parserModel.ParserTypeMihomo)
 	if err != nil {
 		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)

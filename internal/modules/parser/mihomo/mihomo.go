@@ -14,7 +14,7 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func Parse(content *[]byte, sublinkID uint16) (*[]node.Data, error) {
+func Parse(content *[]byte) (*[]node.Data, error) {
 
 	var inProxiesSection bool
 	var yamlBuffer bytes.Buffer
