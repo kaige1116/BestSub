@@ -41,7 +41,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.A
 	for _, config := range *configs {
 		_, err := stmt.ExecContext(ctx,
 			config.Key,
-			config.Value,
+			config.Default,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create system config key '%s': %w", config.Key, err)
@@ -71,7 +71,7 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]config.Advance,
 		var config config.Advance
 		if err := rows.Scan(
 			&config.Key,
-			&config.Value,
+			&config.Default,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan config: %w", err)
 		}
@@ -114,7 +114,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 		var config config.Advance
 		if err := rows.Scan(
 			&config.Key,
-			&config.Value,
+			&config.Default,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan config: %w", err)
 		}

@@ -33,7 +33,7 @@ func GetAllConfig(ctx context.Context) ([]config.GroupAdvance, error) {
 		for j := range sysConf[i].Data {
 			value, ok := sysConfCache[sysConf[i].Data[j].Key]
 			if ok {
-				sysConf[i].Data[j].Value = value
+				sysConf[i].Data[j].Default = value
 			}
 		}
 	}
@@ -71,8 +71,8 @@ func GetConfigByGroup(groupName string) ([]config.GroupAdvance, error) {
 				value, ok := sysConfCache[data.Key]
 				if ok {
 					result = append(result, config.Advance{
-						Key:   data.Key,
-						Value: value,
+						Key:     data.Key,
+						Default: value,
 					})
 				}
 			}
@@ -136,7 +136,7 @@ func refreshConfigCache(ctx context.Context) error {
 		return err
 	}
 	for _, config := range *configs {
-		configCache.Set(config.Key, config.Value)
+		configCache.Set(config.Key, config.Default)
 	}
 	return nil
 }

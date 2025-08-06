@@ -1,12 +1,8 @@
 package config
 
-type Advance struct {
-	Key         string `db:"key" json:"key"`
-	Value       string `db:"value" json:"value"`
-	Type        string `db:"-" json:"type"`
-	Options     string `db:"-" json:"options,omitempty"`
-	Description string `db:"-" json:"description,omitempty"`
-}
+import "github.com/bestruirui/bestsub/internal/utils/desc"
+
+type Advance = desc.Data
 
 type GroupAdvance struct {
 	GroupName   string    `json:"group_name"`
