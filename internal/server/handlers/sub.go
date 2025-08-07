@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/bestruirui/bestsub/internal/core/cron"
 	"github.com/bestruirui/bestsub/internal/core/nodepool"
-	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
@@ -69,8 +69,8 @@ func createSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	task.FetchAdd(&subData)
-	respData := subData.GenResponse(task.FetchStatus(subData.ID), sub.NodeInfo{})
+	cron.FetchAdd(&subData)
+	respData := subData.GenResponse(cron.FetchStatus(subData.ID), sub.NodeInfo{})
 	resp.Success(c, respData)
 }
 
@@ -96,7 +96,7 @@ func getSubs(c *gin.Context) {
 		}
 		var respSubList = make([]sub.Response, len(subList))
 		for i := range subList {
-			respSubList[i] = subList[i].GenResponse(task.FetchStatus(subList[i].ID), nodepool.GetPoolBySubID(subList[i].ID, 0).Info)
+			respSubList[i] = subList[i].GenResponse(cron.FetchStatus(subList[i].ID), nodepool.GetPoolBySubID(subList[i].ID, 0).Info)
 		}
 		resp.Success(c, respSubList)
 	} else {
@@ -111,7 +111,7 @@ func getSubs(c *gin.Context) {
 			return
 		}
 		var respSub = [1]sub.Response{}
-		respSub[0] = subData.GenResponse(task.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
+		respSub[0] = subData.GenResponse(cron.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
 		resp.Success(c, respSub)
 	}
 }
@@ -173,12 +173,12 @@ func updateSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := task.FetchUpdate(&subData); err != nil {
+	if err := cron.FetchUpdate(&subData); err != nil {
 		log.Errorf("failed to update sub: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respData := subData.GenResponse(task.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
+	respData := subData.GenResponse(cron.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
 	resp.Success(c, respData)
 }
 
@@ -207,7 +207,7 @@ func deleteSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := task.FetchRemove(uint16(id)); err != nil {
+	if err := cron.FetchRemove(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -236,6 +236,6 @@ func refreshSub(c *gin.Context) {
 		resp.ErrorBadRequest(c)
 		return
 	}
-	result := task.FetchRun(uint16(id))
+	result := cron.FetchRun(uint16(id))
 	resp.Success(c, result)
 }

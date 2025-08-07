@@ -1,4 +1,4 @@
-package task
+package cron
 
 import (
 	"context"
@@ -14,12 +14,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-type checkTask struct {
-	taskFunc func()
-	cronExpr string
-}
-
-var checkFunc = generic.MapOf[uint16, checkTask]{}
+var checkFunc = generic.MapOf[uint16, cronFunc]{}
 var checkScheduled = generic.MapOf[uint16, cron.EntryID]{}
 var checkRunning = generic.MapOf[uint16, context.CancelFunc]{}
 
@@ -42,8 +37,8 @@ func CheckAdd(data *checkModel.Data) error {
 		log.Errorf("failed to unmarshal task config: %v", err)
 		return err
 	}
-	checkFunc.Store(data.ID, checkTask{
-		taskFunc: func() {
+	checkFunc.Store(data.ID, cronFunc{
+		fn: func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(taskConfig.Timeout)*time.Minute)
 			checkRunning.Store(data.ID, cancel)
 			defer func() {
@@ -82,7 +77,7 @@ func CheckUpdate(data *checkModel.Data) error {
 
 func CheckRun(id uint16) error {
 	if ft, ok := checkFunc.Load(id); ok {
-		go ft.taskFunc()
+		go ft.fn()
 		return nil
 	} else {
 		return fmt.Errorf("check task %d not found", id)
@@ -95,7 +90,7 @@ func CheckEnable(id uint16) error {
 		return nil
 	}
 	if ft, ok := checkFunc.Load(id); ok {
-		entryID, err := scheduler.AddFunc(ft.cronExpr, ft.taskFunc)
+		entryID, err := scheduler.AddFunc(ft.cronExpr, ft.fn)
 		if err != nil {
 			log.Errorf("failed to add task: %v", err)
 			return err

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/bestruirui/bestsub/internal/config"
-	"github.com/bestruirui/bestsub/internal/core/task"
+	"github.com/bestruirui/bestsub/internal/core/cron"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/server/auth"
 	"github.com/bestruirui/bestsub/internal/server/server"
@@ -30,9 +30,9 @@ func main() {
 
 	server.Start()
 
-	task.Start()
-	task.FetchLoad()
-	task.CheckLoad()
+	cron.Start()
+	cron.FetchLoad()
+	cron.CheckLoad()
 
 	log.CleanupOldLogs(5)
 

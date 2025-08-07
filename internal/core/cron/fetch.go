@@ -1,4 +1,4 @@
-package task
+package cron
 
 import (
 	"context"
@@ -13,12 +13,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-type fetchTask struct {
-	taskFunc func()
-	cronExpr string
-}
-
-var fetchFunc = generic.MapOf[uint16, fetchTask]{}
+var fetchFunc = generic.MapOf[uint16, cronFunc]{}
 var fetchScheduled = generic.MapOf[uint16, cron.EntryID]{}
 var fetchRunning = generic.MapOf[uint16, context.CancelFunc]{}
 
@@ -37,8 +32,8 @@ func FetchLoad() {
 }
 
 func FetchAdd(data *subModel.Data) error {
-	fetchFunc.Store(data.ID, fetchTask{
-		taskFunc: func() {
+	fetchFunc.Store(data.ID, cronFunc{
+		fn: func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			fetchRunning.Store(data.ID, cancel)
 			defer func() {
@@ -58,7 +53,7 @@ func FetchAdd(data *subModel.Data) error {
 
 func FetchRun(subID uint16) subModel.Result {
 	if ft, ok := fetchFunc.Load(subID); ok {
-		ft.taskFunc()
+		ft.fn()
 	} else {
 		log.Warnf("fetch task %d not found", subID)
 		return subModel.Result{
@@ -91,7 +86,7 @@ func FetchEnable(subID uint16) error {
 		return nil
 	}
 	if ft, ok := fetchFunc.Load(subID); ok {
-		entryID, err := scheduler.AddFunc(ft.cronExpr, ft.taskFunc)
+		entryID, err := scheduler.AddFunc(ft.cronExpr, ft.fn)
 		if err != nil {
 			log.Errorf("failed to add task: %v", err)
 			return err

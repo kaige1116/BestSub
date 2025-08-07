@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/bestruirui/bestsub/internal/core/check"
-	"github.com/bestruirui/bestsub/internal/core/task"
+	"github.com/bestruirui/bestsub/internal/core/cron"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	checkModel "github.com/bestruirui/bestsub/internal/models/check"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
@@ -117,8 +117,8 @@ func createCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	task.CheckAdd(&checkData)
-	resp.Success(c, checkData.GenResponse(task.CheckStatus(checkData.ID)))
+	cron.CheckAdd(&checkData)
+	resp.Success(c, checkData.GenResponse(cron.CheckStatus(checkData.ID)))
 }
 
 // getCheck 获取检测列表
@@ -143,7 +143,7 @@ func getCheck(c *gin.Context) {
 		}
 		var respCheckList = make([]checkModel.Response, len(checkList))
 		for i := range checkList {
-			respCheckList[i] = checkList[i].GenResponse(task.CheckStatus(checkList[i].ID))
+			respCheckList[i] = checkList[i].GenResponse(cron.CheckStatus(checkList[i].ID))
 		}
 		resp.Success(c, respCheckList)
 	} else {
@@ -158,7 +158,7 @@ func getCheck(c *gin.Context) {
 			return
 		}
 		var respCheck = make([]checkModel.Response, 1)
-		respCheck[0] = check.GenResponse(task.CheckStatus(check.ID))
+		respCheck[0] = check.GenResponse(cron.CheckStatus(check.ID))
 		resp.Success(c, respCheck)
 	}
 }
@@ -201,12 +201,12 @@ func updateCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := task.CheckUpdate(&checkData); err != nil {
+	if err := cron.CheckUpdate(&checkData); err != nil {
 		log.Errorf("failed to update check: %v", err)
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp.Success(c, checkData.GenResponse(task.CheckStatus(checkData.ID)))
+	resp.Success(c, checkData.GenResponse(cron.CheckStatus(checkData.ID)))
 }
 
 // deleteCheck 删除检测
@@ -240,7 +240,7 @@ func deleteCheck(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, "failed to delete check")
 		return
 	}
-	if err := task.CheckRemove(uint16(id)); err != nil {
+	if err := cron.CheckRemove(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -278,7 +278,7 @@ func runCheck(c *gin.Context) {
 		return
 	}
 
-	if err := task.CheckRun(uint16(id)); err != nil {
+	if err := cron.CheckRun(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -315,7 +315,7 @@ func stopCheck(c *gin.Context) {
 		return
 	}
 
-	if err := task.CheckStop(uint16(id)); err != nil {
+	if err := cron.CheckStop(uint16(id)); err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
