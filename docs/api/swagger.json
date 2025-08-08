@@ -3398,19 +3398,25 @@
         "github_com_bestruirui_bestsub_internal_models_config.Advance": {
             "type": "object",
             "properties": {
-                "description": {
+                "default": {
+                    "type": "string"
+                },
+                "desc": {
                     "type": "string"
                 },
                 "key": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "options": {
                     "type": "string"
                 },
-                "type": {
-                    "type": "string"
+                "require": {
+                    "type": "boolean"
                 },
-                "value": {
+                "type": {
                     "type": "string"
                 }
             }
@@ -3455,8 +3461,11 @@
                 },
                 "country": {
                     "description": "ISO 3166数字国家代码（0表示不筛选，\u003e0表示具体国家，最大65535）",
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
                 },
                 "delayLessThan": {
                     "description": "延迟小于指定值（0表示不筛选，\u003e0表示具体值，毫秒，最大65535ms）",
@@ -3477,6 +3486,31 @@
                     "description": "上传速度大于指定值（0表示不筛选，\u003e0表示具体值，KB/s，最大65535KB/s）",
                     "type": "integer",
                     "format": "int32"
+                },
+                "subId": {
+                    "description": "订阅ID",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_node.SimpleInfo": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "delay": {
+                    "type": "integer"
+                },
+                "risk": {
+                    "type": "integer"
+                },
+                "speed_down": {
+                    "type": "integer"
+                },
+                "speed_up": {
+                    "type": "integer"
                 }
             }
         },
@@ -3653,29 +3687,6 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_sub.NodeInfo": {
-            "type": "object",
-            "properties": {
-                "alive_count": {
-                    "type": "integer"
-                },
-                "delay": {
-                    "type": "integer"
-                },
-                "raw_count": {
-                    "type": "integer"
-                },
-                "risk": {
-                    "type": "integer"
-                },
-                "speed_down": {
-                    "type": "integer"
-                },
-                "speed_up": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_bestruirui_bestsub_internal_models_sub.Request": {
             "type": "object",
             "properties": {
@@ -3712,11 +3723,11 @@
                 "id": {
                     "type": "integer"
                 },
+                "info": {
+                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_node.SimpleInfo"
+                },
                 "name": {
                     "type": "string"
-                },
-                "node_info": {
-                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.NodeInfo"
                 },
                 "result": {
                     "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Result"
@@ -3732,9 +3743,6 @@
         "github_com_bestruirui_bestsub_internal_models_sub.Result": {
             "type": "object",
             "properties": {
-                "count": {
-                    "type": "integer"
-                },
                 "duration": {
                     "type": "integer"
                 },

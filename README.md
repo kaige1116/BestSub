@@ -25,6 +25,10 @@
 
 - 要求：SVG格式
 
+## 📈 项目统计
+
+![Repobeats analytics image](https://repobeats.axiom.co/api/embed/dfefb13ae0ed117da68382c0ed63695992826039.svg "Repobeats analytics image")
+
 ## ❤️ 支持项目
 
 点亮 Star ⭐ 来支持项目开发！
