@@ -28,14 +28,11 @@ func Add(node *[]nodeModel.Base) int {
 		if !nodeExist.Exist(n.UniqueKey) && !nodeProcess.Exist(n.UniqueKey) {
 			nodeProcess.Add(n.UniqueKey)
 			nodesToProcess = append(nodesToProcess, n)
-		} else {
-			log.Debugf("exist %s", n.Raw)
 		}
 	}
 
 	if len(nodesToProcess) > 0 {
 		go func() {
-			log.Debugf("nodesToProcess: %d", len(nodesToProcess))
 			for _, node := range nodesToProcess {
 				wgSync.Add(1)
 				task.Submit(func() {
@@ -77,18 +74,16 @@ func Add(node *[]nodeModel.Base) int {
 				})
 
 			}
-			log.Debugf("nodesToProcess end: %d", len(nodesToProcess))
 		}()
 		if !wgStatus {
 			wgStatus = true
 			go func() {
 				time.Sleep(time.Second * 5)
 				wgSync.Wait()
-				log.Debugf("len %d", len(validNodes))
 				if len(validNodes) > 0 {
 					mergeNodesToPool(validNodes)
 					RefreshInfo()
-					log.Debugf("validNodes: %d", len(validNodes))
+					log.Infof("入库成功，新增节点: %d", len(validNodes))
 					validNodes = validNodes[:0]
 				}
 				wgStatus = false
@@ -101,7 +96,6 @@ func Add(node *[]nodeModel.Base) int {
 func ForEach(fn func(node []byte)) {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
-	log.Debugf("nodePool: %d", len(pool))
 	for _, node := range pool {
 		fn(node.Raw)
 	}
@@ -168,17 +162,14 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 	poolCap := cap(pool)
 
 	if poolLen < poolCap {
-		log.Debugf("poolLen < poolCap")
 		remainingCap := poolCap - poolLen
 		if len(newNodes) < remainingCap {
-			log.Debugf("newNodes < remainingCap")
 			pool = append(pool, newNodes...)
 			for _, node := range newNodes {
 				nodeExist.Add(node.Base.UniqueKey)
 			}
 			return
 		} else {
-			log.Debugf("newNodes > remainingCap")
 			pool = append(pool, newNodes[:remainingCap]...)
 			for _, node := range newNodes[:remainingCap] {
 				nodeExist.Add(node.Base.UniqueKey)
@@ -207,7 +198,6 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 func GetSubInfo(subID uint16) nodeModel.SimpleInfo {
 	refreshMutex.Lock()
 	defer refreshMutex.Unlock()
-	log.Debugf("subInfoMap: %v", subInfoMap)
 	return subInfoMap[subID]
 }
 

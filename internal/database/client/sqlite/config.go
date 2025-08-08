@@ -18,11 +18,10 @@ type SystemConfigRepository struct {
 }
 
 func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.Advance) error {
-	log.Debugf("Create: %v", configs)
 	if configs == nil || len(*configs) == 0 {
 		return nil
 	}
-
+	log.Debugf("Create %s : %s", (*configs)[0].Key, (*configs)[0].Default)
 	tx, err := r.db.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

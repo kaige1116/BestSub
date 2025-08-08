@@ -8,7 +8,6 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/utils/cache"
-	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
 var subRepo interfaces.SubRepository
@@ -102,7 +101,6 @@ func UpdateSubResult(ctx context.Context, id uint16, result subModel.Result) err
 		return err
 	}
 	subCache.Set(id, sub)
-	log.Infof("sub %d result updated", id)
 	return nil
 }
 func DeleteSub(ctx context.Context, id uint16) error {

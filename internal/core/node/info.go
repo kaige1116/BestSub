@@ -1,9 +1,6 @@
 package node
 
-import (
-	nodeModel "github.com/bestruirui/bestsub/internal/models/node"
-	"github.com/bestruirui/bestsub/internal/utils/log"
-)
+import nodeModel "github.com/bestruirui/bestsub/internal/models/node"
 
 func RefreshInfo() {
 	refreshMutex.Lock()
@@ -60,7 +57,6 @@ func RefreshInfo() {
 			Delay:     uint16(s.sumDelay / uint64(s.count)),
 			Risk:      uint8(s.sumRisk / uint64(s.count)),
 		}
-		log.Debugf("subInfoMap: %v", subInfoMap)
 	}
 	for country, c := range countryAggBuf {
 		if c.count == 0 {
@@ -73,7 +69,5 @@ func RefreshInfo() {
 			Delay:     uint16(c.sumDelay / uint64(c.count)),
 			Risk:      uint8(c.sumRisk / uint64(c.count)),
 		}
-		log.Debugf("countryInfoMap: %v", countryInfoMap)
 	}
-	log.Debugf("refreshInfo end")
 }

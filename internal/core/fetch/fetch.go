@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
-	"github.com/bestruirui/bestsub/internal/core/nodepool"
+	"github.com/bestruirui/bestsub/internal/core/node"
 	parserModel "github.com/bestruirui/bestsub/internal/models/parser"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/modules/parser"
@@ -25,13 +25,12 @@ func createFailureResult(msg string, startTime time.Time) subModel.Result {
 	}
 }
 
-func createSuccessResult(rawCount, count uint32, startTime time.Time) subModel.Result {
+func createSuccessResult(count uint32, startTime time.Time) subModel.Result {
 	return subModel.Result{
 		Success:  1,
 		Fail:     0,
-		Msg:      "fetch 任务执行完成",
-		RawCount: rawCount,
-		Count:    count,
+		Msg:      "订阅更新完成",
+		RawCount: count,
 		LastRun:  time.Now(),
 		Duration: uint16(time.Since(startTime).Milliseconds()),
 	}
@@ -46,7 +45,7 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 		return createFailureResult(err.Error(), startTime)
 	}
 
-	log.Infof("fetch 任务执行中 %d", subID)
+	log.Infof("订阅 %d 开始更新", subID)
 
 	client := mihomo.Default(subConfig.Proxy)
 	if client == nil {
@@ -75,18 +74,17 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 		return createFailureResult(err.Error(), startTime)
 	}
 
-	nodes, err := parser.Parse(&content, parserModel.ParserTypeMihomo)
+	nodes, err := parser.Parse(&content, parserModel.ParserTypeMihomo, subID)
 	if err != nil {
 		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
+	count := len(*nodes)
 
-	rawCount := uint32(len(*nodes))
-	subStorage := nodepool.GetPoolBySubID(subID, len(*nodes))
-	count := subStorage.AddNode(nodes)
+	node.Add(nodes)
 
-	log.Infof("fetch 任务执行完成 %d, 原始节点数: %d, 有效节点数: %d, 耗时: %dms",
-		subID, rawCount, count, uint16(time.Since(startTime).Milliseconds()))
+	log.Infof("订阅 %d 更新完成, 节点数: %d, 耗时: %dms",
+		subID, count, uint16(time.Since(startTime).Milliseconds()))
 
-	return createSuccessResult(rawCount, count, startTime)
+	return createSuccessResult(uint32(count), startTime)
 }
