@@ -10,7 +10,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/modules/parser/v2ray"
 )
 
-func Parse(content *[]byte, subType parserModel.ParserType) (*[]node.Data, error) {
+func Parse(content *[]byte, subType parserModel.ParserType) (*[]node.Base, error) {
 	if content == nil || len(*content) == 0 {
 		return nil, fmt.Errorf("content is empty")
 	}

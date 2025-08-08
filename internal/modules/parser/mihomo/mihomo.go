@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/bestruirui/bestsub/internal/models/node"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -14,7 +13,7 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func Parse(content *[]byte) (*[]node.Data, error) {
+func Parse(content *[]byte) (*[]node.Base, error) {
 
 	var inProxiesSection bool
 	var yamlBuffer bytes.Buffer
@@ -24,7 +23,7 @@ func Parse(content *[]byte) (*[]node.Data, error) {
 
 	contentReader := bytes.NewReader(*content)
 	scanner := bufio.NewScanner(contentReader)
-	var nodes []node.Data
+	var nodes []node.Base
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -80,7 +79,7 @@ func Parse(content *[]byte) (*[]node.Data, error) {
 	return &nodes, nil
 }
 
-func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Data) error {
+func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Base) error {
 	mihomoConfig := map[string]any{}
 	if err := yaml.Unmarshal(*nodeYAML, &mihomoConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal to config struct: %v", err)
@@ -89,14 +88,11 @@ func parseProxyNode(nodeYAML *[]byte, nodes *[]node.Data) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert to JSON: %v", err)
 	}
-	nodeData := &node.Data{
-		Raw: jsonBytes,
-		Info: node.Info{
-			UniqueKey: generateUniqueKey(&mihomoConfig),
-			AddTime:   uint64(time.Now().Unix()),
-		},
+	nodeData := node.Base{
+		Raw:       jsonBytes,
+		UniqueKey: generateUniqueKey(&mihomoConfig),
 	}
-	*nodes = append(*nodes, *nodeData)
+	*nodes = append(*nodes, nodeData)
 	return nil
 }
 

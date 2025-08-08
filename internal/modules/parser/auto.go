@@ -12,7 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils"
 )
 
-func auto(content *[]byte ) (*[]node.Data, error) {
+func auto(content *[]byte) (*[]node.Base, error) {
 	utils.RemoveAllControlCharacters(content)
 
 	contentStr := strings.TrimSpace(string(*content))
