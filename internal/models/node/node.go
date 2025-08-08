@@ -15,8 +15,14 @@ const (
 )
 
 type Data struct {
-	Raw  []byte // 节点配置的JSON格式数据
-	Info Info   // 节点Info结构体（值类型）
+	Base
+	Info *Info // 节点Info结构体（值类型）
+}
+
+type Base struct {
+	Raw       []byte // 节点配置的JSON格式数据
+	SubId     uint16 // 订阅ID
+	UniqueKey uint64 // 唯一键
 }
 
 type Info struct {
@@ -27,18 +33,16 @@ type Info struct {
 	AliveStatus uint16
 	IP          uint32
 	Country     uint16
-
-	AddTime   uint64 // 入库时间戳
-	UniqueKey uint64 // 唯一键
 }
 
 type Filter struct {
-	SpeedUpMore   uint32 // 上传速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
-	SpeedDownMore uint32 // 下载速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
-	Country       uint16 // ISO 3166数字国家代码（0表示不筛选，>0表示具体国家，最大65535）
-	DelayLessThan uint16 // 延迟小于指定值（0表示不筛选，>0表示具体值，毫秒，最大65535ms）
-	AliveStatus   uint16 // 存活状态位字段筛选（0表示不筛选，其他值表示必须匹配的位）
-	RiskLessThan  uint8  // 风险等级小于指定值（0表示不筛选，>0表示具体值，百分比，最大255）
+	SubId         uint16   // 订阅ID
+	SpeedUpMore   uint32   // 上传速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	SpeedDownMore uint32   // 下载速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
+	Country       []uint16 // ISO 3166数字国家代码（0表示不筛选，>0表示具体国家，最大65535）
+	DelayLessThan uint16   // 延迟小于指定值（0表示不筛选，>0表示具体值，毫秒，最大65535ms）
+	AliveStatus   uint16   // 存活状态位字段筛选（0表示不筛选，其他值表示必须匹配的位）
+	RiskLessThan  uint8    // 风险等级小于指定值（0表示不筛选，>0表示具体值，百分比，最大255）
 }
 
 func (i *Info) SetAliveStatus(AliveStatus uint16, status bool) {
