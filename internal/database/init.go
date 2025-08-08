@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
+	"github.com/bestruirui/bestsub/internal/database/op"
 	authModel "github.com/bestruirui/bestsub/internal/models/auth"
 	"github.com/bestruirui/bestsub/internal/models/config"
 	"github.com/bestruirui/bestsub/internal/models/notify"
@@ -32,15 +33,15 @@ func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 }
 func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigRepository) error {
 	defaultSystemConfig := config.DefaultAdvance()
-	existingSystemConfig, err := systemConfig.GetAll(ctx)
+	existingSystemConfig, err := op.GetAllRawConfig(ctx)
 	notExistConfig := make([]config.Advance, 0)
 	if err != nil {
 		log.Fatalf("failed to get existing system config: %v", err)
 	}
 
 	existingSystemConfigMap := make(map[string]bool)
-	for _, config := range *existingSystemConfig {
-		existingSystemConfigMap[config.Key] = true
+	for _, item := range *existingSystemConfig {
+		existingSystemConfigMap[item.Key] = true
 	}
 
 	for _, group := range defaultSystemConfig {

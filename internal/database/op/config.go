@@ -19,6 +19,22 @@ func ConfigRepo() interfaces.ConfigRepository {
 	}
 	return configRepo
 }
+func GetAllRawConfig(ctx context.Context) (*[]config.Advance, error) {
+	var result []config.Advance
+	if configCache.Len() == 0 {
+		err := refreshConfigCache(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for key, value := range configCache.GetAll() {
+		result = append(result, config.Advance{
+			Key:     key,
+			Default: value,
+		})
+	}
+	return &result, nil
+}
 func GetAllConfig(ctx context.Context) ([]config.GroupAdvance, error) {
 	sysConf := config.DefaultAdvance()
 	sysConfCache := configCache.GetAll()

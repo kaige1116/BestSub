@@ -32,10 +32,46 @@ var system = GroupAdvance{
 			Default: "socks5://user:pass@127.0.0.1:1080",
 		},
 		{
+			Name:    "日志保留天数",
+			Type:    "number",
+			Key:     "log.retention_days",
+			Default: "7",
+		},
+	},
+}
+var node = GroupAdvance{
+	GroupName:   "node",
+	Description: "节点配置",
+	Data: []Advance{
+		{
 			Name:    "节点池大小",
 			Type:    "number",
 			Key:     "node.pool_size",
 			Default: "1000",
+		},
+		{
+			Name:    "默认测试地址",
+			Type:    "string",
+			Key:     "node.test_url",
+			Default: "https://www.gstatic.com/generate_204",
+		},
+		{
+			Name:    "默认测试超时时间（秒）",
+			Type:    "number",
+			Key:     "node.test_timeout",
+			Default: "5",
+		},
+	},
+}
+var task = GroupAdvance{
+	GroupName:   "task",
+	Description: "任务配置",
+	Data: []Advance{
+		{
+			Name:    "最大线程数",
+			Type:    "number",
+			Key:     "task.max_thread",
+			Default: "200",
 		},
 		{
 			Name:    "任务最大超时时间（秒）",
@@ -49,12 +85,12 @@ var system = GroupAdvance{
 			Key:     "task.max_retry",
 			Default: "3",
 		},
-		{
-			Name:    "日志保留天数",
-			Type:    "number",
-			Key:     "log.retention_days",
-			Default: "7",
-		},
+	},
+}
+var notify = GroupAdvance{
+	GroupName:   "notify",
+	Description: "通知配置",
+	Data: []Advance{
 		{
 			Name:    "需要通知的操作类型",
 			Type:    "number",
@@ -72,6 +108,9 @@ var system = GroupAdvance{
 
 var defaultAdvance = []GroupAdvance{
 	system,
+	node,
+	task,
+	notify,
 }
 
 func DefaultAdvance() []GroupAdvance {
