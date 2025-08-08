@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"slices"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
@@ -16,18 +15,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-var poolMutex sync.RWMutex
-var nodePool []nodeModel.Data
-var nodeExist *exist
-var nodeProcess *exist
-
-var wgSync sync.WaitGroup
-var wgStatus bool
-var validNodes []nodeModel.Data
-var validMutex sync.Mutex
-
 func InitNodePool(size int) {
-	nodePool = make([]nodeModel.Data, 0, size)
+	pool = make([]nodeModel.Data, 0, size)
 	nodeExist = NewExist(size)
 	nodeProcess = NewExist(size)
 }
@@ -39,16 +28,18 @@ func Add(node *[]nodeModel.Base) int {
 		if !nodeExist.Exist(n.UniqueKey) && !nodeProcess.Exist(n.UniqueKey) {
 			nodeProcess.Add(n.UniqueKey)
 			nodesToProcess = append(nodesToProcess, n)
+		} else {
+			log.Debugf("exist %s", n.Raw)
 		}
 	}
 
 	if len(nodesToProcess) > 0 {
-		wgSync.Add(1)
 		go func() {
-			defer wgSync.Done()
 			log.Debugf("nodesToProcess: %d", len(nodesToProcess))
 			for _, node := range nodesToProcess {
+				wgSync.Add(1)
 				task.Submit(func() {
+					defer wgSync.Done()
 					defer nodeProcess.Remove(node.UniqueKey)
 					var raw map[string]any
 					if err := json.Unmarshal(node.Raw, &raw); err != nil {
@@ -84,15 +75,19 @@ func Add(node *[]nodeModel.Base) int {
 					})
 					validMutex.Unlock()
 				})
+
 			}
 			log.Debugf("nodesToProcess end: %d", len(nodesToProcess))
 		}()
 		if !wgStatus {
 			wgStatus = true
 			go func() {
+				time.Sleep(time.Second * 5)
 				wgSync.Wait()
+				log.Debugf("len %d", len(validNodes))
 				if len(validNodes) > 0 {
 					mergeNodesToPool(validNodes)
+					RefreshInfo()
 					log.Debugf("validNodes: %d", len(validNodes))
 					validNodes = validNodes[:0]
 				}
@@ -106,8 +101,8 @@ func Add(node *[]nodeModel.Base) int {
 func ForEach(fn func(node []byte)) {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
-	log.Debugf("nodePool: %d", len(nodePool))
-	for _, node := range nodePool {
+	log.Debugf("nodePool: %d", len(pool))
+	for _, node := range pool {
 		fn(node.Raw)
 	}
 }
@@ -115,14 +110,14 @@ func ForEach(fn func(node []byte)) {
 func GetAll() []nodeModel.Data {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
-	return nodePool
+	return pool
 }
 
 func GetBySubId(subId uint16) *[]nodeModel.Data {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
 	var result []nodeModel.Data
-	for _, node := range nodePool {
+	for _, node := range pool {
 		if node.Base.SubId == subId {
 			result = append(result, node)
 		}
@@ -134,7 +129,7 @@ func GetByFilter(filter nodeModel.Filter) *[]nodeModel.Data {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
 	var result []nodeModel.Data
-	for _, node := range nodePool {
+	for _, node := range pool {
 		if filter.SubId != 0 && node.Base.SubId != filter.SubId {
 			continue
 		}
@@ -169,22 +164,22 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 	poolMutex.Lock()
 	defer poolMutex.Unlock()
 
-	poolLen := len(nodePool)
-	poolCap := cap(nodePool)
+	poolLen := len(pool)
+	poolCap := cap(pool)
 
 	if poolLen < poolCap {
 		log.Debugf("poolLen < poolCap")
 		remainingCap := poolCap - poolLen
 		if len(newNodes) < remainingCap {
 			log.Debugf("newNodes < remainingCap")
-			nodePool = append(nodePool, newNodes...)
+			pool = append(pool, newNodes...)
 			for _, node := range newNodes {
 				nodeExist.Add(node.Base.UniqueKey)
 			}
 			return
 		} else {
 			log.Debugf("newNodes > remainingCap")
-			nodePool = append(nodePool, newNodes[:remainingCap]...)
+			pool = append(pool, newNodes[:remainingCap]...)
 			for _, node := range newNodes[:remainingCap] {
 				nodeExist.Add(node.Base.UniqueKey)
 			}
@@ -192,19 +187,32 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 		}
 	}
 
-	sort.Slice(nodePool, func(i, j int) bool {
-		return nodePool[i].Info.Delay.Average() < nodePool[j].Info.Delay.Average()
+	sort.Slice(pool, func(i, j int) bool {
+		return pool[i].Info.Delay.Average() < pool[j].Info.Delay.Average()
 	})
 
 	newNodeIndex := 0
-	for i := len(nodePool) - 1; i >= 0 && newNodeIndex < len(newNodes); i-- {
-		if newNodes[newNodeIndex].Info.Delay.Average() < nodePool[i].Info.Delay.Average() {
-			nodeExist.Remove(nodePool[i].Base.UniqueKey)
-			nodePool[i] = newNodes[newNodeIndex]
+	for i := len(pool) - 1; i >= 0 && newNodeIndex < len(newNodes); i-- {
+		if newNodes[newNodeIndex].Info.Delay.Average() < pool[i].Info.Delay.Average() {
+			nodeExist.Remove(pool[i].Base.UniqueKey)
+			pool[i] = newNodes[newNodeIndex]
 			nodeExist.Add(newNodes[newNodeIndex].Base.UniqueKey)
 			newNodeIndex++
 		} else {
 			return
 		}
 	}
+}
+
+func GetSubInfo(subID uint16) nodeModel.SimpleInfo {
+	refreshMutex.Lock()
+	defer refreshMutex.Unlock()
+	log.Debugf("subInfoMap: %v", subInfoMap)
+	return subInfoMap[subID]
+}
+
+func GetCountryInfo(country uint16) nodeModel.SimpleInfo {
+	refreshMutex.Lock()
+	defer refreshMutex.Unlock()
+	return countryInfoMap[country]
 }

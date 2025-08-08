@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/bestruirui/bestsub/internal/core/cron"
-	"github.com/bestruirui/bestsub/internal/core/nodepool"
+	"github.com/bestruirui/bestsub/internal/core/node"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
@@ -70,7 +70,7 @@ func createSub(c *gin.Context) {
 		return
 	}
 	cron.FetchAdd(&subData)
-	respData := subData.GenResponse(cron.FetchStatus(subData.ID), sub.NodeInfo{})
+	respData := subData.GenResponse(cron.FetchStatus(subData.ID), node.GetSubInfo(subData.ID))
 	resp.Success(c, respData)
 }
 
@@ -96,7 +96,7 @@ func getSubs(c *gin.Context) {
 		}
 		var respSubList = make([]sub.Response, len(subList))
 		for i := range subList {
-			respSubList[i] = subList[i].GenResponse(cron.FetchStatus(subList[i].ID), nodepool.GetPoolBySubID(subList[i].ID, 0).Info)
+			respSubList[i] = subList[i].GenResponse(cron.FetchStatus(subList[i].ID), node.GetSubInfo(subList[i].ID))
 		}
 		resp.Success(c, respSubList)
 	} else {
@@ -111,7 +111,7 @@ func getSubs(c *gin.Context) {
 			return
 		}
 		var respSub = [1]sub.Response{}
-		respSub[0] = subData.GenResponse(cron.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
+		respSub[0] = subData.GenResponse(cron.FetchStatus(subData.ID), node.GetSubInfo(subData.ID))
 		resp.Success(c, respSub)
 	}
 }
@@ -178,7 +178,7 @@ func updateSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respData := subData.GenResponse(cron.FetchStatus(subData.ID), nodepool.GetPoolBySubID(subData.ID, 0).Info)
+	respData := subData.GenResponse(cron.FetchStatus(subData.ID), node.GetSubInfo(subData.ID))
 	resp.Success(c, respData)
 }
 
@@ -211,7 +211,7 @@ func deleteSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	nodepool.DeletePool(uint16(id))
+	// TODO: 删除节点池
 	resp.Success(c, nil)
 }
 

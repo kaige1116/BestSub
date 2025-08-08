@@ -3,6 +3,8 @@ package sub
 import (
 	"encoding/json"
 	"time"
+
+	nodeModel "github.com/bestruirui/bestsub/internal/models/node"
 )
 
 type Data struct {
@@ -32,19 +34,9 @@ type Result struct {
 	Success  uint16    `json:"success,omitempty" description:"成功次数"`
 	Fail     uint16    `json:"fail,omitempty" description:"失败次数"`
 	Msg      string    `json:"msg,omitempty" description:"消息"`
-	RawCount uint32    `json:"raw_count,omitempty" description:"原始节点数量"`
-	Count    uint32    `json:"count,omitempty" description:"去重后的节点数量"`
+	RawCount uint32    `json:"raw_count,omitempty" description:"节点数量"`
 	LastRun  time.Time `json:"last_run,omitempty" description:"上次运行时间"`
 	Duration uint16    `json:"duration,omitempty" description:"运行时长(单位:毫秒)"`
-}
-
-type NodeInfo struct {
-	RawCount   int32  `json:"raw_count" description:"原始节点数量"`
-	AliveCount int32  `json:"alive_count" description:"存活节点数量"`
-	SpeedUp    uint32 `json:"speed_up" description:"平均上行速度"`
-	SpeedDown  uint32 `json:"speed_down" description:"平均下行速度"`
-	Delay      uint16 `json:"delay" description:"平均延迟"`
-	Risk       uint8  `json:"risk" description:"平均风险"`
 }
 
 type Request struct {
@@ -55,16 +47,16 @@ type Request struct {
 }
 
 type Response struct {
-	ID        uint16    `json:"id" description:"订阅任务ID"`
-	Name      string    `json:"name" description:"订阅任务名称"`
-	Enable    bool      `json:"enable" description:"是否启用"`
-	CronExpr  string    `json:"cron_expr" description:"cron表达式"`
-	Config    Config    `json:"config" description:"订阅器配置"`
-	Status    string    `json:"status" description:"订阅状态"`
-	Result    Result    `json:"result" description:"订阅结果"`
-	NodeInfo  NodeInfo  `json:"node_info" description:"节点信息"`
-	CreatedAt time.Time `json:"created_at" description:"创建时间"`
-	UpdatedAt time.Time `json:"updated_at" description:"更新时间"`
+	ID        uint16               `json:"id" description:"订阅任务ID"`
+	Name      string               `json:"name" description:"订阅任务名称"`
+	Enable    bool                 `json:"enable" description:"是否启用"`
+	CronExpr  string               `json:"cron_expr" description:"cron表达式"`
+	Config    Config               `json:"config" description:"订阅器配置"`
+	Status    string               `json:"status" description:"订阅状态"`
+	Result    Result               `json:"result" description:"订阅结果"`
+	Info      nodeModel.SimpleInfo `json:"info" description:"订阅信息"`
+	CreatedAt time.Time            `json:"created_at" description:"创建时间"`
+	UpdatedAt time.Time            `json:"updated_at" description:"更新时间"`
 }
 
 func (c *Request) GenData(id uint16) Data {
@@ -80,7 +72,7 @@ func (c *Request) GenData(id uint16) Data {
 		Config:   string(configBytes),
 	}
 }
-func (d *Data) GenResponse(status string, nodeInfo NodeInfo) Response {
+func (d *Data) GenResponse(status string, subInfo nodeModel.SimpleInfo) Response {
 	var config Config
 	json.Unmarshal([]byte(d.Config), &config)
 	var result Result
@@ -93,7 +85,7 @@ func (d *Data) GenResponse(status string, nodeInfo NodeInfo) Response {
 		Config:    config,
 		Status:    status,
 		Result:    result,
-		NodeInfo:  nodeInfo,
+		Info:      subInfo,
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
 	}

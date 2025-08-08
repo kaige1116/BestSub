@@ -35,6 +35,14 @@ type Info struct {
 	Country     uint16
 }
 
+type SimpleInfo struct {
+	SpeedUp   uint32 `json:"speed_up"`
+	SpeedDown uint32 `json:"speed_down"`
+	Delay     uint16 `json:"delay"`
+	Risk      uint8  `json:"risk"`
+	Count     uint32 `json:"count"`
+}
+
 type Filter struct {
 	SubId         uint16   // 订阅ID
 	SpeedUpMore   uint32   // 上传速度大于指定值（0表示不筛选，>0表示具体值，KB/s，最大65535KB/s）
