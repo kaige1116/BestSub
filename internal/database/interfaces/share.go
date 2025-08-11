@@ -21,7 +21,7 @@ type ShareRepository interface {
 	UpdateAccessCount(ctx context.Context, shareLink *[]share.UpdateAccessCountDB) error
 
 	// GetConfigByToken 根据token获取分享链接配置
-	GetConfigByToken(ctx context.Context, token string) (string, error)
+	GetGenByToken(ctx context.Context, token string) (string, error)
 
 	// Delete 删除分享链接
 	Delete(ctx context.Context, id uint16) error

@@ -74,9 +74,11 @@ CREATE TABLE IF NOT EXISTS "share" (
 	"id" INTEGER NOT NULL,
 	"enable" BOOLEAN NOT NULL DEFAULT false,
 	"name" TEXT NOT NULL,
+	"gen" TEXT NOT NULL,
 	"token" TEXT NOT NULL UNIQUE,
-	"access_count" INTEGER NOT NULL,
-	"config" TEXT NOT NULL,
+	"access_count" INTEGER DEFAULT 0,
+	"max_access_count" INTEGER DEFAULT 0,
+	"expires" INTEGER DEFAULT 0,
 	PRIMARY KEY("id")
 );
 

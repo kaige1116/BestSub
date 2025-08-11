@@ -20,15 +20,16 @@ func (db *DB) Share() interfaces.ShareRepository {
 
 func (r *ShareRepository) Create(ctx context.Context, shareData *share.Data) error {
 	log.Debugf("Create share")
-	query := `INSERT INTO share (enable, name, token, config, access_count)
-	          VALUES (?, ?, ?, ?, ?)`
+	query := `INSERT INTO share (enable, name, token, gen, max_access_count, expires)
+	          VALUES (?, ?, ?, ?, ?, ?)`
 
 	result, err := r.db.db.ExecContext(ctx, query,
 		shareData.Enable,
 		shareData.Name,
 		shareData.Token,
-		shareData.Config,
-		shareData.AccessCount,
+		shareData.Gen,
+		shareData.MaxAccessCount,
+		shareData.Expires,
 	)
 
 	if err != nil {
@@ -47,7 +48,7 @@ func (r *ShareRepository) Create(ctx context.Context, shareData *share.Data) err
 
 func (r *ShareRepository) GetByID(ctx context.Context, id uint16) (*share.Data, error) {
 	log.Debugf("Get share by id")
-	query := `SELECT id, enable, name, token, config, access_count
+	query := `SELECT id, enable, name, token, gen, access_count, expires, max_access_count
 	          FROM share WHERE id = ?`
 
 	var shareData share.Data
@@ -56,8 +57,10 @@ func (r *ShareRepository) GetByID(ctx context.Context, id uint16) (*share.Data, 
 		&shareData.Enable,
 		&shareData.Name,
 		&shareData.Token,
-		&shareData.Config,
+		&shareData.Gen,
 		&shareData.AccessCount,
+		&shareData.Expires,
+		&shareData.MaxAccessCount,
 	)
 
 	if err != nil {
@@ -72,14 +75,16 @@ func (r *ShareRepository) GetByID(ctx context.Context, id uint16) (*share.Data, 
 
 func (r *ShareRepository) Update(ctx context.Context, shareData *share.Data) error {
 	log.Debugf("Update share")
-	query := `UPDATE share SET enable = ?, name = ?, token = ?, config = ?, access_count = ? WHERE id = ?`
+	query := `UPDATE share SET enable = ?, name = ?, token = ?, gen = ?, access_count = ?, max_access_count = ?, expires = ? WHERE id = ?`
 
 	_, err := r.db.db.ExecContext(ctx, query,
 		shareData.Enable,
 		shareData.Name,
 		shareData.Token,
-		shareData.Config,
+		shareData.Gen,
 		shareData.AccessCount,
+		shareData.MaxAccessCount,
+		shareData.Expires,
 		shareData.ID,
 	)
 
@@ -137,7 +142,7 @@ func (r *ShareRepository) Delete(ctx context.Context, id uint16) error {
 
 func (r *ShareRepository) List(ctx context.Context) (*[]share.Data, error) {
 	log.Debugf("List share")
-	query := `SELECT id, enable, name, token, config, access_count
+	query := `SELECT id, enable, name, token, gen, access_count, expires, max_access_count
 	          FROM share`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
@@ -154,8 +159,10 @@ func (r *ShareRepository) List(ctx context.Context) (*[]share.Data, error) {
 			&shareData.Enable,
 			&shareData.Name,
 			&shareData.Token,
-			&shareData.Config,
+			&shareData.Gen,
 			&shareData.AccessCount,
+			&shareData.Expires,
+			&shareData.MaxAccessCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan share link: %w", err)
@@ -169,9 +176,9 @@ func (r *ShareRepository) List(ctx context.Context) (*[]share.Data, error) {
 
 	return &shareDatas, nil
 }
-func (r *ShareRepository) GetConfigByToken(ctx context.Context, token string) (string, error) {
+func (r *ShareRepository) GetGenByToken(ctx context.Context, token string) (string, error) {
 	log.Debugf("Get config by token")
-	query := `SELECT config FROM share WHERE token = ?`
+	query := `SELECT gen FROM share WHERE token = ?`
 
 	var config string
 	err := r.db.db.QueryRowContext(ctx, query, token).Scan(&config)
