@@ -148,13 +148,14 @@ func getSubNameAndID(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param id path int true "订阅链接ID"
 // @Param request body sub.Request true "更新订阅链接请求"
 // @Success 200 {object} resp.SuccessStruct{data=sub.Response} "更新成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/sub [put]
+// @Router /api/v1/sub/{id} [put]
 func updateSub(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 16)
