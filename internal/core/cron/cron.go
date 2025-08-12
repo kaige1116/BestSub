@@ -13,6 +13,13 @@ type cronFunc struct {
 
 var scheduler = cron.New(cron.WithLocation(time.Local))
 
+const (
+	RunningStatus   = "running"
+	ScheduledStatus = "scheduled"
+	PendingStatus   = "pending"
+	DisabledStatus  = "disabled"
+)
+
 func Start() {
 	scheduler.Start()
 }

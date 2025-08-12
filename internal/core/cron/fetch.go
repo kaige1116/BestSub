@@ -25,9 +25,6 @@ func FetchLoad() {
 	}
 	for _, data := range subData {
 		FetchAdd(&data)
-		if data.Enable {
-			FetchEnable(data.ID)
-		}
 	}
 }
 
@@ -82,7 +79,7 @@ func FetchRun(subID uint16) subModel.Result {
 
 func FetchEnable(subID uint16) error {
 	if _, ok := fetchScheduled.Load(subID); ok {
-		log.Infof("fetch task %d already scheduled", subID)
+		log.Warnf("fetch task %d already scheduled", subID)
 		return nil
 	}
 	if ft, ok := fetchFunc.Load(subID); ok {
@@ -133,13 +130,13 @@ func FetchUpdate(data *subModel.Data) error {
 }
 func FetchStatus(subID uint16) string {
 	if _, ok := fetchRunning.Load(subID); ok {
-		return "running"
+		return RunningStatus
 	}
 	if _, ok := fetchScheduled.Load(subID); ok {
-		return "scheduled"
+		return ScheduledStatus
 	}
 	if _, ok := fetchFunc.Load(subID); ok {
-		return "pending"
+		return PendingStatus
 	}
-	return "disabled"
+	return DisabledStatus
 }

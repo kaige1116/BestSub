@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/check"
+	"github.com/bestruirui/bestsub/internal/core/node"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	checkModel "github.com/bestruirui/bestsub/internal/models/check"
 	"github.com/bestruirui/bestsub/internal/utils/generic"
@@ -26,9 +27,6 @@ func CheckLoad() {
 	}
 	for _, data := range checkData {
 		CheckAdd(&data)
-		if data.Enable {
-			CheckEnable(data.ID)
-		}
 	}
 }
 func CheckAdd(data *checkModel.Data) error {
@@ -61,6 +59,7 @@ func CheckAdd(data *checkModel.Data) error {
 			}
 			result := checker.Run(ctx, logger, taskConfig.SubID)
 			op.UpdateCheckResult(data.ID, result)
+			node.RefreshInfo()
 		},
 		cronExpr: taskConfig.CronExpr,
 	})
@@ -86,7 +85,7 @@ func CheckRun(id uint16) error {
 
 func CheckEnable(id uint16) error {
 	if _, ok := checkScheduled.Load(id); ok {
-		log.Infof("check task %d already scheduled", id)
+		log.Warnf("check task %d already scheduled", id)
 		return nil
 	}
 	if ft, ok := checkFunc.Load(id); ok {
@@ -132,13 +131,13 @@ func CheckStop(id uint16) error {
 }
 func CheckStatus(id uint16) string {
 	if _, ok := checkRunning.Load(id); ok {
-		return "running"
+		return RunningStatus
 	}
 	if _, ok := checkScheduled.Load(id); ok {
-		return "scheduled"
+		return ScheduledStatus
 	}
 	if _, ok := checkFunc.Load(id); ok {
-		return "pending"
+		return PendingStatus
 	}
-	return "disabled"
+	return DisabledStatus
 }
