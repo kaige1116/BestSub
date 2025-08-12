@@ -56,10 +56,9 @@ func (r *SubRepository) GetByID(ctx context.Context, id uint16) (*sub.Data, erro
 	          FROM sub WHERE id = ?`
 
 	var s sub.Data
-	var enable bool
 	err := r.db.db.QueryRowContext(ctx, query, id).Scan(
 		&s.ID,
-		&enable,
+		&s.Enable,
 		&s.Name,
 		&s.CronExpr,
 		&s.Config,
@@ -114,7 +113,7 @@ func (r *SubRepository) Delete(ctx context.Context, id uint16) error {
 func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
 	log.Debugf("List sub")
 	query := `SELECT id, enable, name, cron_expr, config, result, created_at, updated_at
-	          FROM sub ORDER BY created_at DESC`
+	          FROM sub ORDER BY id DESC`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
@@ -125,10 +124,9 @@ func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
 	var subs []sub.Data
 	for rows.Next() {
 		var s sub.Data
-		var enable bool
 		err := rows.Scan(
 			&s.ID,
-			&enable,
+			&s.Enable,
 			&s.Name,
 			&s.CronExpr,
 			&s.Config,
