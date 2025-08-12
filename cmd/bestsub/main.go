@@ -3,7 +3,11 @@ package main
 import (
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/cron"
+	"github.com/bestruirui/bestsub/internal/core/node"
+	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database"
+	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/modules/subconverter"
 	"github.com/bestruirui/bestsub/internal/server/auth"
 	"github.com/bestruirui/bestsub/internal/server/server"
 	"github.com/bestruirui/bestsub/internal/utils/info"
@@ -29,14 +33,20 @@ func main() {
 	}
 
 	server.Start()
+	subconverter.Start()
+
+	task.Init(op.GetConfigInt("task.max_thread"))
 
 	cron.Start()
 	cron.FetchLoad()
 	cron.CheckLoad()
 
+	node.InitNodePool(op.GetConfigInt("node.pool_size"))
+
 	log.CleanupOldLogs(5)
 
-	shutdown.Register(server.Close)      // 关闭顺序
+	shutdown.Register(subconverter.Stop) // 关闭顺序
+	shutdown.Register(server.Close)      //   ↓↓
 	shutdown.Register(database.Close)    //   ↓↓
 	shutdown.Register(auth.CloseSession) //   ↓↓
 	shutdown.Register(log.Close)         //   ↓↓

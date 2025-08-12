@@ -2,11 +2,12 @@ package config
 
 // Base 全局配置
 type Base struct {
-	Server   ServerConfig   `json:"server"`
-	Database DatabaseConfig `json:"database"`
-	Log      LogConfig      `json:"log"`
-	JWT      JWTConfig      `json:"jwt"`
-	Session  SessionConfig  `json:"-"`
+	Server       ServerConfig       `json:"server"`
+	Database     DatabaseConfig     `json:"database"`
+	Log          LogConfig          `json:"log"`
+	JWT          JWTConfig          `json:"jwt"`
+	Session      SessionConfig      `json:"-"`
+	SubConverter SubConverterConfig `json:"subconverter"`
 }
 
 // ServerConfig 服务器配置
@@ -36,4 +37,10 @@ type JWTConfig struct {
 // SessionConfig 会话配置
 type SessionConfig struct {
 	Path string `json:"-"`
+}
+
+type SubConverterConfig struct {
+	Path string `json:"-"`
+	Port int    `json:"port"`
+	Host string `json:"host"`
 }

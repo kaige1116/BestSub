@@ -47,6 +47,8 @@ func init() {
 
 	setupPaths(&baseConfig, *configPath)
 
+	genSubConverterConfig(&baseConfig)
+
 	loadFromEnv(&baseConfig)
 
 	if err := validateConfig(&baseConfig); err != nil {
@@ -71,6 +73,10 @@ func setupPaths(config *config.Base, configPath string) {
 
 	if config.Session.Path == "" {
 		config.Session.Path = filepath.Join(configDir, "session", "bestsub.session")
+	}
+
+	if config.SubConverter.Path == "" {
+		config.SubConverter.Path = filepath.Join(configDir, "subconverter")
 	}
 }
 
@@ -141,6 +147,8 @@ func createDefaultConfig(filePath string) error {
 	bytes := make([]byte, 32)
 	rand.Read(bytes)
 	baseConfig.JWT.Secret = hex.EncodeToString(bytes)
+	baseConfig.SubConverter.Port = 25500
+	baseConfig.SubConverter.Host = "127.0.0.1"
 
 	data, err := json.MarshalIndent(baseConfig, "", "    ")
 	if err != nil {
@@ -270,5 +278,26 @@ func validateSessionConfig(config *config.SessionConfig) error {
 		return fmt.Errorf("会话目录 %s 不可写", dir)
 	}
 
+	return nil
+}
+func genSubConverterConfig(config *config.Base) error {
+	if _, err := os.Stat(config.SubConverter.Path); err == nil {
+		return nil
+	}
+	const baseConfig = `
+common:
+  api_mode: true
+server:
+  listen: %s
+  port: %d
+advanced:
+  log_level: error
+  enable_cache: false
+`
+	cfg := fmt.Sprintf(baseConfig, config.SubConverter.Host, config.SubConverter.Port)
+	cfgPath := filepath.Join(config.SubConverter.Path, "pref.yml")
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0644); err != nil {
+		return err
+	}
 	return nil
 }
