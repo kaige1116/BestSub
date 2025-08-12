@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -35,7 +36,9 @@ func (e *Alive) Init() error {
 
 func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkModel.Result {
 	log.Infof("alive check task start, alive url: %s, thread: %d", e.URL, e.Thread)
+	startTime := time.Now()
 	var nodes []nodeModel.Data
+	var aliveCount, deadCount, totalDelay int64
 	if len(subID) == 0 {
 		nodes = node.GetAll()
 	} else {
@@ -48,7 +51,15 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 	if threads > task.MaxThread() {
 		threads = task.MaxThread()
 	}
+	if threads == 0 {
+		return checkModel.Result{
+			Msg:      "alive check task failed, no nodes",
+			LastRun:  time.Now(),
+			Duration: uint16(time.Since(startTime).Milliseconds()),
+		}
+	}
 	sem := make(chan struct{}, threads)
+	defer close(sem)
 
 	var wg sync.WaitGroup
 	for _, nd := range nodes {
@@ -65,21 +76,31 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 				log.Warnf("yaml.Unmarshal failed: %v", err)
 				return
 			}
-			log.Debugf("Start Name: %v", raw["name"])
 			start := time.Now()
 			alive := e.detect(ctx, raw)
 			if alive {
 				log.Debugf("Node %s is alive ✔", raw["name"].(string))
+				atomic.AddInt64(&aliveCount, 1)
 			} else {
 				log.Debugf("Node %s is dead ✘", raw["name"].(string))
+				atomic.AddInt64(&deadCount, 1)
 			}
-			n.Info.SetAliveStatus(nodeModel.Alive, alive)
 			n.Info.Delay.Update(uint16(time.Since(start).Milliseconds()))
+			atomic.AddInt64(&totalDelay, int64(n.Info.Delay.Average()))
 		})
 	}
 	wg.Wait()
-	log.Debugf("alive check task end, alive url: %s", e.URL)
-	return checkModel.Result{}
+	log.Debugf("alive check task end, alive: %d, dead: %d, delay: %d", aliveCount, deadCount, totalDelay/aliveCount)
+	return checkModel.Result{
+		Msg:      "alive check task success",
+		LastRun:  time.Now(),
+		Duration: uint16(time.Since(startTime).Milliseconds()),
+		Extra: map[string]any{
+			"alive": aliveCount,
+			"dead":  deadCount,
+			"delay": totalDelay / aliveCount,
+		},
+	}
 }
 
 func (e *Alive) detect(ctx context.Context, raw map[string]any) bool {
