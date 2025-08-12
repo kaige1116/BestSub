@@ -27,7 +27,6 @@ type Config struct {
 	Url     string `json:"url" required:"true" description:"订阅地址"`
 	Proxy   bool   `json:"proxy" required:"false" description:"是否启用代理" example:"false"`
 	Timeout int    `json:"timeout" required:"false" description:"超时时间单位:秒" example:"10"`
-	Type    string `json:"type" required:"false" description:"订阅类型" example:"clash" optional:"clash,singbox,base64,v2ray,auto"`
 }
 
 type Result struct {
