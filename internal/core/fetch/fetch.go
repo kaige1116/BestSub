@@ -3,13 +3,16 @@ package fetch
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
+	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/node"
-	parserModel "github.com/bestruirui/bestsub/internal/models/parser"
+	"github.com/bestruirui/bestsub/internal/database/op"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/modules/parser"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -29,7 +32,7 @@ func createSuccessResult(count uint32, startTime time.Time) subModel.Result {
 	return subModel.Result{
 		Success:  1,
 		Fail:     0,
-		Msg:      "订阅更新完成",
+		Msg:      "sub updated successfully",
 		RawCount: count,
 		LastRun:  time.Now(),
 		Duration: uint16(time.Since(startTime).Milliseconds()),
@@ -41,50 +44,65 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 
 	var subConfig subModel.Config
 	if err := json.Unmarshal([]byte(config), &subConfig); err != nil {
-		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
+		log.Warnf("fetch task %d failed: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
 
-	log.Infof("订阅 %d 开始更新", subID)
+	log.Debugf("fetch task %d started", subID)
 
 	client := mihomo.Default(subConfig.Proxy)
 	if client == nil {
-		log.Warnf("fetch 任务执行失败 %d: 代理配置错误", subID)
-		return createFailureResult("代理配置错误", startTime)
+		log.Warnf("fetch task %d failed: proxy config error", subID)
+		return createFailureResult("proxy config error", startTime)
 	}
 	defer client.Release()
 	client.Timeout = time.Duration(subConfig.Timeout) * time.Second
 
-	req, err := http.NewRequestWithContext(ctx, "GET", subConfig.Url, nil)
+	subUrl := genSubConverterUrl(subConfig.Url, subConfig.Proxy)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", subUrl, nil)
 	if err != nil {
-		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
+		log.Warnf("fetch task %d failed: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
+		log.Warnf("fetch task %d failed: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
 	defer resp.Body.Close()
 
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
+		log.Warnf("fetch task %d failed: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
 
-	nodes, err := parser.Parse(&content, parserModel.ParserTypeMihomo, subID)
+	nodes, err := parser.Parse(&content, subID)
 	if err != nil {
-		log.Warnf("fetch 任务执行失败 %d: %v", subID, err)
+		log.Warnf("fetch task %d failed: %v", subID, err)
 		return createFailureResult(err.Error(), startTime)
 	}
 	count := len(*nodes)
 
 	node.Add(nodes)
 
-	log.Infof("订阅 %d 更新完成, 节点数: %d, 耗时: %dms",
+	log.Debugf("fetch task %d completed, node count: %d,  duration: %dms",
 		subID, count, uint16(time.Since(startTime).Milliseconds()))
 
 	return createSuccessResult(uint32(count), startTime)
+}
+
+func genSubConverterUrl(subUrl string, enableProxy bool) string {
+	subUrl = url.QueryEscape(subUrl)
+	cfg := config.Base()
+	scHost := cfg.SubConverter.Host
+	scPort := cfg.SubConverter.Port
+	if enableProxy {
+		proxy := op.GetConfigStr("proxy.url")
+		proxy = url.QueryEscape(proxy)
+		return fmt.Sprintf("http://%s:%d/sub?target=clash&list=true&url=%s&proxy=%s", scHost, scPort, subUrl, proxy)
+	}
+	return fmt.Sprintf("http://%s:%d/sub?target=clash&list=true&url=%s", scHost, scPort, subUrl)
 }
