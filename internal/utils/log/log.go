@@ -103,6 +103,13 @@ func Initialize(level, path, method string) error {
 	logger.Close()
 
 	basePath = path
+
+	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+		if err := os.MkdirAll(basePath, 0755); err != nil {
+			return fmt.Errorf("failed to create log directory: %w", err)
+		}
+	}
+
 	mainPath := filepath.Join(basePath, "main", time.Now().Format("20060102150405")+".log")
 
 	switch method {
