@@ -2,11 +2,12 @@ package node
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"slices"
 	"sort"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/task"
@@ -34,12 +35,14 @@ func Add(node *[]nodeModel.Base) int {
 	if len(nodesToProcess) > 0 {
 		go func() {
 			for _, node := range nodesToProcess {
+				n := node // capture loop variable
 				wgSync.Add(1)
 				task.Submit(func() {
 					defer wgSync.Done()
-					defer nodeProcess.Remove(node.UniqueKey)
+					defer nodeProcess.Remove(n.UniqueKey)
 					var raw map[string]any
-					if err := json.Unmarshal(node.Raw, &raw); err != nil {
+					if err := yaml.Unmarshal(n.Raw, &raw); err != nil {
+						log.Warnf("yaml.Unmarshal failed: %v", err)
 						return
 					}
 					client := mihomo.Proxy(raw)
@@ -65,9 +68,12 @@ func Add(node *[]nodeModel.Base) int {
 
 					var info nodeModel.Info
 					info.Delay.Update(uint16(time.Since(start).Milliseconds()))
+					// Copy raw to avoid pinning the whole subscription buffer
+					rawCopy := append([]byte(nil), n.Raw...)
+					n.Raw = rawCopy
 					validMutex.Lock()
 					validNodes = append(validNodes, nodeModel.Data{
-						Base: node,
+						Base: n,
 						Info: &info,
 					})
 					validMutex.Unlock()
@@ -83,7 +89,7 @@ func Add(node *[]nodeModel.Base) int {
 				if len(validNodes) > 0 {
 					mergeNodesToPool(validNodes)
 					RefreshInfo()
-					log.Infof("入库成功，新增节点: %d", len(validNodes))
+					log.Infof("Receipt successful, %d new nodes added", len(validNodes))
 					validNodes = validNodes[:0]
 				}
 				wgStatus = false
@@ -107,12 +113,12 @@ func GetAll() []nodeModel.Data {
 	return pool
 }
 
-func GetBySubId(subId uint16) *[]nodeModel.Data {
+func GetBySubId(subId []uint16) *[]nodeModel.Data {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
 	var result []nodeModel.Data
 	for _, node := range pool {
-		if node.Base.SubId == subId {
+		if slices.Contains(subId, node.Base.SubId) {
 			result = append(result, node)
 		}
 	}
@@ -124,7 +130,7 @@ func GetByFilter(filter nodeModel.Filter) *[]nodeModel.Data {
 	defer poolMutex.RUnlock()
 	var result []nodeModel.Data
 	for _, node := range pool {
-		if filter.SubId != 0 && node.Base.SubId != filter.SubId {
+		if len(filter.SubId) > 0 && !slices.Contains(filter.SubId, node.Base.SubId) {
 			continue
 		}
 		if filter.AliveStatus != 0 && node.Info.AliveStatus&filter.AliveStatus == 0 {
