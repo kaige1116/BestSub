@@ -1,29 +1,30 @@
 package parser
 
 import (
-	"fmt"
+	"bytes"
 
 	"github.com/bestruirui/bestsub/internal/models/node"
-	parserModel "github.com/bestruirui/bestsub/internal/models/parser"
-	"github.com/bestruirui/bestsub/internal/modules/parser/mihomo"
-	"github.com/bestruirui/bestsub/internal/modules/parser/singbox"
-	"github.com/bestruirui/bestsub/internal/modules/parser/v2ray"
+	"gopkg.in/yaml.v3"
 )
 
-func Parse(content *[]byte, subType parserModel.ParserType) (*[]node.Base, error) {
-	if content == nil || len(*content) == 0 {
-		return nil, fmt.Errorf("content is empty")
+func Parse(content *[]byte, subID uint16) (*[]node.Base, error) {
+	var nodes []node.Base
+	var unique node.UniqueKey
+	lines := bytes.Split(*content, []byte("\n"))
+	lines = lines[1:]
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		line = line[4:]
+		if err := yaml.Unmarshal(line, &unique); err != nil {
+			continue
+		}
+		nodes = append(nodes, node.Base{
+			Raw:       line,
+			SubId:     subID,
+			UniqueKey: unique.Gen(),
+		})
 	}
-	switch subType {
-	case parserModel.ParserTypeAuto:
-		return auto(content)
-	case parserModel.ParserTypeMihomo:
-		return mihomo.Parse(content)
-	case parserModel.ParserTypeSingbox:
-		return singbox.Parse(content)
-	case parserModel.ParserTypeV2ray:
-		return v2ray.Parse(content)
-	default:
-		return nil, fmt.Errorf("unknown subscription format")
-	}
+	return &nodes, nil
 }
