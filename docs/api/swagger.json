@@ -2059,6 +2059,82 @@
                 }
             }
         },
+        "/api/v1/share/node/{token}": {
+            "get": {
+                "description": "获取订阅内容 节点",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "获取订阅内容 节点",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分享token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功，内容为yaml/plain格式",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/share/sub/{token}": {
+            "get": {
+                "description": "获取订阅内容 转换器",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "获取订阅内容 转换器",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分享token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功，内容为yaml/plain格式",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/share/{id}": {
             "put": {
                 "security": [
@@ -2165,44 +2241,6 @@
                         "description": "未授权",
                         "schema": {
                             "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/share/{token}": {
-            "get": {
-                "description": "获取订阅内容",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "分享"
-                ],
-                "summary": "获取订阅内容",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "分享token",
-                        "name": "token",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "获取成功，内容为yaml/plain格式",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     "500": {
@@ -2646,79 +2684,6 @@
                     }
                 }
             },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "根据请求体中的ID更新订阅链接信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "订阅"
-                ],
-                "summary": "更新订阅链接",
-                "parameters": [
-                    {
-                        "description": "更新订阅链接请求",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Request"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "更新成功",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    },
-                    "404": {
-                        "description": "订阅链接不存在",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -2921,6 +2886,86 @@
             }
         },
         "/api/v1/sub/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据请求体中的ID更新订阅链接信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "订阅"
+                ],
+                "summary": "更新订阅链接",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订阅链接ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新订阅链接请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.SuccessStruct"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_sub.Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "404": {
+                        "description": "订阅链接不存在",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_server_resp.ErrorStruct"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -3455,12 +3500,10 @@
             "type": "object",
             "properties": {
                 "aliveStatus": {
-                    "description": "存活状态位字段筛选（0表示不筛选，其他值表示必须匹配的位）",
                     "type": "integer",
                     "format": "int32"
                 },
                 "country": {
-                    "description": "ISO 3166数字国家代码（0表示不筛选，\u003e0表示具体国家，最大65535）",
                     "type": "array",
                     "items": {
                         "type": "integer",
@@ -3468,29 +3511,27 @@
                     }
                 },
                 "delayLessThan": {
-                    "description": "延迟小于指定值（0表示不筛选，\u003e0表示具体值，毫秒，最大65535ms）",
                     "type": "integer",
                     "format": "int32"
                 },
                 "riskLessThan": {
-                    "description": "风险等级小于指定值（0表示不筛选，\u003e0表示具体值，百分比，最大255）",
                     "type": "integer",
                     "format": "int32"
                 },
                 "speedDownMore": {
-                    "description": "下载速度大于指定值（0表示不筛选，\u003e0表示具体值，KB/s，最大65535KB/s）",
                     "type": "integer",
                     "format": "int32"
                 },
                 "speedUpMore": {
-                    "description": "上传速度大于指定值（0表示不筛选，\u003e0表示具体值，KB/s，最大65535KB/s）",
                     "type": "integer",
                     "format": "int32"
                 },
                 "subId": {
-                    "description": "订阅ID",
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
                 }
             }
         },
@@ -3563,38 +3604,34 @@
                 }
             }
         },
-        "github_com_bestruirui_bestsub_internal_models_share.Config": {
+        "github_com_bestruirui_bestsub_internal_models_share.GenConfig": {
             "type": "object",
             "properties": {
-                "expires": {
-                    "type": "integer",
-                    "example": 1722336000
-                },
                 "filter": {
                     "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_node.Filter"
                 },
-                "max_access_count": {
-                    "type": "integer"
-                },
-                "sub_id": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "template": {
+                "rename": {
                     "type": "string"
+                },
+                "sub_converter": {
+                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_share.SubConverterConfig"
                 }
             }
         },
         "github_com_bestruirui_bestsub_internal_models_share.Request": {
             "type": "object",
             "properties": {
-                "config": {
-                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_share.Config"
-                },
                 "enable": {
                     "type": "boolean"
+                },
+                "expires": {
+                    "type": "integer"
+                },
+                "gen": {
+                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_share.GenConfig"
+                },
+                "max_access_count": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -3610,19 +3647,42 @@
                 "access_count": {
                     "type": "integer"
                 },
-                "config": {
-                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_share.Config"
-                },
                 "enable": {
                     "type": "boolean"
                 },
+                "expires": {
+                    "type": "integer"
+                },
+                "gen": {
+                    "$ref": "#/definitions/github_com_bestruirui_bestsub_internal_models_share.GenConfig"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "max_access_count": {
                     "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bestruirui_bestsub_internal_models_share.SubConverterConfig": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "string"
+                },
+                "list": {
+                    "type": "boolean"
+                },
+                "new_name": {
+                    "type": "boolean"
+                },
+                "target": {
                     "type": "string"
                 }
             }
@@ -3666,10 +3726,6 @@
                 "timeout": {
                     "type": "integer",
                     "example": 10
-                },
-                "type": {
-                    "type": "string",
-                    "example": "clash"
                 },
                 "url": {
                     "type": "string"
