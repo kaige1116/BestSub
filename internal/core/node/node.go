@@ -68,6 +68,7 @@ func Add(node *[]nodeModel.Base) int {
 
 					var info nodeModel.Info
 					info.Delay.Update(uint16(time.Since(start).Milliseconds()))
+					info.SetAliveStatus(nodeModel.Alive, true)
 					// Copy raw to avoid pinning the whole subscription buffer
 					rawCopy := append([]byte(nil), n.Raw...)
 					n.Raw = rawCopy
@@ -207,7 +208,7 @@ func GetSubInfo(subID uint16) nodeModel.SimpleInfo {
 	return subInfoMap[subID]
 }
 
-func GetCountryInfo(country uint16) nodeModel.SimpleInfo {
+func GetCountryInfo(country string) nodeModel.SimpleInfo {
 	refreshMutex.Lock()
 	defer refreshMutex.Unlock()
 	return countryInfoMap[country]
