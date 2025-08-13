@@ -25,8 +25,8 @@ type GenConfig struct {
 }
 
 type SubConverterConfig struct {
-	Target string `url:"target"`
-	Config string `url:"config"`
+	Target string `url:"target" json:"target"`
+	Config string `url:"config" json:"config"`
 }
 
 type Request struct {
