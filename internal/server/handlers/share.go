@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/bestruirui/bestsub/internal/core/nodepool"
 	"github.com/bestruirui/bestsub/internal/database/op"
-	"github.com/bestruirui/bestsub/internal/models/share"
+	shareModel "github.com/bestruirui/bestsub/internal/models/share"
+	"github.com/bestruirui/bestsub/internal/modules/share"
 	"github.com/bestruirui/bestsub/internal/server/middleware"
 	"github.com/bestruirui/bestsub/internal/server/resp"
 	"github.com/bestruirui/bestsub/internal/server/router"
@@ -38,8 +36,12 @@ func init() {
 		)
 	router.NewGroupRouter("/api/v1/share").
 		AddRoute(
-			router.NewRoute("/:token", router.GET).
-				Handle(getShareContent),
+			router.NewRoute("/node/:token", router.GET).
+				Handle(getShareNodeContent),
+		).
+		AddRoute(
+			router.NewRoute("/sub/:token", router.GET).
+				Handle(getShareSubContent),
 		)
 }
 
@@ -49,13 +51,13 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param data body share.Request true "分享数据"
-// @Success 200 {object} resp.SuccessStruct{data=share.Response} "创建成功"
+// @Param data body shareModel.Request true "分享数据"
+// @Success 200 {object} resp.SuccessStruct{data=shareModel.Response} "创建成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/share [post]
 func createShare(c *gin.Context) {
-	var req share.Request
+	var req shareModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Errorf("createShare: %v", err)
 		resp.ErrorBadRequest(c)
@@ -75,7 +77,7 @@ func createShare(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]share.Response} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=[]shareModel.Response} "获取成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/share [get]
@@ -85,7 +87,7 @@ func getShare(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var result = make([]share.Response, 0, len(shares))
+	var result = make([]shareModel.Response, 0, len(shares))
 	for _, v := range shares {
 		result = append(result, v.GenResponse())
 	}
@@ -99,13 +101,13 @@ func getShare(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "分享ID"
-// @Param data body share.Request true "分享数据"
-// @Success 200 {object} resp.SuccessStruct{data=share.Response} "更新成功"
+// @Param data body shareModel.Request true "分享数据"
+// @Success 200 {object} resp.SuccessStruct{data=shareModel.Response} "更新成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/share/{id} [put]
 func updateShare(c *gin.Context) {
-	var req share.Request
+	var req shareModel.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.ErrorBadRequest(c)
 		return
@@ -150,17 +152,22 @@ func deleteShare(c *gin.Context) {
 	resp.Success(c, nil)
 }
 
-// @Summary 获取订阅内容
-// @Description 获取订阅内容
+// @Summary 获取订阅内容 纯Mihomo格式的节点
+// @Description 获取订阅内容 纯Mihomo格式的节点
 // @Tags 分享
 // @Accept json
 // @Produce plain
 // @Param token path string true "分享token"
 // @Success 200 {string} string "获取成功，内容为yaml/plain格式"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/share/{token} [get]
-func getShareContent(c *gin.Context) {
+// @Router /api/v1/share/node/{token} [get]
+func getShareNodeContent(c *gin.Context) {
 	token := c.Param("token")
+	clientIp := c.ClientIP()
+	if token == "" {
+		resp.Error(c, http.StatusInternalServerError, "token is required")
+		return
+	}
 	shareData, err := op.GetShareByToken(c.Request.Context(), token)
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
@@ -170,29 +177,52 @@ func getShareContent(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, "share not enable")
 		return
 	}
-	var config share.Config
-	if err := json.Unmarshal([]byte(shareData.Config), &config); err != nil {
-		resp.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if config.Expires < uint64(time.Now().Unix()) {
+	if shareData.Expires < uint64(time.Now().Unix()) && shareData.Expires > 0 {
 		resp.Error(c, http.StatusInternalServerError, "share expired")
 		return
 	}
-	if config.MaxAccessCount > 0 && config.MaxAccessCount <= shareData.AccessCount {
+	if shareData.MaxAccessCount > 0 && shareData.MaxAccessCount <= shareData.AccessCount {
+		resp.Error(c, http.StatusInternalServerError, "share access count exceeded")
+		return
+	}
+	if clientIp != "127.0.0.1" {
+		op.UpdateShareAccessCount(c.Request.Context(), shareData.ID)
+	}
+	c.Data(http.StatusOK, "text/plain", share.GenNodeData(shareData.Gen))
+}
+
+// @Summary 获取订阅内容 带规则的订阅
+// @Description 获取订阅内容 带规则的订阅
+// @Tags 分享
+// @Accept json
+// @Produce plain
+// @Param token path string true "分享token"
+// @Success 200 {string} string "获取成功，内容为yaml/plain格式"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/share/sub/{token} [get]
+func getShareSubContent(c *gin.Context) {
+	token := c.Param("token")
+	if token == "" {
+		resp.Error(c, http.StatusInternalServerError, "token is required")
+		return
+	}
+	shareData, err := op.GetShareByToken(c.Request.Context(), token)
+	if err != nil {
+		resp.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !shareData.Enable {
+		resp.Error(c, http.StatusInternalServerError, "share not enable")
+		return
+	}
+	if shareData.Expires < uint64(time.Now().Unix()) && shareData.Expires > 0 {
+		resp.Error(c, http.StatusInternalServerError, "share expired")
+		return
+	}
+	if shareData.MaxAccessCount > 0 && shareData.MaxAccessCount <= shareData.AccessCount {
 		resp.Error(c, http.StatusInternalServerError, "share access count exceeded")
 		return
 	}
 	op.UpdateShareAccessCount(c.Request.Context(), shareData.ID)
-	var result strings.Builder
-	result.WriteString("proxies:\n")
-	for _, subID := range config.SubID {
-		subStorage := nodepool.GetPoolBySubID(subID, 0)
-		subStorage.FilterNode(config.Filter, func(node []byte) {
-			result.WriteString(" - ")
-			result.Write(node)
-			result.WriteString("\n")
-		})
-	}
-	c.Data(http.StatusOK, "text/plain", []byte(result.String()))
+	c.Data(http.StatusOK, "text/plain", share.GenSubData(shareData.Gen, c.GetHeader("User-Agent"), token, c.Request.URL.RawQuery))
 }

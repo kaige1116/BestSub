@@ -18,8 +18,15 @@ type Data struct {
 }
 
 type GenConfig struct {
-	Filter    nodeModel.Filter `json:"filter"`
-	Converter string           `json:"converter"`
+	Filter       nodeModel.Filter   `json:"filter"`
+	Rename       string             `json:"rename"`
+	Proxy        bool               `json:"proxy"`
+	SubConverter SubConverterConfig `json:"sub_converter"`
+}
+
+type SubConverterConfig struct {
+	Target string `url:"target"`
+	Config string `url:"config"`
 }
 
 type Request struct {
