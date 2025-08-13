@@ -46,7 +46,7 @@ type Info struct {
 	Risk        uint8
 	AliveStatus uint16
 	IP          uint32
-	Country     uint16
+	Country     string
 }
 
 type SimpleInfo struct {
@@ -61,7 +61,7 @@ type Filter struct {
 	SubId         []uint16
 	SpeedUpMore   uint32
 	SpeedDownMore uint32
-	Country       []uint16
+	Country       []string
 	DelayLessThan uint16
 	AliveStatus   uint16
 	RiskLessThan  uint8

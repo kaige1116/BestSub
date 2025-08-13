@@ -19,9 +19,9 @@ var (
 
 	refreshMutex   sync.Mutex
 	subInfoMap     = make(map[uint16]nodeModel.SimpleInfo)
-	countryInfoMap = make(map[uint16]nodeModel.SimpleInfo)
+	countryInfoMap = make(map[string]nodeModel.SimpleInfo)
 	subAggBuf      = make(map[uint16]*infoSums)
-	countryAggBuf  = make(map[uint16]*infoSums)
+	countryAggBuf  = make(map[string]*infoSums)
 )
 
 type infoSums struct {
