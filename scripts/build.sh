@@ -15,6 +15,8 @@ readonly APP_NAME="bestsub"
 readonly MAIN_DIR="./cmd/bestsub"
 readonly OUTPUT_DIR="build"
 readonly TOOLCHAIN_DIR="$HOME/.bestsub/toolchains"
+readonly WEB_DIR="static"
+readonly WEB_URL="https://github.com/BestSubOrg/Front/releases/latest/download/out.tar.gz"
 
 # Build metadata
 readonly BUILD_TIME="$(TZ='Asia/Shanghai' date +'%F %T %z')"
@@ -228,6 +230,18 @@ prepare_environment() {
         log_error "Failed to tidy Go modules"
         return 1
     fi
+
+    log_info "Downloading Web UI..."
+    if ! curl -L -o "${OUTPUT_DIR}/web.tar.gz" "${WEB_URL}" >/dev/null 2>&1; then
+        log_error "Failed to download Web UI"
+        return 1
+    fi
+    if ! tar -xzf "${OUTPUT_DIR}/web.tar.gz" -C "${WEB_DIR}" >/dev/null 2>&1; then
+        log_error "Failed to extract Web UI"
+        return 1
+    fi
+    rm -f "${OUTPUT_DIR}/web.tar.gz"
+    log_success "Web UI downloaded successfully"
 
     log_success "Build environment ready"
 }
