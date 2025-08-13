@@ -18,35 +18,22 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
-var (
-	NodeData = []byte("proxies:\n")
-	NewLine  = []byte("\n")
-	Dash     = []byte(" - ")
-)
-
-type renameTmpl struct {
-	SpeedUp   uint32
-	SpeedDown uint32
-	Delay     uint16
-	Risk      uint8
-	Country   country.Country
-	Count     uint32
-}
-
 func GenSubData(genConfigStr string, userAgent string, token string, extraQuery string) []byte {
 	var genConfig share.GenConfig
 	if err := json.Unmarshal([]byte(genConfigStr), &genConfig); err != nil {
 		return nil
 	}
-	nodeUrl := fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token)
 	subUrlParam, _ := query.Values(genConfig.SubConverter)
 	if genConfig.Proxy {
 		subUrlParam.Add("proxy", op.GetConfigStr("proxy.url"))
 	}
-	subUrlParam.Add("url", nodeUrl)
+	subUrlParam.Add("url", fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token))
 	subUrlParam.Add("remove_emoji", "false")
 	requestUrl := fmt.Sprintf("%s/sub?%s&%s", subconverter.GetBaseUrl(), subUrlParam.Encode(), extraQuery)
 	client := mihomo.Default(false)
+	if client == nil {
+		return nil
+	}
 	request, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
 		return nil
@@ -71,7 +58,7 @@ func GenNodeData(config string) []byte {
 	}
 	nodes := node.GetByFilter(genConfig.Filter)
 	var result bytes.Buffer
-	result.Write(NodeData)
+	result.Write(nodeData)
 	tmpl, err := template.New("node").Parse(genConfig.Rename)
 	if err != nil {
 		return nil
@@ -79,7 +66,7 @@ func GenNodeData(config string) []byte {
 	var newName bytes.Buffer
 	for i, node := range *nodes {
 		newName.Reset()
-		result.Write(Dash)
+		result.Write(dash)
 		simpleInfo := renameTmpl{
 			SpeedUp:   node.Info.SpeedUp.Average(),
 			SpeedDown: node.Info.SpeedDown.Average(),
@@ -89,99 +76,38 @@ func GenNodeData(config string) []byte {
 			Country:   country.GetCountry(node.Info.Country),
 		}
 		tmpl.Execute(&newName, simpleInfo)
-		result.Write(replaceNameEnsureDQuoted(node.Base.Raw, newName.Bytes()))
-		result.Write(NewLine)
+		result.Write(rename(node.Base.Raw, newName.Bytes()))
+		result.Write(newLine)
 	}
 	return result.Bytes()
 }
 
-func yamlDQuoteBytes(b []byte) []byte {
-	out := make([]byte, 0, len(b)+2)
-	out = append(out, '"')
-	for i := 0; i < len(b); i++ {
-		switch b[i] {
-		case '\\':
-			out = append(out, '\\', '\\')
-		case '"':
-			out = append(out, '\\', '"')
-		case '\n':
-			out = append(out, '\\', 'n')
-		case '\t':
-			out = append(out, '\\', 't')
-		default:
-			out = append(out, b[i])
-		}
+func rename(raw []byte, newName []byte) []byte {
+	idx := bytes.Index(raw, serverDelim)
+	if idx < 0 {
+		return raw
 	}
-	out = append(out, '"')
+	out := make([]byte, 0, len(name)+len(newName)+len(raw)-idx)
+	out = append(out, name...)
+	out = append(out, newName...)
+	out = append(out, raw[idx:]...)
 	return out
 }
 
-func replaceNameEnsureDQuoted(raw []byte, newName []byte) []byte {
-	const key = "name:"
-	i := bytes.Index(raw, []byte(key))
-	if i < 0 {
-		return raw
-	}
-	j := i + len(key)
+var (
+	name        = []byte("{name: ")
+	serverDelim = []byte(", server:")
 
-	k := j
-	for k < len(raw) && (raw[k] == ' ' || raw[k] == '\t') {
-		k++
-	}
-	if k >= len(raw) {
-		return raw
-	}
+	nodeData = []byte("proxies:\n")
+	newLine  = []byte("\n")
+	dash     = []byte(" - ")
+)
 
-	valStart := k
-	valEnd := k
-
-	switch raw[k] {
-	case '"':
-		p := k + 1
-		for p < len(raw) {
-			if raw[p] == '"' {
-				bs := 0
-				for q := p - 1; q >= k+1 && raw[q] == '\\'; q-- {
-					bs++
-				}
-				if bs%2 == 0 {
-					valEnd = p + 1
-					break
-				}
-			}
-			p++
-		}
-		if valEnd == k {
-			return raw
-		}
-	case '\'':
-		p := k + 1
-		for p < len(raw) {
-			if raw[p] == '\'' {
-				if p+1 < len(raw) && raw[p+1] == '\'' {
-					p += 2
-					continue
-				}
-				valEnd = p + 1
-				break
-			}
-			p++
-		}
-		if valEnd == k {
-			return raw
-		}
-	default:
-		rel := bytes.IndexByte(raw[k:], ',')
-		if rel < 0 {
-			return raw
-		}
-		valEnd = k + rel
-	}
-
-	quoted := yamlDQuoteBytes(newName)
-	out := make([]byte, 0, len(raw)-(valEnd-valStart)+len(quoted))
-	out = append(out, raw[:valStart]...)
-	out = append(out, quoted...)
-	out = append(out, raw[valEnd:]...)
-	return out
+type renameTmpl struct {
+	SpeedUp   uint32
+	SpeedDown uint32
+	Delay     uint16
+	Risk      uint8
+	Country   country.Country
+	Count     uint32
 }
