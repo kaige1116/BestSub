@@ -2,6 +2,7 @@ package subconverter
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -49,4 +50,8 @@ func Stop() error {
 
 	log.Info("subconverter service stopped")
 	return nil
+}
+
+func GetBaseUrl() string {
+	return fmt.Sprintf("http://127.0.0.1:%d", config.Base().SubConverter.Port)
 }
