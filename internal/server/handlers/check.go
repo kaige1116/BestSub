@@ -25,10 +25,6 @@ func init() {
 				Handle(getCheckTypes),
 		).
 		AddRoute(
-			router.NewRoute("/type/config", router.GET).
-				Handle(getCheckTypeConfig),
-		).
-		AddRoute(
 			router.NewRoute("", router.POST).
 				Handle(createCheck),
 		).
@@ -61,35 +57,13 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]string} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=map[string][]check.Desc} "获取成功"
 // @Failure 400 {object} resp.ErrorStruct "请求参数错误"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/check/type [get]
 func getCheckTypes(c *gin.Context) {
-	resp.Success(c, check.GetTypes())
-}
-
-// getCheckTypeConfig 获取检测类型对应的配置项
-// @Summary 获取检测类型对应的配置项
-// @Description 获取检测类型对应的配置项
-// @Tags 检测
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param type query string true "检测类型"
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]check.Desc} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
-// @Router /api/v1/check/type/config [get]
-func getCheckTypeConfig(c *gin.Context) {
-	typ := c.Query("type")
-	if typ == "" {
-		resp.Success(c, check.GetInfoMap())
-	} else {
-		resp.Success(c, check.GetInfoMap()[typ])
-	}
+	resp.Success(c, check.GetInfoMap())
 }
 
 // createCheck 创建检测
