@@ -68,7 +68,7 @@ func Initialize() error {
 
 	r, routerErr := setRouter()
 	if routerErr != nil {
-		return fmt.Errorf("设置路由失败: %w", routerErr)
+		return fmt.Errorf("failed to set router: %w", routerErr)
 	}
 
 	server = &Server{
@@ -82,21 +82,19 @@ func Initialize() error {
 		},
 		router: r,
 	}
-
-	log.Debugf("HTTP 服务器初始化成功 %s", server.httpServer.Addr)
 	return nil
 }
 
 func Start() error {
 	if server == nil {
-		return fmt.Errorf("HTTP 服务器未初始化, 请先调用 Initialize()")
+		return fmt.Errorf("HTTP server not initialized, please call Initialize() first")
 	}
 
-	log.Infof("启动 HTTP 服务器 %s", server.httpServer.Addr)
+	log.Infof("Starting HTTP server %s", server.httpServer.Addr)
 
 	go func() {
 		if err := server.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Errorf("启动 HTTP 服务器失败: %v", err)
+			log.Errorf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
@@ -105,18 +103,18 @@ func Start() error {
 
 func Close() error {
 	if server == nil {
-		return fmt.Errorf("HTTP 服务器未初始化")
+		return fmt.Errorf("HTTP server not initialized")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
 	defer cancel()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
-		log.Errorf("HTTP 服务器强制关闭: %v", err)
-		return fmt.Errorf("HTTP 服务器强制关闭: %w", err)
+		log.Errorf("HTTP server force closed: %v", err)
+		return fmt.Errorf("HTTP server force closed: %w", err)
 	}
 
-	log.Debug("HTTP 服务器关闭完成")
+	log.Debug("HTTP server closed")
 	return nil
 }
 
@@ -134,9 +132,9 @@ func setRouter() (*gin.Engine, error) {
 	r.Use(middleware.Static())
 
 	if err := router.RegisterAll(r); err != nil {
-		return nil, fmt.Errorf("注册路由失败: %w", err)
+		return nil, fmt.Errorf("failed to register routes: %w", err)
 	}
 
-	log.Debugf("成功注册 %d 个路由", router.GetRouterCount())
+	log.Debugf("successfully registered %d routes", router.GetRouterCount())
 	return r, nil
 }

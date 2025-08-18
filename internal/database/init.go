@@ -6,8 +6,8 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	authModel "github.com/bestruirui/bestsub/internal/models/auth"
-	"github.com/bestruirui/bestsub/internal/models/config"
 	"github.com/bestruirui/bestsub/internal/models/notify"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,33 +31,35 @@ func initAuth(ctx context.Context, auth interfaces.AuthRepository) error {
 	}
 	return nil
 }
-func initSystemConfig(ctx context.Context, systemConfig interfaces.ConfigRepository) error {
-	defaultSystemConfig := config.DefaultAdvance()
-	existingSystemConfig, err := op.GetAllRawConfig(ctx)
-	notExistConfig := make([]config.Advance, 0)
+func initSystemSetting(ctx context.Context, systemSetting interfaces.SettingRepository) error {
+	defaultSystemSetting := setting.DefaultSetting()
+	existingSystemSetting, err := op.GetAllSetting(ctx)
+	notExistSetting := make([]setting.Setting, 0)
 	if err != nil {
-		log.Fatalf("failed to get existing system config: %v", err)
+		log.Fatalf("failed to get existing system setting: %v", err)
 	}
 
-	existingSystemConfigMap := make(map[string]bool)
-	for _, item := range *existingSystemConfig {
-		existingSystemConfigMap[item.Key] = true
+	existingSystemSettingMap := make(map[string]bool)
+	for _, item := range existingSystemSetting {
+		existingSystemSettingMap[item.Key] = true
 	}
 
-	for _, group := range defaultSystemConfig {
-		for _, config := range group.Data {
-			if !existingSystemConfigMap[config.Key] {
-				notExistConfig = append(notExistConfig, config)
+	for _, group := range defaultSystemSetting {
+		for _, s := range group.Data {
+			if !existingSystemSettingMap[s.Key] {
+				notExistSetting = append(notExistSetting, setting.Setting{
+					Key:   s.Key,
+					Value: s.Default,
+				})
 			}
 		}
 	}
 
-	if len(notExistConfig) > 0 {
-		if err := systemConfig.Create(ctx, &notExistConfig); err != nil {
-			log.Fatalf("failed to create missing system config: %v", err)
+	if len(notExistSetting) > 0 {
+		if err := systemSetting.Create(ctx, &notExistSetting); err != nil {
+			log.Fatalf("failed to create missing system setting: %v", err)
 		}
 	}
-
 	return nil
 }
 func initNotifyTemplate(ctx context.Context, notifyTemplateRepo interfaces.NotifyTemplateRepository) error {

@@ -25,7 +25,7 @@ func GenSubData(genConfigStr string, userAgent string, token string, extraQuery 
 	}
 	subUrlParam, _ := query.Values(genConfig.SubConverter)
 	if genConfig.Proxy {
-		subUrlParam.Add("proxy", op.GetConfigStr("proxy.url"))
+		subUrlParam.Add("proxy", op.GetSettingStr("proxy.url"))
 	}
 	subUrlParam.Add("url", fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token))
 	subUrlParam.Add("remove_emoji", "false")

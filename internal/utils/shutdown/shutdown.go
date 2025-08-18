@@ -34,11 +34,11 @@ func execute() {
 			func(fn func() error) {
 				defer func() {
 					if r := recover(); r != nil {
-						fmt.Printf("关闭函数 发生panic: %v", r)
+						fmt.Printf("Closing functions panic: %v", r)
 					}
 				}()
 				if err := fn(); err != nil {
-					fmt.Printf("关闭函数 执行失败: %v", err)
+					fmt.Printf("Closing functions execution failed: %v", err)
 				}
 			}(funcs[i])
 		}
@@ -47,16 +47,16 @@ func execute() {
 	select {
 	case <-done:
 	case <-ctx.Done():
-		fmt.Printf("关闭函数执行超时: %v", ctx.Err())
+		fmt.Printf("Closing functions execution timeout: %v", ctx.Err())
 	}
 }
 
 func Listen() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	log.Info("程序已启动，按 Ctrl+C 退出")
+	log.Info("Program started, press Ctrl+C to exit")
 	sig := <-quit
-	log.Warnf("收到退出信号: %v，开始关闭程序", sig)
+	log.Warnf("Received exit signal: %v, starting to close program", sig)
 	execute()
 	os.Exit(0)
 }

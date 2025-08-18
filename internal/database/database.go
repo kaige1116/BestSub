@@ -28,7 +28,7 @@ func Initialize(sqltype, path string) error {
 	if err := initAuth(context.Background(), op.AuthRepo()); err != nil {
 		log.Fatalf("failed to initialize auth: %v", err)
 	}
-	if err := initSystemConfig(context.Background(), op.ConfigRepo()); err != nil {
+	if err := initSystemSetting(context.Background(), op.SettingRepo()); err != nil {
 		log.Fatalf("failed to initialize system config: %v", err)
 	}
 	if err := initNotifyTemplate(context.Background(), op.NotifyTemplateRepo()); err != nil {

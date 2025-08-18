@@ -1,0 +1,100 @@
+package handlers
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
+	"github.com/bestruirui/bestsub/internal/server/middleware"
+	"github.com/bestruirui/bestsub/internal/server/resp"
+	"github.com/bestruirui/bestsub/internal/server/router"
+	"github.com/bestruirui/bestsub/internal/utils/log"
+	"github.com/gin-gonic/gin"
+)
+
+func init() {
+
+	router.NewGroupRouter("/api/v1/setting").
+		Use(middleware.Auth()).
+		AddRoute(
+			router.NewRoute("", router.GET).
+				Handle(getSetting),
+		).
+		AddRoute(
+			router.NewRoute("", router.PUT).
+				Handle(updateSetting),
+		)
+}
+
+// getSetting 获取配置项
+// @Summary 获取配置项
+// @Description 获取系统所有配置项，支持按分组过滤和关键字搜索
+// @Tags 配置
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param group query string false "分组名称"
+// @Success 200 {object} resp.SuccessStruct{data=[]setting.GroupSettingAdvance} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/setting [get]
+func getSetting(c *gin.Context) {
+	settings, err := op.GetAllSettingMap(context.Background())
+	if err != nil {
+		log.Errorf("Failed to get all setting: %v", err)
+		resp.Error(c, http.StatusInternalServerError, "failed to get all setting")
+		return
+	}
+	defaultSetting := setting.DefaultSetting()
+	result := make([]setting.GroupSettingAdvance, 0, len(defaultSetting))
+	for _, group := range defaultSetting {
+		advanceData := make([]setting.SettingAdvance, 0, len(group.Data))
+		for _, item := range group.Data {
+			advanceData = append(advanceData, setting.SettingAdvance{
+				Name:    item.Name,
+				Type:    item.Type,
+				Key:     item.Key,
+				Default: settings[item.Key],
+				Desc:    item.Desc,
+			})
+		}
+		result = append(result, setting.GroupSettingAdvance{
+			GroupName:   group.GroupName,
+			Description: group.Description,
+			Data:        advanceData,
+		})
+	}
+
+	resp.Success(c, result)
+}
+
+// updateSetting 更新配置项
+// @Summary 更新配置项
+// @Description 根据请求数据中的ID批量更新配置项的值和描述
+// @Tags 配置
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body []setting.Setting  true "更新配置项请求"
+// @Success 200 {object} resp.SuccessStruct "更新成功"
+// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/setting [put]
+func updateSetting(c *gin.Context) {
+	var req []setting.Setting
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.ErrorBadRequest(c)
+		return
+	}
+
+	err := op.UpdateSetting(context.Background(), &req)
+	if err != nil {
+		log.Errorf("Failed to update config: %v", err)
+		resp.Error(c, http.StatusInternalServerError, "failed to update config")
+		return
+	}
+
+	resp.Success(c, nil)
+}

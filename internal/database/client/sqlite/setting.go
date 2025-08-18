@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/models/config"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
-func (db *DB) Config() interfaces.ConfigRepository {
+func (db *DB) Setting() interfaces.SettingRepository {
 	return &SystemConfigRepository{db: db}
 }
 
@@ -17,18 +17,17 @@ type SystemConfigRepository struct {
 	db *DB
 }
 
-func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.Advance) error {
+func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]setting.Setting) error {
 	if configs == nil || len(*configs) == 0 {
 		return nil
 	}
-	log.Debugf("Create %s : %s", (*configs)[0].Key, (*configs)[0].Default)
 	tx, err := r.db.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	query := `INSERT INTO config (key, value)
+	query := `INSERT INTO setting (key, value)
 	          VALUES (?, ?)`
 
 	stmt, err := tx.PrepareContext(ctx, query)
@@ -40,7 +39,7 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.A
 	for _, config := range *configs {
 		_, err := stmt.ExecContext(ctx,
 			config.Key,
-			config.Default,
+			config.Value,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create system config key '%s': %w", config.Key, err)
@@ -54,10 +53,10 @@ func (r *SystemConfigRepository) Create(ctx context.Context, configs *[]config.A
 	return nil
 }
 
-func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]config.Advance, error) {
+func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]setting.Setting, error) {
 	log.Debugf("GetAll")
 	query := `SELECT key, value
-	          FROM config ORDER BY key`
+	          FROM setting ORDER BY key`
 
 	rows, err := r.db.db.QueryContext(ctx, query)
 	if err != nil {
@@ -65,12 +64,12 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]config.Advance,
 	}
 	defer rows.Close()
 
-	var configs []config.Advance
+	var configs []setting.Setting
 	for rows.Next() {
-		var config config.Advance
+		var config setting.Setting
 		if err := rows.Scan(
 			&config.Key,
-			&config.Default,
+			&config.Value,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan config: %w", err)
 		}
@@ -84,10 +83,10 @@ func (r *SystemConfigRepository) GetAll(ctx context.Context) (*[]config.Advance,
 	return &configs, nil
 }
 
-func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*[]config.Advance, error) {
+func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*[]setting.Setting, error) {
 	log.Debugf("GetByKey: %v", keys)
 	if len(keys) == 0 {
-		return &[]config.Advance{}, nil
+		return &[]setting.Setting{}, nil
 	}
 
 	args := make([]interface{}, len(keys))
@@ -100,7 +99,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 		args[i] = key
 	}
 	query := `SELECT key, value
-	          FROM config WHERE key IN (` + inClause + `) ORDER BY key`
+	          FROM setting WHERE key IN (` + inClause + `) ORDER BY key`
 
 	rows, err := r.db.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -108,12 +107,12 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 	}
 	defer rows.Close()
 
-	var configs []config.Advance
+	var configs []setting.Setting
 	for rows.Next() {
-		var config config.Advance
+		var config setting.Setting
 		if err := rows.Scan(
 			&config.Key,
-			&config.Default,
+			&config.Value,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan config: %w", err)
 		}
@@ -127,7 +126,7 @@ func (r *SystemConfigRepository) GetByKey(ctx context.Context, keys []string) (*
 	return &configs, nil
 }
 
-func (r *SystemConfigRepository) Update(ctx context.Context, data *[]config.UpdateAdvance) error {
+func (r *SystemConfigRepository) Update(ctx context.Context, data *[]setting.Setting) error {
 	log.Debugf("Update: %v", data)
 	if data == nil || len(*data) == 0 {
 		return nil
@@ -139,7 +138,7 @@ func (r *SystemConfigRepository) Update(ctx context.Context, data *[]config.Upda
 	}
 	defer tx.Rollback()
 
-	query := `UPDATE config SET value = ? WHERE key = ?`
+	query := `UPDATE setting SET value = ? WHERE key = ?`
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {

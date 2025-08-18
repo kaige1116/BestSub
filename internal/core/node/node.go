@@ -50,9 +50,9 @@ func Add(node *[]nodeModel.Base) int {
 						return
 					}
 					defer client.Release()
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(op.GetConfigInt("node.test_timeout"))*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(op.GetSettingInt("node.test_timeout"))*time.Second)
 					defer cancel()
-					request, err := http.NewRequestWithContext(ctx, "GET", op.GetConfigStr("node.test_url"), nil)
+					request, err := http.NewRequestWithContext(ctx, "GET", op.GetSettingStr("node.test_url"), nil)
 					if err != nil {
 						return
 					}

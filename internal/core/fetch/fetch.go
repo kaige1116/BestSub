@@ -100,7 +100,7 @@ func genSubConverterUrl(subUrl string, enableProxy bool) string {
 	scHost := cfg.SubConverter.Host
 	scPort := cfg.SubConverter.Port
 	if enableProxy {
-		proxy := op.GetConfigStr("proxy.url")
+		proxy := op.GetSettingStr("proxy.url")
 		proxy = url.QueryEscape(proxy)
 		return fmt.Sprintf("http://%s:%d/sub?target=clash&list=true&url=%s&proxy=%s", scHost, scPort, subUrl, proxy)
 	}

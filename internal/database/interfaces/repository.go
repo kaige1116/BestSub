@@ -4,7 +4,7 @@ package interfaces
 type Repository interface {
 	Auth() AuthRepository
 
-	Config() ConfigRepository
+	Setting() SettingRepository
 
 	Notify() NotifyRepository
 	NotifyTemplate() NotifyTemplateRepository

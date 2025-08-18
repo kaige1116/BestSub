@@ -35,13 +35,13 @@ func main() {
 	server.Start()
 	subconverter.Start()
 
-	task.Init(op.GetConfigInt("task.max_thread"))
+	task.Init(op.GetSettingInt("task.max_thread"))
 
 	cron.Start()
 	cron.FetchLoad()
 	cron.CheckLoad()
 
-	node.InitNodePool(op.GetConfigInt("node.pool_size"))
+	node.InitNodePool(op.GetSettingInt("node.pool_size"))
 
 	log.CleanupOldLogs(5)
 

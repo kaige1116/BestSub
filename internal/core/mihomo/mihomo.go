@@ -48,10 +48,10 @@ func parsePort(portStr string) (uint16, error) {
 }
 
 func Default(useProxy bool) *HC {
-	if !useProxy || !op.GetConfigBool("proxy.enable") {
+	if !useProxy || !op.GetSettingBool("proxy.enable") {
 		return direct()
 	}
-	proxyUrl := op.GetConfigStr("proxy.url")
+	proxyUrl := op.GetSettingStr("proxy.url")
 	if proxyUrl == "" {
 		log.Warnf("proxy url is empty")
 		return direct()
