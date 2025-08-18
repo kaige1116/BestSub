@@ -188,7 +188,7 @@ func getShareNodeContent(c *gin.Context) {
 	if clientIp != "127.0.0.1" {
 		op.UpdateShareAccessCount(c.Request.Context(), shareData.ID)
 	}
-	c.Data(http.StatusOK, "text/plain", share.GenNodeData(shareData.Gen))
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", share.GenNodeData(shareData.Gen))
 }
 
 // @Summary 获取订阅内容 带规则的订阅
@@ -224,5 +224,5 @@ func getShareSubContent(c *gin.Context) {
 		return
 	}
 	op.UpdateShareAccessCount(c.Request.Context(), shareData.ID)
-	c.Data(http.StatusOK, "text/plain", share.GenSubData(shareData.Gen, c.GetHeader("User-Agent"), token, c.Request.URL.RawQuery))
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", share.GenSubData(shareData.Gen, c.GetHeader("User-Agent"), token, c.Request.URL.RawQuery))
 }
