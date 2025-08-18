@@ -19,15 +19,15 @@ import (
 )
 
 type Alive struct {
-	URL         string `json:"url" name:"测试链接" default:"https://www.gstatic.com/generate_204" description:"测试链接"`
-	ExptectCode int    `json:"exptect_code" name:"期望状态码" default:"204" description:"期望状态码"`
-	Thread      int    `json:"thread" name:"线程数" default:"100"`
-	Timeout     int    `json:"timeout" name:"超时时间" default:"10"`
+	URL         string `json:"url" name:"测试链接" value:"https://www.gstatic.com/generate_204" desc:"测试链接"`
+	ExptectCode int    `json:"exptect_code" name:"期望状态码" value:"204" desc:"期望状态码"`
+	Thread      int    `json:"thread" name:"线程数" value:"100"`
+	Timeout     int    `json:"timeout" name:"超时时间" value:"10"`
 }
 type Result struct {
-	AliveCount uint16 `json:"alive_count" description:"存活节点数量"`
-	DeadCount  uint16 `json:"dead_count" description:"死亡节点数量"`
-	Delay      uint16 `json:"delay" description:"平均延迟"`
+	AliveCount uint16 `json:"alive_count" desc:"存活节点数量"`
+	DeadCount  uint16 `json:"dead_count" desc:"死亡节点数量"`
+	Delay      uint16 `json:"delay" desc:"平均延迟"`
 }
 
 func (e *Alive) Init() error {

@@ -52,11 +52,11 @@ func getSetting(c *gin.Context) {
 		advanceData := make([]setting.SettingAdvance, 0, len(group.Data))
 		for _, item := range group.Data {
 			advanceData = append(advanceData, setting.SettingAdvance{
-				Name:    item.Name,
-				Type:    item.Type,
-				Key:     item.Key,
-				Default: settings[item.Key],
-				Desc:    item.Desc,
+				Name:  item.Name,
+				Type:  item.Type,
+				Key:   item.Key,
+				Value: settings[item.Key],
+				Desc:  item.Desc,
 			})
 		}
 		result = append(result, setting.GroupSettingAdvance{

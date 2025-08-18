@@ -8,7 +8,7 @@ type Data struct {
 	Name    string `json:"name,omitempty"`
 	Key     string `json:"key,omitempty"`
 	Type    string `json:"type,omitempty"`
-	Default string `json:"default,omitempty"`
+	Value   string `json:"value,omitempty"`
 	Options string `json:"options,omitempty"`
 	Require bool   `json:"require,omitempty"`
 	Desc    string `json:"desc,omitempty"`
@@ -43,7 +43,7 @@ func gen(t reflect.Type) []Data {
 			Name:    tag.Get("name"),
 			Key:     key,
 			Type:    typeName,
-			Default: tag.Get("default"),
+			Value:   tag.Get("value"),
 			Options: tag.Get("options"),
 			Require: tag.Get("require") == "true",
 			Desc:    tag.Get("description"),

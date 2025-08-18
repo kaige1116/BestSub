@@ -49,7 +49,7 @@ func initSystemSetting(ctx context.Context, systemSetting interfaces.SettingRepo
 			if !existingSystemSettingMap[s.Key] {
 				notExistSetting = append(notExistSetting, setting.Setting{
 					Key:   s.Key,
-					Value: s.Default,
+					Value: s.Value,
 				})
 			}
 		}

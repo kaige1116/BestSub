@@ -18,8 +18,8 @@ import (
 )
 
 type Country struct {
-	Thread  int `json:"thread" name:"线程数" default:"100"`
-	Timeout int `json:"timeout" name:"超时时间" default:"10"`
+	Thread  int `json:"thread" name:"线程数" value:"100"`
+	Timeout int `json:"timeout" name:"超时时间" value:"10"`
 }
 
 func (e *Country) Init() error {
