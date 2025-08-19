@@ -14,3 +14,21 @@ type Setting struct {
 	Key   string `json:"key" example:"proxy.enabled"`
 	Value string `json:"value" example:"true"`
 }
+
+const (
+	PROXY_ENABLE = "proxy_enable"
+	PROXY_URL    = "proxy_url"
+
+	LOG_RETENTION_DAYS = "log_retention_days"
+
+	NODE_POOL_SIZE    = "node_pool_size"
+	NODE_TEST_URL     = "node_test_url"
+	NODE_TEST_TIMEOUT = "node_test_timeout"
+
+	TASK_MAX_THREAD  = "task_max_thread"
+	TASK_MAX_TIMEOUT = "task_max_timeout"
+	TASK_MAX_RETRY   = "task_max_retry"
+
+	NOTIFY_OPERATION = "notify_operation"
+	NOTIFY_ID        = "notify_id"
+)

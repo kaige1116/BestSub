@@ -12,6 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/node"
 	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/models/share"
 	"github.com/bestruirui/bestsub/internal/modules/subconverter"
 	"github.com/bestruirui/bestsub/internal/utils/country"
@@ -25,7 +26,7 @@ func GenSubData(genConfigStr string, userAgent string, token string, extraQuery 
 	}
 	subUrlParam, _ := query.Values(genConfig.SubConverter)
 	if genConfig.Proxy {
-		subUrlParam.Add("proxy", op.GetSettingStr("proxy.url"))
+		subUrlParam.Add("proxy", op.GetSettingStr(setting.PROXY_URL))
 	}
 	subUrlParam.Add("url", fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token))
 	subUrlParam.Add("remove_emoji", "false")

@@ -6,6 +6,7 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/op"
 	notifyModel "github.com/bestruirui/bestsub/internal/models/notify"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	_ "github.com/bestruirui/bestsub/internal/modules/notify/channel"
 	"github.com/bestruirui/bestsub/internal/modules/register"
 	"github.com/bestruirui/bestsub/internal/utils/desc"
@@ -15,7 +16,7 @@ import (
 type Desc = desc.Data
 
 func SendSystemNotify(operation uint16, title string, content any) error {
-	if operation&uint16(op.GetSettingInt("notify.operation")) == 0 {
+	if operation&uint16(op.GetSettingInt(setting.NOTIFY_OPERATION)) == 0 {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func SendSystemNotify(operation uint16, title string, content any) error {
 		return err
 	}
 
-	sysNotifyID := op.GetSettingInt("notify.id")
+	sysNotifyID := op.GetSettingInt(setting.NOTIFY_ID)
 	notifyConfig, err := op.GetNotifyByID(uint16(sysNotifyID))
 	if err != nil {
 		log.Errorf("failed to get notify config: %v", sysNotifyID)

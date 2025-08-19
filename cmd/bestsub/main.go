@@ -7,6 +7,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database"
 	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/modules/subconverter"
 	"github.com/bestruirui/bestsub/internal/server/auth"
 	"github.com/bestruirui/bestsub/internal/server/server"
@@ -35,13 +36,13 @@ func main() {
 	server.Start()
 	subconverter.Start()
 
-	task.Init(op.GetSettingInt("task.max_thread"))
+	task.Init(op.GetSettingInt(setting.TASK_MAX_THREAD))
 
 	cron.Start()
 	cron.FetchLoad()
 	cron.CheckLoad()
 
-	node.InitNodePool(op.GetSettingInt("node.pool_size"))
+	node.InitNodePool(op.GetSettingInt(setting.NODE_POOL_SIZE))
 
 	log.CleanupOldLogs(5)
 

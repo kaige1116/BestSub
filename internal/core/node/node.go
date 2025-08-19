@@ -13,6 +13,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	nodeModel "github.com/bestruirui/bestsub/internal/models/node"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -50,9 +51,9 @@ func Add(node *[]nodeModel.Base) int {
 						return
 					}
 					defer client.Release()
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(op.GetSettingInt("node.test_timeout"))*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(op.GetSettingInt(setting.NODE_TEST_TIMEOUT))*time.Second)
 					defer cancel()
-					request, err := http.NewRequestWithContext(ctx, "GET", op.GetSettingStr("node.test_url"), nil)
+					request, err := http.NewRequestWithContext(ctx, "GET", op.GetSettingStr(setting.NODE_TEST_URL), nil)
 					if err != nil {
 						return
 					}

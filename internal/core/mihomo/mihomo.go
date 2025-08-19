@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/constant"
@@ -48,10 +49,10 @@ func parsePort(portStr string) (uint16, error) {
 }
 
 func Default(useProxy bool) *HC {
-	if !useProxy || !op.GetSettingBool("proxy.enable") {
+	if !useProxy || !op.GetSettingBool(setting.PROXY_ENABLE) {
 		return direct()
 	}
-	proxyUrl := op.GetSettingStr("proxy.url")
+	proxyUrl := op.GetSettingStr(setting.PROXY_URL)
 	if proxyUrl == "" {
 		log.Warnf("proxy url is empty")
 		return direct()

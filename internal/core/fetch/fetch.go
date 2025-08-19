@@ -13,6 +13,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/node"
 	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/modules/parser"
 	"github.com/bestruirui/bestsub/internal/utils/log"
@@ -100,7 +101,7 @@ func genSubConverterUrl(subUrl string, enableProxy bool) string {
 	scHost := cfg.SubConverter.Host
 	scPort := cfg.SubConverter.Port
 	if enableProxy {
-		proxy := op.GetSettingStr("proxy.url")
+		proxy := op.GetSettingStr(setting.PROXY_URL)
 		proxy = url.QueryEscape(proxy)
 		return fmt.Sprintf("http://%s:%d/sub?target=clash&list=true&url=%s&proxy=%s", scHost, scPort, subUrl, proxy)
 	}
