@@ -14,7 +14,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/models/share"
-	"github.com/bestruirui/bestsub/internal/modules/subconverter"
+	"github.com/bestruirui/bestsub/internal/modules/subcer"
 	"github.com/bestruirui/bestsub/internal/utils/country"
 	"github.com/google/go-querystring/query"
 )
@@ -30,7 +30,7 @@ func GenSubData(genConfigStr string, userAgent string, token string, extraQuery 
 	}
 	subUrlParam.Add("url", fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token))
 	subUrlParam.Add("remove_emoji", "false")
-	requestUrl := fmt.Sprintf("%s/sub?%s&%s", subconverter.GetBaseUrl(), subUrlParam.Encode(), extraQuery)
+	requestUrl := fmt.Sprintf("%s/sub?%s&%s", subcer.GetBaseUrl(), subUrlParam.Encode(), extraQuery)
 	client := mihomo.Default(false)
 	if client == nil {
 		return nil

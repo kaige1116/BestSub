@@ -1,4 +1,4 @@
-package subconverter
+package subcer
 
 import (
 	"context"
