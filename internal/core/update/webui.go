@@ -14,6 +14,7 @@ func InitUI() error {
 		err = UpdateUI()
 		if err != nil {
 			log.Warnf("auto update ui failed, please download ui manually from %s and unzip to %s: %v", op.GetSettingStr(setting.FRONTEND_URL), config.Base().Server.UIPath, err)
+			os.Exit(1)
 			return err
 		}
 	}
