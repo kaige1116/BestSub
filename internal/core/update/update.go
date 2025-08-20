@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,8 +13,65 @@ import (
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
+	"github.com/bestruirui/bestsub/internal/database/op"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
+
+const (
+	BESTSUB_API_URL      = "https://api.github.com/repos/bestruirui/BestSub/releases/latest"
+	FRONTEND_API_URL     = "https://api.github.com/repos/BestSubOrg/Front/releases/latest"
+	SUBCONVERTER_API_URL = "https://api.github.com/repos/BestSubOrg/subconverter/releases/latest"
+)
+
+type LatestInfo struct {
+	Version     string `json:"tag_name"`
+	PublishedAt string `json:"published_at"`
+	Body        string `json:"body"`
+}
+
+func GetLatestUIInfo() (*LatestInfo, error) {
+	return getLatestInfo(FRONTEND_API_URL, op.GetSettingBool(setting.FRONTEND_URL_PROXY))
+}
+
+func GetLatestSubconverterInfo() (*LatestInfo, error) {
+	return getLatestInfo(SUBCONVERTER_API_URL, op.GetSettingBool(setting.SUBCONVERTER_URL_PROXY))
+}
+
+func GetLatestBestsubInfo() (*LatestInfo, error) {
+	return getLatestInfo(BESTSUB_API_URL, op.GetSettingBool(setting.PROXY_ENABLE))
+}
+
+func getLatestInfo(url string, proxy bool) (*LatestInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	hc := mihomo.Default(proxy)
+	defer hc.Release()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		log.Debugf("new request failed: %v", err)
+		return nil, err
+	}
+	resp, err := hc.Do(req)
+	if err != nil {
+		log.Debugf("request failed: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Debugf("read body failed: %v", err)
+		return nil, err
+	}
+
+	latestInfo := LatestInfo{}
+	err = json.Unmarshal(body, &latestInfo)
+	if err != nil {
+		log.Debugf("unmarshal body failed: %v", err)
+		return nil, err
+	}
+	return &latestInfo, nil
+}
 
 func download(url string, proxy bool) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
