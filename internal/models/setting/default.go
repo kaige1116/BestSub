@@ -22,6 +22,32 @@ var system = GroupSettingAdvance{
 			Key:   LOG_RETENTION_DAYS,
 			Value: "7",
 		},
+		{
+			Name:  "前端地址",
+			Type:  "string",
+			Key:   FRONTEND_URL,
+			Value: "https://github.com/BestSubOrg/Front/releases/latest/download/out.zip",
+		},
+		{
+			Name:  "前端代理",
+			Desc:  "是否启用代理更新前端UI",
+			Type:  "boolean",
+			Key:   FRONTEND_URL_PROXY,
+			Value: "false",
+		},
+		{
+			Name:  "subconverter地址",
+			Type:  "string",
+			Key:   SUBCONVERTER_URL,
+			Value: "https://github.com/BestSubOrg/subconverter/releases/latest/download/",
+		},
+		{
+			Name:  "subconverter代理",
+			Desc:  "是否启用代理更新subconverter",
+			Type:  "boolean",
+			Key:   SUBCONVERTER_URL_PROXY,
+			Value: "false",
+		},
 	},
 }
 var node = GroupSettingAdvance{

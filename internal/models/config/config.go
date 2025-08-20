@@ -10,8 +10,9 @@ type Base struct {
 }
 
 type ServerConfig struct {
-	Port int    `json:"port"`
-	Host string `json:"host"`
+	Port   int    `json:"port"`
+	Host   string `json:"host"`
+	UIPath string `json:"-"`
 }
 
 type DatabaseConfig struct {

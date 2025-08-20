@@ -21,6 +21,11 @@ const (
 
 	LOG_RETENTION_DAYS = "log_retention_days"
 
+	FRONTEND_URL           = "frontend_url"
+	FRONTEND_URL_PROXY     = "frontend_url_proxy"
+	SUBCONVERTER_URL       = "subconverter_url"
+	SUBCONVERTER_URL_PROXY = "subconverter_url_proxy"
+
 	NODE_POOL_SIZE    = "node_pool_size"
 	NODE_TEST_URL     = "node_test_url"
 	NODE_TEST_TIMEOUT = "node_test_timeout"

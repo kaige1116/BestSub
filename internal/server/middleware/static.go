@@ -1,13 +1,12 @@
 package middleware
 
 import (
-	"fmt"
-	"io/fs"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 
-	"github.com/bestruirui/bestsub/static"
+	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,18 +43,12 @@ var (
 	cacheOneMonthHeader = "public, max-age=2592000"
 	cacheOneYearHeader  = "public, max-age=31536000"
 
-	subFS      fs.FS
 	fileServer http.Handler
 )
 
 func init() {
-	var err error
-	subFS, err = fs.Sub(static.Frontend, "out")
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create sub filesystem: %v", err))
-	}
 
-	fileServer = http.FileServer(http.FS(subFS))
+	fileServer = http.FileServer(http.Dir(config.Base().Server.UIPath))
 }
 
 func Static() gin.HandlerFunc {
@@ -88,7 +81,7 @@ func Static() gin.HandlerFunc {
 			c.Header("Cache-Control", cacheOneWeekHeader)
 		}
 
-		if _, err := fs.Stat(subFS, reqPath[1:]); err != nil {
+		if _, err := os.Stat(config.Base().Server.UIPath + reqPath); err != nil {
 			if staticExtensions[ext] {
 				c.Status(http.StatusNotFound)
 				return
