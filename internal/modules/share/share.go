@@ -30,6 +30,8 @@ func GenSubData(genConfigStr string, userAgent string, token string, extraQuery 
 	}
 	subUrlParam.Add("url", fmt.Sprintf("http://127.0.0.1:%d/api/v1/share/node/%s", config.Base().Server.Port, token))
 	subUrlParam.Add("remove_emoji", "false")
+	subcer.RLock()
+	defer subcer.RUnlock()
 	requestUrl := fmt.Sprintf("%s/sub?%s&%s", subcer.GetBaseUrl(), subUrlParam.Encode(), extraQuery)
 	client := mihomo.Default(false)
 	if client == nil {
