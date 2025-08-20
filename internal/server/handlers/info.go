@@ -36,6 +36,10 @@ func init() {
 		AddRoute(
 			router.NewRoute("/info", router.GET).
 				Handle(systemInfo),
+		).
+		AddRoute(
+			router.NewRoute("/version", router.GET).
+				Handle(version),
 		)
 }
 
@@ -150,4 +154,25 @@ func livenessCheck(c *gin.Context) {
 // @Router /api/v1/system/info [get]
 func systemInfo(c *gin.Context) {
 	resp.Success(c, sys.GetSystemInfo())
+}
+
+// systemInfo 系统版本
+// @Summary 系统版本
+// @Description 获取程序版本信息
+// @Tags 系统
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} resp.SuccessStruct{data=system.Version} "获取成功"
+// @Failure 401 {object} resp.ErrorStruct "未授权"
+// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Router /api/v1/system/version [get]
+func version(c *gin.Context) {
+	resp.Success(c, system.Version{
+		Version:   info.Version,
+		BuildTime: info.BuildTime,
+		Commit:    info.Commit,
+		Author:    info.Author,
+		Repo:      info.Repo,
+	})
 }

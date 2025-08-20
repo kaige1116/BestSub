@@ -16,3 +16,11 @@ type Info struct {
 	UploadBytes   uint64  `json:"upload_bytes"`   // 上传流量 (bytes)
 	DownloadBytes uint64  `json:"download_bytes"` // 下载流量 (bytes)
 }
+
+type Version struct {
+	Version   string `json:"version"`
+	BuildTime string `json:"build_time"`
+	Commit    string `json:"commit"`
+	Author    string `json:"author"`
+	Repo      string `json:"repo"`
+}
