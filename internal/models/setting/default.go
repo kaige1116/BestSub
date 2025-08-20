@@ -5,7 +5,7 @@ var system = GroupSettingAdvance{
 	Data: []SettingAdvance{
 		{
 			Name:  "代理",
-			Type:  "bool",
+			Type:  "boolean",
 			Key:   PROXY_ENABLE,
 			Value: "false",
 			Desc:  "是否启用代理",
