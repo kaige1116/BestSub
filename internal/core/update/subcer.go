@@ -43,9 +43,9 @@ func UpdateSubconverter() error {
 	case "windows":
 		switch arch {
 		case "386":
-			filename = "subconverter_win32.exe"
+			filename = "subconverter_win32.zip"
 		case "amd64":
-			filename = "subconverter_win64.exe"
+			filename = "subconverter_win64.zip"
 		default:
 			log.Errorf("unsupported windows architecture: %s", arch)
 			return fmt.Errorf("unsupported windows architecture: %s", arch)
@@ -53,9 +53,9 @@ func UpdateSubconverter() error {
 	case "darwin":
 		switch arch {
 		case "amd64":
-			filename = "subconverter_darwin64"
+			filename = "subconverter_darwin64.zip"
 		case "arm64":
-			filename = "subconverter_darwinarm"
+			filename = "subconverter_darwinarm.zip"
 		default:
 			log.Errorf("unsupported darwin architecture: %s", arch)
 			return fmt.Errorf("unsupported darwin architecture: %s", arch)
@@ -63,13 +63,13 @@ func UpdateSubconverter() error {
 	case "linux":
 		switch arch {
 		case "386":
-			filename = "subconverter_linux32"
+			filename = "subconverter_linux32.zip"
 		case "amd64":
-			filename = "subconverter_linux64"
+			filename = "subconverter_linux64.zip"
 		case "arm":
-			filename = "subconverter_armv7"
+			filename = "subconverter_armv7.zip"
 		case "arm64":
-			filename = "subconverter_aarch64"
+			filename = "subconverter_aarch64.zip"
 		default:
 			log.Errorf("unsupported linux architecture: %s", arch)
 			return fmt.Errorf("unsupported linux architecture: %s", arch)
@@ -91,13 +91,7 @@ func UpdateSubconverter() error {
 		return err
 	}
 
-	targetPath := config.Base().SubConverter.Path + "/subconverter"
-	if goos == "windows" {
-		targetPath += ".exe"
-	}
-
-	err = os.WriteFile(targetPath, bytes, 0755)
-	if err != nil {
+	if err := unzip(bytes, config.Base().SubConverter.Path); err != nil {
 		return err
 	}
 
