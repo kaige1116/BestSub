@@ -8,6 +8,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/models/setting"
+	"github.com/bestruirui/bestsub/internal/modules/subcer"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
 
@@ -90,11 +91,13 @@ func UpdateSubconverter() error {
 		log.Errorf("failed to create directory: %v", err)
 		return err
 	}
-
+	subcer.Lock()
+	defer subcer.Unlock()
+	subcer.Stop()
 	if err := unzip(bytes, config.Base().SubConverter.Path); err != nil {
 		return err
 	}
-
+	subcer.Start()
 	log.Infof("update subconverter success: %s", filename)
 
 	return nil
