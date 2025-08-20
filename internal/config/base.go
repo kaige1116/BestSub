@@ -47,8 +47,6 @@ func init() {
 
 	setupPaths(&baseConfig, *configPath)
 
-	genSubConverterConfig(&baseConfig)
-
 	loadFromEnv(&baseConfig)
 
 	if err := validateConfig(&baseConfig); err != nil {
@@ -62,6 +60,10 @@ func Base() config.Base {
 
 func setupPaths(config *config.Base, configPath string) {
 	configDir := filepath.Dir(configPath)
+
+	if config.Server.UIPath == "" {
+		config.Server.UIPath = filepath.Join(configDir, "ui")
+	}
 
 	if config.Database.Path == "" {
 		config.Database.Path = filepath.Join(configDir, "data", "bestsub.db")
@@ -278,26 +280,5 @@ func validateSessionConfig(config *config.SessionConfig) error {
 		return fmt.Errorf("会话目录 %s 不可写", dir)
 	}
 
-	return nil
-}
-func genSubConverterConfig(config *config.Base) error {
-	if _, err := os.Stat(config.SubConverter.Path); err == nil {
-		return nil
-	}
-	const baseConfig = `
-common:
-  api_mode: true
-server:
-  listen: %s
-  port: %d
-advanced:
-  log_level: error
-  enable_cache: false
-`
-	cfg := fmt.Sprintf(baseConfig, config.SubConverter.Host, config.SubConverter.Port)
-	cfgPath := filepath.Join(config.SubConverter.Path, "pref.yml")
-	if err := os.WriteFile(cfgPath, []byte(cfg), 0644); err != nil {
-		return err
-	}
 	return nil
 }
