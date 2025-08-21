@@ -17,10 +17,9 @@ func InitSubconverter() error {
 	if runtime.GOOS == "windows" {
 		filePath += ".exe"
 	}
-
 	if _, err := os.Stat(filePath); err != nil {
 		log.Infof("subconverter not found, downloading...")
-		err = UpdateSubconverter()
+		err = updateSubconverter()
 		if err != nil {
 			log.Warnf("auto update subconverter failed, please download subconverter manually from %s and move to %s: %v", op.GetSettingStr(setting.SUBCONVERTER_URL), config.Base().SubConverter.Path, err)
 			os.Exit(1)
@@ -32,7 +31,17 @@ func InitSubconverter() error {
 }
 
 func UpdateSubconverter() error {
+	log.Infof("start update subconverter")
+	err := updateSubconverter()
+	if err != nil {
+		log.Warnf("update subconverter failed, please download subconverter manually from %s and move to %s: %v", op.GetSettingStr(setting.SUBCONVERTER_URL), config.Base().SubConverter.Path, err)
+		return err
+	}
+	log.Infof("update subconverter success")
+	return nil
+}
 
+func updateSubconverter() error {
 	arch := runtime.GOARCH
 	goos := runtime.GOOS
 
@@ -98,7 +107,5 @@ func UpdateSubconverter() error {
 		return err
 	}
 	subcer.Start()
-	log.Infof("update subconverter success: %s", filename)
-
 	return nil
 }
