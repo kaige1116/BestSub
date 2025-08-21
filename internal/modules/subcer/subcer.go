@@ -3,10 +3,13 @@ package subcer
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/bestruirui/bestsub/internal/config"
@@ -88,4 +91,20 @@ func Unlock() {
 
 func GetBaseUrl() string {
 	return fmt.Sprintf("http://127.0.0.1:%d", config.Base().SubConverter.Port)
+}
+func GetVersion() string {
+	resp, err := http.Get(fmt.Sprintf("%s/version", GetBaseUrl()))
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+	parts := strings.Split(string(body), " ")
+	if len(parts) > 1 {
+		return parts[1]
+	}
+	return ""
 }
