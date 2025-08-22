@@ -23,7 +23,7 @@ require (
 	github.com/3andne/restls-client-go v0.1.6 // indirect
 	github.com/RyuaNerin/go-krypto v1.3.0 // indirect
 	github.com/Yawning/aez v0.0.0-20211027044916-e49e68abd344 // indirect
-	github.com/andybalholm/brotli v1.0.6 // indirect
+	github.com/andybalholm/brotli v1.1.2-0.20250424173009-453214e765f3 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/insomniacslk/dhcp v0.0.0-20250109001534-8abf58130905 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
@@ -95,7 +95,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.9.5 // indirect
 	github.com/openacid/low v0.1.21 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
-	github.com/pierrec/lz4/v4 v4.1.14 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
