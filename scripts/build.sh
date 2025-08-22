@@ -231,17 +231,6 @@ prepare_environment() {
         return 1
     fi
 
-    log_info "Downloading Web UI..."
-    if ! curl -L -o "${OUTPUT_DIR}/web.tar.gz" "${WEB_URL}" >/dev/null 2>&1; then
-        log_error "Failed to download Web UI"
-        return 1
-    fi
-    if ! tar -xzf "${OUTPUT_DIR}/web.tar.gz" -C "${WEB_DIR}" >/dev/null 2>&1; then
-        log_error "Failed to extract Web UI"
-        return 1
-    fi
-    rm -f "${OUTPUT_DIR}/web.tar.gz"
-    log_success "Web UI downloaded successfully"
 
     log_success "Build environment ready"
 }
@@ -671,18 +660,18 @@ main() {
                 exit 1
             fi
 
-            if ! setup_android_ndk; then
-                log_error "Failed to setup Android NDK"
-                exit 1
-            fi
+            # if ! setup_android_ndk; then
+            #     log_error "Failed to setup Android NDK"
+            #     exit 1
+            # fi
 
             # Build for different platforms
             log_step "Building binaries"
 
             # Android builds (requires CGO and NDK)
-            if ! build_android arm64; then
-                log_error "Failed to build Android arm64"
-            fi
+            # if ! build_android arm64; then
+            #     log_error "Failed to build Android arm64"
+            # fi
 
             # Standard builds (pure Go, static binaries)
             if ! build_standard linux x86_64; then
