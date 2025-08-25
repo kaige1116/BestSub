@@ -92,7 +92,11 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		})
 	}
 	wg.Wait()
-	log.Debugf("alive check task end, alive: %d, dead: %d, delay: %d", aliveCount, deadCount, totalDelay/aliveCount)
+	avgDelay := int64(0)
+	if aliveCount > 0 {
+		avgDelay = totalDelay / aliveCount
+	}
+	log.Debugf("alive check task end, alive: %d, dead: %d, delay: %d", aliveCount, deadCount, avgDelay)
 	return checkModel.Result{
 		Msg:      "alive check task success",
 		LastRun:  time.Now(),
@@ -100,7 +104,7 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		Extra: map[string]any{
 			"alive": aliveCount,
 			"dead":  deadCount,
-			"delay": totalDelay / aliveCount,
+			"delay": avgDelay,
 		},
 	}
 }
