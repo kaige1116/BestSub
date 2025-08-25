@@ -51,7 +51,7 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 
 	log.Debugf("fetch task %d started", subID)
 
-	client := mihomo.Default(subConfig.Proxy)
+	client := mihomo.Default(false)
 	if client == nil {
 		log.Warnf("fetch task %d failed: proxy config error", subID)
 		return createFailureResult("proxy config error", startTime)
