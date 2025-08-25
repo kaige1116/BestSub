@@ -46,7 +46,7 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 		return checkModel.Result{
 			Msg:      "no nodes",
 			LastRun:  time.Now(),
-			Duration: uint16(time.Since(startTime).Milliseconds()),
+			Duration: time.Since(startTime).Milliseconds(),
 		}
 	}
 	sem := make(chan struct{}, threads)
@@ -86,7 +86,7 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 	return checkModel.Result{
 		Msg:      "success",
 		LastRun:  time.Now(),
-		Duration: uint16(time.Since(startTime).Milliseconds()),
+			Duration: time.Since(startTime).Milliseconds(),
 	}
 }
 

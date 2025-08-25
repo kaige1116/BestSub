@@ -56,7 +56,7 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		return checkModel.Result{
 			Msg:      "no nodes",
 			LastRun:  time.Now(),
-			Duration: uint16(time.Since(startTime).Milliseconds()),
+			Duration: time.Since(startTime).Milliseconds(),
 		}
 	}
 	sem := make(chan struct{}, threads)
@@ -101,7 +101,7 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 	return checkModel.Result{
 		Msg:      fmt.Sprintf("success, alive: %d, dead: %d, average delay: %dms", aliveCount, deadCount, avgDelay),
 		LastRun:  time.Now(),
-		Duration: uint16(time.Since(startTime).Milliseconds()),
+		Duration: time.Since(startTime).Milliseconds(),
 		Extra: map[string]any{
 			"alive": aliveCount,
 			"dead":  deadCount,

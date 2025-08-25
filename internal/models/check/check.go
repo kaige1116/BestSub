@@ -37,7 +37,7 @@ type Result struct {
 	Msg      string    `json:"msg" description:"消息"`
 	Extra    any       `json:"extra" description:"额外信息"`
 	LastRun  time.Time `json:"last_run" description:"上次运行时间"`
-	Duration uint16    `json:"duration" description:"运行时长(单位:毫秒)"`
+	Duration int64    `json:"duration" description:"运行时长(单位:毫秒)"`
 }
 
 type Request struct {

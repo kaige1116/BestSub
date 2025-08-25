@@ -63,7 +63,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		return checkModel.Result{
 			Msg:      "no nodes",
 			LastRun:  time.Now(),
-			Duration: uint16(time.Since(startTime).Milliseconds()),
+			Duration: time.Since(startTime).Milliseconds(),
 		}
 	}
 	sem := make(chan struct{}, threads)
@@ -94,7 +94,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 			}
 			defer client.Release()
 			client.Timeout = time.Duration(e.Timeout) * time.Second
-			if e.Download && e.DownloadCount > 0 && downloadCount < e.DownloadCount {
+			if e.Download && downloadCount < e.DownloadCount {
 				speed := e.download(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedDown.Update(uint32(speed))
@@ -104,7 +104,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 					downloadCount++
 				}
 			}
-			if e.Upload && e.UploadCount > 0 && uploadCount < e.UploadCount {
+			if e.Upload && uploadCount < e.UploadCount {
 				speed := e.upload(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedUp.Update(uint32(speed))
@@ -120,7 +120,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 	return checkModel.Result{
 		Msg:      fmt.Sprintf("success, download count: %d, upload count: %d", downloadCount, uploadCount),
 		LastRun:  time.Now(),
-		Duration: uint16(time.Since(startTime).Milliseconds()),
+		Duration: time.Since(startTime).Milliseconds(),
 	}
 }
 func (e *Speed) download(ctx context.Context, client *http.Client) int64 {
