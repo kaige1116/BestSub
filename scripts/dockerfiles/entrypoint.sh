@@ -3,4 +3,4 @@ set -e
 
 chmod +x /app/bestsub
 
-cd /app && exec ./bestsub "$@"
+cd /app && exec ./bestsub -c data/config.json

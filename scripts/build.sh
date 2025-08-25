@@ -689,7 +689,13 @@ main() {
             if ! build_standard windows x86_64; then
                 log_error "Failed to build Windows x86_64"
             fi
+            if ! build_standard windows arm64; then
+                log_error "Failed to build Windows x86_64"
+            fi
             if ! build_standard darwin arm64; then
+                log_error "Failed to build Darwin arm64"
+            fi
+            if ! build_standard darwin x86_64; then
                 log_error "Failed to build Darwin arm64"
             fi
 
