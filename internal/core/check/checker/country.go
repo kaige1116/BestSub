@@ -27,7 +27,6 @@ func (e *Country) Init() error {
 }
 
 func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) checkModel.Result {
-	log.Infof("country check task start, thread: %d", e.Thread)
 	startTime := time.Now()
 	var nodes []nodeModel.Data
 	if len(subID) == 0 {
@@ -43,8 +42,9 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 		threads = task.MaxThread()
 	}
 	if threads == 0 {
+		log.Warnf("country check task failed, no nodes")
 		return checkModel.Result{
-			Msg:      "country check task failed, no nodes",
+			Msg:      "no nodes",
 			LastRun:  time.Now(),
 			Duration: uint16(time.Since(startTime).Milliseconds()),
 		}
@@ -83,9 +83,8 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 		})
 	}
 	wg.Wait()
-	log.Infof("country check task end")
 	return checkModel.Result{
-		Msg:      "country check task success",
+		Msg:      "success",
 		LastRun:  time.Now(),
 		Duration: uint16(time.Since(startTime).Milliseconds()),
 	}

@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -43,7 +44,6 @@ func (e *Speed) Init() error {
 }
 
 func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkModel.Result {
-	log.Infof("speed check task start, thread: %d", e.Thread)
 	startTime := time.Now()
 	var nodes []nodeModel.Data
 	if len(subID) == 0 {
@@ -59,14 +59,16 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		threads = task.MaxThread()
 	}
 	if threads == 0 {
+		log.Warnf("speed check task failed, no nodes")
 		return checkModel.Result{
-			Msg:      "speed check task failed, no nodes",
+			Msg:      "no nodes",
 			LastRun:  time.Now(),
 			Duration: uint16(time.Since(startTime).Milliseconds()),
 		}
 	}
 	sem := make(chan struct{}, threads)
 	defer close(sem)
+	var downloadCount, uploadCount int
 
 	var wg sync.WaitGroup
 	for _, nd := range nodes {
@@ -92,30 +94,31 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 			}
 			defer client.Release()
 			client.Timeout = time.Duration(e.Timeout) * time.Second
-			if e.Download && e.DownloadCount > 0 {
+			if e.Download && e.DownloadCount > 0 && downloadCount < e.DownloadCount {
 				speed := e.download(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedDown.Update(uint32(speed))
+					log.Debugf("node %d download speed: %d", raw["name"], speed)
 				}
 				if speed > e.DownloadSpeed*mbToBytes {
-					e.DownloadCount--
+					downloadCount++
 				}
 			}
-			if e.Upload && e.UploadCount > 0 {
+			if e.Upload && e.UploadCount > 0 && uploadCount < e.UploadCount {
 				speed := e.upload(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedUp.Update(uint32(speed))
+					log.Debugf("node %d upload speed: %d", raw["name"], speed)
 				}
 				if speed > e.UploadSpeed*mbToBytes {
-					e.UploadCount--
+					uploadCount++
 				}
 			}
 		})
 	}
 	wg.Wait()
-	log.Infof("speed check task end")
 	return checkModel.Result{
-		Msg:      "speed check task success",
+		Msg:      fmt.Sprintf("success, download count: %d, upload count: %d", downloadCount, uploadCount),
 		LastRun:  time.Now(),
 		Duration: uint16(time.Since(startTime).Milliseconds()),
 	}

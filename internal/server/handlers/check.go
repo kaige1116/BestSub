@@ -257,7 +257,7 @@ func runCheck(c *gin.Context) {
 		return
 	}
 
-	log.Infof("Check %d manually run from %s", id, c.ClientIP())
+	log.Debugf("Check %d manually run from %s", id, c.ClientIP())
 
 	resp.Success(c, nil)
 }

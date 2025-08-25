@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -35,7 +36,6 @@ func (e *Alive) Init() error {
 }
 
 func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkModel.Result {
-	log.Infof("alive check task start, alive url: %s, thread: %d", e.URL, e.Thread)
 	startTime := time.Now()
 	var nodes []nodeModel.Data
 	var aliveCount, deadCount, totalDelay int64
@@ -52,8 +52,9 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 		threads = task.MaxThread()
 	}
 	if threads == 0 {
+		log.Warnf("alive check task failed, no nodes")
 		return checkModel.Result{
-			Msg:      "alive check task failed, no nodes",
+			Msg:      "no nodes",
 			LastRun:  time.Now(),
 			Duration: uint16(time.Since(startTime).Milliseconds()),
 		}
@@ -96,9 +97,9 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 	if aliveCount > 0 {
 		avgDelay = totalDelay / aliveCount
 	}
-	log.Debugf("alive check task end, alive: %d, dead: %d, delay: %d", aliveCount, deadCount, avgDelay)
+	log.Debugf("alive check task end, alive: %d, dead: %d, average delay: %dms", aliveCount, deadCount, avgDelay)
 	return checkModel.Result{
-		Msg:      "alive check task success",
+		Msg:      fmt.Sprintf("success, alive: %d, dead: %d, average delay: %dms", aliveCount, deadCount, avgDelay),
 		LastRun:  time.Now(),
 		Duration: uint16(time.Since(startTime).Milliseconds()),
 		Extra: map[string]any{

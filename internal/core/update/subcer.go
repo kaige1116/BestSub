@@ -25,6 +25,11 @@ func InitSubconverter() error {
 			os.Exit(1)
 			return err
 		}
+		if _, err := os.Stat(filePath); err != nil {
+			log.Warnf("subconverter not found, please download subconverter manually from %s and move to %s: %v", op.GetSettingStr(setting.SUBCONVERTER_URL), config.Base().SubConverter.Path, err)
+			os.Exit(1)
+			return err
+		}
 	}
 	log.Infof("subconverter is already up to date")
 	return nil

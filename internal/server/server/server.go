@@ -126,7 +126,7 @@ func setRouter() (*gin.Engine, error) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 
-	r.Use(middleware.Logging())
+	// r.Use(middleware.Logging())
 	r.Use(middleware.Recovery())
 	r.Use(middleware.Cors())
 	r.Use(middleware.Static())

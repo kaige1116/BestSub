@@ -57,7 +57,9 @@ func CheckAdd(data *checkModel.Data) error {
 				log.Errorf("failed to get execer: %v", err)
 				return
 			}
+			log.Infof("%s task %d start", taskConfig.Type, data.ID)
 			result := checker.Run(ctx, logger, taskConfig.SubID)
+			log.Infof("%s task %d end", taskConfig.Type, data.ID)
 			op.UpdateCheckResult(data.ID, result)
 			node.RefreshInfo()
 		},
