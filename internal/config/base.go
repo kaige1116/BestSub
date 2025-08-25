@@ -31,6 +31,13 @@ func init() {
 	if *configPath == "" {
 		*configPath = defaultConfigPath
 	}
+	if !filepath.IsAbs(*configPath) {
+		absPath, err := filepath.Abs(*configPath)
+		if err != nil {
+			panic(fmt.Errorf("无法转换为绝对路径: %v", err))
+		}
+		*configPath = absPath
+	}
 
 	if err := loadFromFile(&baseConfig, *configPath); err != nil {
 		if os.IsNotExist(err) {
