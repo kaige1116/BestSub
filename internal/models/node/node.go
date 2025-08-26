@@ -58,13 +58,13 @@ type SimpleInfo struct {
 }
 
 type Filter struct {
-	SubId         []uint16
-	SpeedUpMore   uint32
-	SpeedDownMore uint32
-	Country       []string
-	DelayLessThan uint16
-	AliveStatus   uint16
-	RiskLessThan  uint8
+	SubId         []uint16 `json:"sub_id"`
+	SpeedUpMore   uint32   `json:"speed_up_more"`
+	SpeedDownMore uint32   `json:"speed_down_more"`
+	Country       []string `json:"country"`
+	DelayLessThan uint16   `json:"delay_less_than"`
+	AliveStatus   uint16   `json:"alive_status"`
+	RiskLessThan  uint8    `json:"risk_less_than"`
 }
 
 func (i *Info) SetAliveStatus(AliveStatus uint16, status bool) {
