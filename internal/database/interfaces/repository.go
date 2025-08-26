@@ -13,7 +13,6 @@ type Repository interface {
 
 	Sub() SubRepository
 	Share() ShareRepository
-	SubTemplate() SubTemplateRepository
 
 	Storage() StorageRepository
 
