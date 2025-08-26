@@ -1,12 +1,13 @@
 package channel
 
 import (
-	"context"
 	"net/http"
 )
 
 type Channel interface {
-	Get(ctx context.Context, client *http.Client) string
+	Url() string
+	Header(req *http.Request)
+	CountryCode(body []byte) string
 }
 
 var Channels = make([]Channel, 0)

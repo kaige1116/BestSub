@@ -12,7 +12,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/core/task"
 	checkModel "github.com/bestruirui/bestsub/internal/models/check"
 	nodeModel "github.com/bestruirui/bestsub/internal/models/node"
-	country "github.com/bestruirui/bestsub/internal/modules/conutry"
+	"github.com/bestruirui/bestsub/internal/modules/country"
 	"github.com/bestruirui/bestsub/internal/modules/register"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -86,7 +86,7 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 	return checkModel.Result{
 		Msg:      "success",
 		LastRun:  time.Now(),
-			Duration: time.Since(startTime).Milliseconds(),
+		Duration: time.Since(startTime).Milliseconds(),
 	}
 }
 
