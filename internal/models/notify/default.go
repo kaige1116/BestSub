@@ -1,16 +1,8 @@
 package notify
 
-var templates = []Template{
-	{
-		Type:     "login_success",
-		Template: `{{.Username}}{{.Time}}{{.IP}}{{.UserAgent}}`,
-	},
-	{
-		Type:     "login_failed",
-		Template: `{{.Username}}{{.Time}}{{.IP}}{{.UserAgent}}`,
-	},
-}
-
 func DefaultTemplates() []Template {
-	return templates
+	return []Template{
+		{"login_success", "登录成功", "{{.Username}}{{.Time}}{{.IP}}{{.UserAgent}}"},
+		{"login_failed", "登录失败", "{{.Username}}{{.Time}}{{.IP}}{{.UserAgent}}"},
+	}
 }

@@ -1,9 +1,12 @@
 package migration
 
-import "sort"
+import (
+	"runtime"
+	"sort"
+)
 
 type Info struct {
-	Date        uint64 // 迁移日期 格式 202507171200
+	Date        uint64
 	Version     string
 	Description string
 	Content     func() string
@@ -32,10 +35,14 @@ func Register(client string, date uint64, version, description string, contentFu
 	clientMigrations[client] = migrations
 }
 
-// Get 获取指定客户端的迁移数据
 func Get(client string) []*Info {
 	if migrations := clientMigrations[client]; migrations != nil {
 		return migrations
 	}
 	return make([]*Info, 0)
+}
+
+func Clean() {
+	clientMigrations = nil
+	runtime.GC()
 }

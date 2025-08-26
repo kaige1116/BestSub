@@ -1,10 +1,5 @@
 package auth
 
-var authConfigData = Data{
-	UserName: "admin",
-	Password: "admin",
-}
-
 func Default() Data {
-	return authConfigData
+	return Data{0, "admin", "admin"}
 }
