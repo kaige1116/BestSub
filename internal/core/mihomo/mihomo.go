@@ -118,7 +118,7 @@ func Proxy(raw map[string]any) *HC {
 		if proxy != nil {
 			proxy.Close()
 		}
-		log.Warnf("parse proxy failed: %v raw: %v", err, raw)
+		log.Debugf("parse proxy failed: %v raw: %v", err, raw)
 		return nil
 	}
 
