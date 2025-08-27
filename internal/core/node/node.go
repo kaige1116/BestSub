@@ -1,14 +1,19 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"net/http"
+	"os"
+	"path"
 	"slices"
 	"sort"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/task"
 	"github.com/bestruirui/bestsub/internal/database/op"
@@ -19,8 +24,57 @@ import (
 
 func InitNodePool(size int) {
 	pool = make([]nodeModel.Data, 0, size)
+	nodes := make([]nodeModel.Base, 0, size)
 	nodeExist = NewExist(size)
 	nodeProcess = NewExist(size)
+	sessionFile := config.Base().Session.NodePath
+	if _, err := os.Stat(sessionFile); os.IsNotExist(err) {
+		return
+	}
+
+	file, err := os.Open(sessionFile)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	decoder := gob.NewDecoder(file)
+	if err := decoder.Decode(&nodes); err != nil {
+		return
+	}
+	for _, node := range nodes {
+		pool = append(pool, nodeModel.Data{
+			Base: node,
+			Info: &nodeModel.Info{},
+		})
+		nodeExist.Add(node.UniqueKey)
+	}
+	nodes = nil
+}
+
+func CloseNodePool() error {
+	var buf bytes.Buffer
+	nodes := make([]nodeModel.Base, 0, len(pool))
+	for _, node := range pool {
+		nodes = append(nodes, node.Base)
+	}
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(nodes); err != nil {
+		log.Warnf("encode pool failed %v", err)
+		return err
+	}
+	filePath := config.Base().Session.NodePath
+
+	dir := path.Dir(filePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
+	}
+	if os.WriteFile(filePath, buf.Bytes(), 0600) != nil {
+		log.Warnf("node pool save failed")
+	}
+	log.Debugf("node pool saved")
+
+	return nil
 }
 
 func Add(node *[]nodeModel.Base) int {

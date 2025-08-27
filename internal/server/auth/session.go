@@ -25,7 +25,7 @@ var (
 
 // Load 从文件加载会话信息
 func init() {
-	sessionFile := config.Base().Session.Path
+	sessionFile := config.Base().Session.AuthPath
 	if _, err := os.Stat(sessionFile); os.IsNotExist(err) {
 		return
 	}
@@ -55,7 +55,7 @@ func CloseSession() error {
 	if err := encoder.Encode(sessions); err != nil {
 		return err
 	}
-	sessionFile := config.Base().Session.Path
+	sessionFile := config.Base().Session.AuthPath
 
 	dir := path.Dir(sessionFile)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

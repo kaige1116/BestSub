@@ -51,11 +51,12 @@ func main() {
 
 	server.Start()
 
-	shutdown.Register(server.Close)      //   ↓↓
-	shutdown.Register(database.Close)    //   ↓↓
-	shutdown.Register(auth.CloseSession) //   ↓↓
-	shutdown.Register(subcer.Stop)       //   ↓↓
-	shutdown.Register(log.Close)         //   ↓↓
+	shutdown.Register(server.Close)       //   ↓↓
+	shutdown.Register(database.Close)     //   ↓↓
+	shutdown.Register(auth.CloseSession)  //   ↓↓
+	shutdown.Register(node.CloseNodePool) //   ↓↓
+	shutdown.Register(subcer.Stop)        //   ↓↓
+	shutdown.Register(log.Close)          //   ↓↓
 
 	shutdown.Listen()
 }

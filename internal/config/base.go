@@ -80,8 +80,12 @@ func setupPaths(config *config.Base, configPath string) {
 		config.Log.Path = filepath.Join(configDir, "log")
 	}
 
-	if config.Session.Path == "" {
-		config.Session.Path = filepath.Join(configDir, "session", "bestsub.session")
+	if config.Session.AuthPath == "" {
+		config.Session.AuthPath = filepath.Join(configDir, "session", "auth.session")
+	}
+
+	if config.Session.NodePath == "" {
+		config.Session.NodePath = filepath.Join(configDir, "session", "node.session")
 	}
 
 	if config.SubConverter.Path == "" {
@@ -132,7 +136,7 @@ func loadFromEnv(config *config.Base) {
 		config.JWT.Secret = jwtSecret
 	}
 	if sessionFile := os.Getenv("BESTSUB_SESSION_FILE"); sessionFile != "" {
-		config.Session.Path = sessionFile
+		config.Session.AuthPath = sessionFile
 	}
 }
 
@@ -274,11 +278,11 @@ func validateJWTConfig(config *config.JWTConfig) error {
 }
 
 func validateSessionConfig(config *config.SessionConfig) error {
-	if config.Path == "" {
+	if config.AuthPath == "" {
 		return fmt.Errorf("会话文件路径不能为空")
 	}
 
-	dir := filepath.Dir(config.Path)
+	dir := filepath.Dir(config.AuthPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("无法创建会话目录 %s: %v", dir, err)
 	}
