@@ -51,7 +51,7 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 	if threads > task.MaxThread() {
 		threads = task.MaxThread()
 	}
-	if threads == 0 {
+	if threads == 0 || len(nodes) == 0 {
 		log.Warnf("alive check task failed, no nodes")
 		return checkModel.Result{
 			Msg:      "no nodes",
