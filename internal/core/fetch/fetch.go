@@ -42,6 +42,7 @@ func createSuccessResult(count uint32, startTime time.Time) subModel.Result {
 
 func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 	startTime := time.Now()
+	retry := 0
 
 	var subConfig subModel.Config
 	if err := json.Unmarshal([]byte(config), &subConfig); err != nil {
@@ -57,42 +58,46 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 		return createFailureResult("proxy config error", startTime)
 	}
 	defer client.Release()
-	client.Timeout = time.Duration(subConfig.Timeout) * time.Second
-
 	subUrl := genSubConverterUrl(subConfig.Url, subConfig.Proxy)
+	for retry < 3 {
+		time.Sleep(time.Duration(retry) * time.Second)
+		retry++
+		client.Timeout = time.Duration(subConfig.Timeout) * time.Second
 
-	req, err := http.NewRequestWithContext(ctx, "GET", subUrl, nil)
-	if err != nil {
-		log.Warnf("fetch task %d failed: %v", subID, err)
-		return createFailureResult(err.Error(), startTime)
+		req, err := http.NewRequestWithContext(ctx, "GET", subUrl, nil)
+		if err != nil {
+			log.Warnf("fetch task %d failed: %v", subID, err)
+			continue
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Warnf("fetch task %d failed: %v", subID, err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Warnf("fetch task %d failed: %v", subID, err)
+			continue
+		}
+
+		nodes, err := parser.Parse(&content, subID)
+		if err != nil {
+			log.Warnf("fetch task %d failed: %v", subID, err)
+			continue
+		}
+		count := len(*nodes)
+
+		node.Add(nodes)
+
+		log.Debugf("fetch task %d completed, node count: %d,  duration: %dms",
+			subID, count, uint16(time.Since(startTime).Milliseconds()))
+
+		return createSuccessResult(uint32(count), startTime)
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Warnf("fetch task %d failed: %v", subID, err)
-		return createFailureResult(err.Error(), startTime)
-	}
-	defer resp.Body.Close()
-
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Warnf("fetch task %d failed: %v", subID, err)
-		return createFailureResult(err.Error(), startTime)
-	}
-
-	nodes, err := parser.Parse(&content, subID)
-	if err != nil {
-		log.Warnf("fetch task %d failed: %v", subID, err)
-		return createFailureResult(err.Error(), startTime)
-	}
-	count := len(*nodes)
-
-	node.Add(nodes)
-
-	log.Debugf("fetch task %d completed, node count: %d,  duration: %dms",
-		subID, count, uint16(time.Since(startTime).Milliseconds()))
-
-	return createSuccessResult(uint32(count), startTime)
+	return createFailureResult("fetch task failed", startTime)
 }
 
 func genSubConverterUrl(subUrl string, enableProxy bool) string {

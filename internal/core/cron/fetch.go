@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/core/fetch"
@@ -83,7 +84,11 @@ func FetchEnable(subID uint16) error {
 		return nil
 	}
 	if ft, ok := fetchFunc.Load(subID); ok {
-		entryID, err := scheduler.AddFunc(ft.cronExpr, ft.fn)
+		entryID, err := scheduler.AddFunc(ft.cronExpr,
+			func() {
+				time.Sleep(time.Duration(rand.Intn(100)) * time.Second)
+				ft.fn()
+			})
 		if err != nil {
 			log.Errorf("failed to add task: %v", err)
 			return err
