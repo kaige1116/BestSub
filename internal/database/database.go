@@ -5,7 +5,6 @@ import (
 
 	"github.com/bestruirui/bestsub/internal/database/client/sqlite"
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
-	"github.com/bestruirui/bestsub/internal/database/migration"
 	"github.com/bestruirui/bestsub/internal/database/op"
 	"github.com/bestruirui/bestsub/internal/utils/log"
 )
@@ -35,7 +34,6 @@ func Initialize(sqltype, path string) error {
 	if err := initNotifyTemplate(context.Background(), op.NotifyTemplateRepo()); err != nil {
 		log.Fatalf("failed to initialize notify templates: %v", err)
 	}
-	migration.Clean()
 	return nil
 }
 func Close() error {

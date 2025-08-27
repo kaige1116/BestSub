@@ -44,7 +44,7 @@ server:
 advanced:
   log_level: debug
   max_pending_connections: 10240
-  max_concurrent_threads: 2
+  max_concurrent_threads: 100
   enable_cache: true
   cache_subscription: 0
   cache_config: 86400
