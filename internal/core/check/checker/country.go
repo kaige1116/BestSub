@@ -54,7 +54,7 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 
 	var wg sync.WaitGroup
 	for _, nd := range nodes {
-		if nd.Info.Country != "" {
+		if nd.Info.AliveStatus&nodeModel.Country != 0 {
 			continue
 		}
 		sem <- struct{}{}
@@ -79,6 +79,9 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 			countryCode := country.GetCode(ctx, client.Client)
 			if countryCode != "" {
 				n.Info.Country = countryCode
+				n.Info.SetAliveStatus(nodeModel.Country, true)
+			} else {
+				n.Info.SetAliveStatus(nodeModel.Country, false)
 			}
 		})
 	}

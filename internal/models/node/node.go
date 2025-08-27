@@ -9,7 +9,7 @@ import (
 
 const (
 	Alive        uint16 = 1 << 0
-	AliveCustom1 uint16 = 1 << 1
+	Country      uint16 = 1 << 1
 	AliveCustom2 uint16 = 1 << 2
 	AliveCustom3 uint16 = 1 << 3
 	AliveCustom4 uint16 = 1 << 4

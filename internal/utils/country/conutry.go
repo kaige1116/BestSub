@@ -7,6 +7,9 @@ type Country struct {
 }
 
 func GetCountry(code string) Country {
+	if code == "" {
+		return Country{}
+	}
 	if names, ok := namesByNumeric[code]; ok {
 		return Country{NameEn: code, NameZh: names, Emoji: emoji(code)}
 	}
