@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -42,7 +41,6 @@ func createSuccessResult(count uint32, startTime time.Time) subModel.Result {
 }
 
 func Do(ctx context.Context, subID uint16, config string) subModel.Result {
-	time.Sleep(time.Duration(rand.Intn(100)) * time.Second)
 	startTime := time.Now()
 
 	var subConfig subModel.Config

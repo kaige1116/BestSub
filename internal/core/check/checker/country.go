@@ -54,7 +54,7 @@ func (e *Country) Run(ctx context.Context, log *log.Logger, subID []uint16) chec
 
 	var wg sync.WaitGroup
 	for _, nd := range nodes {
-		if nd.Info.Country != "" && nd.Info.AliveStatus&nodeModel.Alive == 0 {
+		if nd.Info.Country != "" {
 			continue
 		}
 		sem <- struct{}{}

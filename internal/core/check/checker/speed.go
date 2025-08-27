@@ -72,9 +72,6 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 
 	var wg sync.WaitGroup
 	for _, nd := range nodes {
-		if nd.Info.Country != "" && nd.Info.AliveStatus&nodeModel.Alive == 0 {
-			continue
-		}
 		sem <- struct{}{}
 		wg.Add(1)
 		n := nd
@@ -98,17 +95,18 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 				speed := e.download(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedDown.Update(uint32(speed))
-					log.Debugf("node %d download speed: %d", raw["name"], speed)
+					log.Debugf("node %s download speed: %d", raw["name"], speed)
 				}
 				if speed > e.DownloadSpeed*mbToBytes {
 					downloadCount++
 				}
 			}
+			client.Timeout = time.Duration(e.Timeout) * time.Second
 			if e.Upload && uploadCount < e.UploadCount {
 				speed := e.upload(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedUp.Update(uint32(speed))
-					log.Debugf("node %d upload speed: %d", raw["name"], speed)
+					log.Debugf("node %s upload speed: %d", raw["name"], speed)
 				}
 				if speed > e.UploadSpeed*mbToBytes {
 					uploadCount++
@@ -136,10 +134,7 @@ func (e *Speed) download(ctx context.Context, client *http.Client) int64 {
 	startTime := time.Now()
 
 	limitReader := io.LimitReader(response.Body, e.DownloadSize*mbToBytes)
-	bytes, err := io.Copy(io.Discard, limitReader)
-	if err != nil {
-		return 0
-	}
+	bytes, _ := io.Copy(io.Discard, limitReader)
 	duration := time.Since(startTime).Milliseconds()
 	if duration <= 0 || bytes <= 0 {
 		return 0
