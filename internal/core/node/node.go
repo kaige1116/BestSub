@@ -145,9 +145,9 @@ func Add(node *[]nodeModel.Base) int {
 				if len(validNodes) > 0 {
 					mergeNodesToPool(validNodes)
 					RefreshInfo()
-					log.Infof("Receipt successful, %d new nodes added", len(validNodes))
-					validNodes = validNodes[:0]
 				}
+				log.Infof("Receipt successful, %d new nodes added", len(validNodes))
+				validNodes = validNodes[:0]
 				wgStatus = false
 			}()
 		}
