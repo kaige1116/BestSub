@@ -97,7 +97,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 					n.Info.SpeedDown.Update(uint32(speed))
 					log.Debugf("node %s download speed: %d", raw["name"], speed)
 				}
-				if speed > e.DownloadSpeed*mbToBytes {
+				if speed > e.DownloadSpeed*1024 {
 					downloadCount++
 				}
 			}
@@ -108,7 +108,7 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 					n.Info.SpeedUp.Update(uint32(speed))
 					log.Debugf("node %s upload speed: %d", raw["name"], speed)
 				}
-				if speed > e.UploadSpeed*mbToBytes {
+				if speed > e.UploadSpeed*1024 {
 					uploadCount++
 				}
 			}
