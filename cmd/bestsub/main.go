@@ -34,8 +34,6 @@ func main() {
 		panic(err)
 	}
 
-	server.Start()
-
 	update.InitUI()
 	update.InitSubconverter()
 
@@ -51,10 +49,12 @@ func main() {
 
 	log.CleanupOldLogs(5)
 
-	shutdown.Register(subcer.Stop)       // 关闭顺序
+	server.Start()
+
 	shutdown.Register(server.Close)      //   ↓↓
 	shutdown.Register(database.Close)    //   ↓↓
 	shutdown.Register(auth.CloseSession) //   ↓↓
+	shutdown.Register(subcer.Stop)       //   ↓↓
 	shutdown.Register(log.Close)         //   ↓↓
 
 	shutdown.Listen()
