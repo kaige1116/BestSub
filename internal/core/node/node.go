@@ -189,7 +189,7 @@ func GetByFilter(filter nodeModel.Filter) *[]nodeModel.Data {
 		if len(filter.SubId) > 0 && !slices.Contains(filter.SubId, node.Base.SubId) {
 			continue
 		}
-		if filter.AliveStatus != 0 && node.Info.AliveStatus&filter.AliveStatus == 0 {
+		if filter.AliveStatus != 0 && node.Info.AliveStatus&filter.AliveStatus != filter.AliveStatus {
 			continue
 		}
 		if len(filter.Country) > 0 && !slices.Contains(filter.Country, node.Info.Country) {
