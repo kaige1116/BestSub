@@ -70,7 +70,7 @@ func Stop() error {
 		cmd.Wait()
 	}
 
-	log.Info("subconverter service stopped")
+	log.Debug("subconverter service stopped")
 	return nil
 }
 

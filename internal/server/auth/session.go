@@ -62,9 +62,9 @@ func CloseSession() error {
 		os.MkdirAll(dir, 0755)
 	}
 	if os.WriteFile(sessionFile, buf.Bytes(), 0600) != nil {
-		log.Error("保存会话信息失败")
+		log.Error("session save failed")
 	}
-	log.Debugf("保存会话信息成功")
+	log.Debugf("session saved")
 	return nil
 }
 

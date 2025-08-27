@@ -43,6 +43,6 @@ func Close() error {
 		log.Errorf("failed to close database: %v", err)
 		return err
 	}
-	log.Debugf("数据库关闭成功")
+	log.Debugf("database closed")
 	return nil
 }

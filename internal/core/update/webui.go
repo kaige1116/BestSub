@@ -11,6 +11,7 @@ import (
 
 func InitUI() error {
 	if _, err := os.Stat(config.Base().Server.UIPath + "/index.html"); err != nil {
+		log.Infof("ui not found, downloading...")
 		err = updateUI()
 		if err != nil {
 			log.Warnf("auto update ui failed, please download ui manually from %s and unzip to %s: %v", op.GetSettingStr(setting.FRONTEND_URL), config.Base().Server.UIPath, err)
