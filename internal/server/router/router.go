@@ -28,6 +28,9 @@ type GroupRouter struct {
 	Middlewares []gin.HandlerFunc
 }
 
+// Global registry for route groups
+var registeredRouters []*GroupRouter
+
 // NewGroupRouter creates a new GroupRouter with the given path and automatically registers it.
 func NewGroupRouter(path string) *GroupRouter {
 	router := &GroupRouter{
@@ -87,9 +90,6 @@ func (r *Route) Validate() error {
 	return nil
 }
 
-// Global registry for route groups
-var registeredRouters []*GroupRouter
-
 // GetRouterCount returns the total count of registered routes
 func GetRouterCount() int {
 	count := 0
@@ -121,7 +121,7 @@ func RegisterAll(engine *gin.Engine) error {
 			registerRoute(group, route.Method, route.Path, handlers)
 		}
 	}
-
+	registeredRouters = nil
 	return nil
 }
 
