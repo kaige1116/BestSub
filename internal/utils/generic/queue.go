@@ -6,9 +6,9 @@ type Integer interface {
 }
 
 type Queue[T Integer] struct {
-	data []T
-	ptr  int
-	full bool
+	Data []T
+	Ptr  int
+	Full bool
 }
 
 func NewQueue[T Integer](capacity int) *Queue[T] {
@@ -16,57 +16,57 @@ func NewQueue[T Integer](capacity int) *Queue[T] {
 		panic("queue capacity must be positive")
 	}
 	return &Queue[T]{
-		data: make([]T, 0, capacity),
-		ptr:  0,
-		full: false,
+		Data: make([]T, 0, capacity),
+		Ptr:  0,
+		Full: false,
 	}
 }
 
 func (q *Queue[T]) Update(value T) {
-	if q.full {
-		q.data[q.ptr] = value
-		q.ptr = (q.ptr + 1) % len(q.data)
+	if q.Full {
+		q.Data[q.Ptr] = value
+		q.Ptr = (q.Ptr + 1) % len(q.Data)
 	} else {
-		q.data = append(q.data, value)
-		if len(q.data) == cap(q.data) {
-			q.full = true
+		q.Data = append(q.Data, value)
+		if len(q.Data) == cap(q.Data) {
+			q.Full = true
 		}
 	}
 }
 
 func (q *Queue[T]) GetAll() []T {
-	if len(q.data) == 0 {
+	if len(q.Data) == 0 {
 		return nil
 	}
 
-	result := make([]T, len(q.data))
+	result := make([]T, len(q.Data))
 
-	if q.full {
-		tailLen := len(q.data) - q.ptr
-		copy(result, q.data[q.ptr:])
-		copy(result[tailLen:], q.data[:q.ptr])
+	if q.Full {
+		tailLen := len(q.Data) - q.Ptr
+		copy(result, q.Data[q.Ptr:])
+		copy(result[tailLen:], q.Data[:q.Ptr])
 	} else {
-		copy(result, q.data)
+		copy(result, q.Data)
 	}
 
 	return result
 }
 
 func (q *Queue[T]) Clear() {
-	q.data = q.data[:0]
-	q.ptr = 0
-	q.full = false
+	q.Data = q.Data[:0]
+	q.Ptr = 0
+	q.Full = false
 }
 
 func (q *Queue[T]) Average() T {
-	if len(q.data) == 0 {
+	if len(q.Data) == 0 {
 		return 0
 	}
 
 	var sum int64
-	for _, value := range q.data {
+	for _, value := range q.Data {
 		sum += int64(value)
 	}
 
-	return T(sum / int64(len(q.data)))
+	return T(sum / int64(len(q.Data)))
 }

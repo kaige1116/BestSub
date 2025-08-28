@@ -24,7 +24,6 @@ import (
 
 func InitNodePool(size int) {
 	pool = make([]nodeModel.Data, 0, size)
-	nodes := make([]nodeModel.Base, 0, size)
 	nodeExist = NewExist(size)
 	nodeProcess = NewExist(size)
 	sessionFile := config.Base().Session.NodePath
@@ -39,28 +38,21 @@ func InitNodePool(size int) {
 	defer file.Close()
 
 	decoder := gob.NewDecoder(file)
-	if err := decoder.Decode(&nodes); err != nil {
+	if err := decoder.Decode(&pool); err != nil {
+		log.Warnf("restore node pool failed: %v", err)
+		os.Remove(sessionFile)
 		return
 	}
-	for _, node := range nodes {
-		pool = append(pool, nodeModel.Data{
-			Base: node,
-			Info: &nodeModel.Info{},
-		})
-		nodeExist.Add(node.UniqueKey)
+	for _, node := range pool {
+		nodeExist.Add(node.Base.UniqueKey)
 	}
-	nodes = nil
 }
 
 func CloseNodePool() error {
 	var buf bytes.Buffer
-	nodes := make([]nodeModel.Base, 0, len(pool))
-	for _, node := range pool {
-		nodes = append(nodes, node.Base)
-	}
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(nodes); err != nil {
-		log.Warnf("encode pool failed %v", err)
+	if err := encoder.Encode(pool); err != nil {
+		log.Warnf("save node pool failed: %v", err)
 		return err
 	}
 	filePath := config.Base().Session.NodePath
