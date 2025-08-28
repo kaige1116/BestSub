@@ -33,9 +33,9 @@ var transportPool = sync.Pool{
 	New: func() interface{} {
 		return &http.Transport{
 			DisableKeepAlives:     true,
-			TLSHandshakeTimeout:   5 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			ResponseHeaderTimeout: 5 * time.Second,
+			TLSHandshakeTimeout:   30 * time.Second,
+			ExpectContinueTimeout: 10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
 		}
 	},
 }
