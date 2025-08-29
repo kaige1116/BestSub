@@ -28,6 +28,7 @@ type LatestInfo struct {
 	TagName     string `json:"tag_name"`
 	PublishedAt string `json:"published_at"`
 	Body        string `json:"body"`
+	Message     string `json:"message"`
 }
 
 func GetLatestUIInfo() (*LatestInfo, error) {
@@ -46,6 +47,9 @@ func getLatestInfo(url string, proxy bool) (*LatestInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	hc := mihomo.Default(proxy)
+	if hc == nil {
+		return nil, fmt.Errorf("failed to create http client")
+	}
 	defer hc.Release()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -70,6 +74,9 @@ func getLatestInfo(url string, proxy bool) (*LatestInfo, error) {
 		log.Debugf("unmarshal body failed: %v", err)
 		return nil, err
 	}
+	if latestInfo.Message != "" {
+		return nil, fmt.Errorf("failed to get latest info: %s", latestInfo.Message)
+	}
 	return &latestInfo, nil
 }
 
@@ -77,6 +84,9 @@ func download(url string, proxy bool) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	hc := mihomo.Default(proxy)
+	if hc == nil {
+		return nil, fmt.Errorf("failed to create http client")
+	}
 	defer hc.Release()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
