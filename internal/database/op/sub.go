@@ -58,6 +58,21 @@ func CreateSub(ctx context.Context, sub *subModel.Data) error {
 	subCache.Set(sub.ID, *sub)
 	return nil
 }
+
+func BatchCreateSub(ctx context.Context, subs []*subModel.Data) error {
+	if subCache.Len() == 0 {
+		if err := refreshSubCache(ctx); err != nil {
+			return err
+		}
+	}
+	if err := SubRepo().BatchCreate(ctx, subs); err != nil {
+		return err
+	}
+	for _, sub := range subs {
+		subCache.Set(sub.ID, *sub)
+	}
+	return nil
+}
 func UpdateSub(ctx context.Context, sub *subModel.Data) error {
 	if subCache.Len() == 0 {
 		if err := refreshSubCache(ctx); err != nil {

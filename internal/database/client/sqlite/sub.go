@@ -146,3 +146,60 @@ func (r *SubRepository) List(ctx context.Context) (*[]sub.Data, error) {
 
 	return &subs, nil
 }
+
+func (r *SubRepository) BatchCreate(ctx context.Context, links []*sub.Data) error {
+	log.Debugf("Batch create %d subs", len(links))
+	if len(links) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query := `INSERT INTO sub (enable, name, cron_expr, config, created_at, updated_at)
+	          VALUES (?, ?, ?, ?, ?, ?)`
+	
+	now := time.Now()
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, link := range links {
+		result, err := stmt.ExecContext(ctx,
+			link.Enable,
+			link.Name,
+			link.CronExpr,
+			link.Config,
+			now,
+			now,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to execute batch insert: %w", err)
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("failed to get sub id: %w", err)
+		}
+
+		link.ID = uint16(id)
+		link.CreatedAt = now
+		link.UpdatedAt = now
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}

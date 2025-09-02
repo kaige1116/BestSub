@@ -22,4 +22,7 @@ type SubRepository interface {
 
 	// List 获取订阅链接列表
 	List(ctx context.Context) (*[]sub.Data, error)
+
+	// BatchCreate 批量创建订阅链接
+	BatchCreate(ctx context.Context, links []*sub.Data) error
 }
