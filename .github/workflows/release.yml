@@ -53,8 +53,8 @@ jobs:
             ghcr.io/${{ github.repository }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           tags: |
-            type=ref,event=tag
             type=raw,value=latest
+            type=raw,value=${{ steps.tag.outputs.TAG_NAME }}
 
       - name: Docker meta (Alpine)
         id: meta-alpine
@@ -64,8 +64,8 @@ jobs:
             ghcr.io/${{ github.repository }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           tags: |
-            type=ref,event=tag,suffix=-alpine
             type=raw,value=latest-alpine
+            type=raw,value=${{ steps.tag.outputs.TAG_NAME }}-alpine
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
