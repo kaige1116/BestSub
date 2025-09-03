@@ -20,8 +20,8 @@ import (
 
 const (
 	BESTSUB_API_URL      = "https://api.github.com/repos/bestruirui/BestSub/releases/latest"
-	FRONTEND_API_URL     = "https://api.github.com/repos/BestSubOrg/Front/releases/latest"
-	SUBCONVERTER_API_URL = "https://api.github.com/repos/BestSubOrg/subconverter/releases/latest"
+	FRONTEND_API_URL     = "https://api.github.com/repos/bestruirui/BestSubFront/releases/latest"
+	SUBCONVERTER_API_URL = "https://api.github.com/repos/bestruirui/subconverter/releases/latest"
 )
 
 type LatestInfo struct {

@@ -90,11 +90,11 @@ bestsub/
 当自动下载失败时，请按以下步骤手动部署：
 
 1. **下载 WebUI 组件**
-   - 访问 [BestSubOrg/Front](https://github.com/BestSubOrg/Front/releases/latest)
+   - 访问 [bestruirui/Front](https://github.com/bestruirui/Front/releases/latest)
    - 下载最新版本并解压到 `ui` 目录
 
 2. **下载 Subconverter 组件**
-   - 访问 [BestSubOrg/subconverter](https://github.com/BestSubOrg/subconverter/releases/latest)
+   - 访问 [bestruirui/subconverter](https://github.com/bestruirui/subconverter/releases/latest)
    - 下载对应系统架构的版本并解压到 `subconverter` 目录
 
 3. **验证部署**

@@ -40,10 +40,30 @@ func initSystemSetting(ctx context.Context, systemSetting interfaces.SettingRepo
 	}
 
 	existingSystemSettingMap := make(map[string]bool)
+	var updateSetting []setting.Setting
 	for _, item := range existingSystemSetting {
 		existingSystemSettingMap[item.Key] = true
-	}
+		if item.Key == setting.FRONTEND_URL && item.Value == "https://github.com/BestSubOrg/Front/releases/latest/download/out.zip" {
+			updateSetting = append(updateSetting, setting.Setting{
+				Key:   setting.FRONTEND_URL,
+				Value: "https://github.com/bestruirui/BestSubFront/releases/latest/download/out.zip",
+			},
+			)
+		}
+		if item.Key == setting.SUBCONVERTER_URL && item.Value == "https://github.com/BestSubOrg/subconverter/releases/latest/download/" {
+			updateSetting = append(updateSetting, setting.Setting{
+				Key:   setting.SUBCONVERTER_URL,
+				Value: "https://github.com/bestruirui/subconverter/releases/latest/download/",
+			},
+			)
+		}
 
+	}
+	if len(updateSetting) > 0 {
+		if err := systemSetting.Update(ctx, &updateSetting); err != nil {
+			log.Fatalf("failed to update system setting: %v", err)
+		}
+	}
 	for _, group := range defaultSystemSetting {
 		for _, s := range group.Data {
 			if !existingSystemSettingMap[s.Key] {
