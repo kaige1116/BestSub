@@ -58,7 +58,12 @@ func CheckAdd(data *checkModel.Data) error {
 				return
 			}
 			log.Infof("%s task %d start", taskConfig.Type, data.ID)
-			result := checker.Run(ctx, logger, taskConfig.SubID)
+			var result checkModel.Result
+			if taskConfig.SubIdExclude {
+				result = checker.Run(ctx, logger, node.GetBySubIdExclude(taskConfig.SubID))
+			} else {
+				result = checker.Run(ctx, logger, taskConfig.SubID)
+			}
 			log.Infof("%s task %d end", taskConfig.Type, data.ID)
 			op.UpdateCheckResult(data.ID, result)
 			node.RefreshInfo()

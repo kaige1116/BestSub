@@ -23,6 +23,7 @@ type Data struct {
 }
 
 type Task struct {
+	SubIdExclude  bool     `json:"sub_id_exclude" example:"false" description:"是否排除订阅ID"`
 	SubID         []uint16 `json:"sub_id" example:"1" description:"订阅ID"`
 	CronExpr      string   `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
 	Notify        bool     `json:"notify" example:"true" description:"是否通知"`
@@ -37,7 +38,7 @@ type Result struct {
 	Msg      string    `json:"msg" description:"消息"`
 	Extra    any       `json:"extra" description:"额外信息"`
 	LastRun  time.Time `json:"last_run" description:"上次运行时间"`
-	Duration int64    `json:"duration" description:"运行时长(单位:毫秒)"`
+	Duration int64     `json:"duration" description:"运行时长(单位:毫秒)"`
 }
 
 type Request struct {

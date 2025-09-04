@@ -161,6 +161,18 @@ func GetAll() []nodeModel.Data {
 	return pool
 }
 
+func GetBySubIdExclude(subId []uint16) []uint16 {
+	poolMutex.RLock()
+	defer poolMutex.RUnlock()
+	var result []uint16
+	for _, node := range pool {
+		if !slices.Contains(subId, node.Base.SubId) {
+			result = append(result, node.Base.SubId)
+		}
+	}
+	return result
+}
+
 func GetBySubId(subId []uint16) *[]nodeModel.Data {
 	poolMutex.RLock()
 	defer poolMutex.RUnlock()
@@ -178,14 +190,24 @@ func GetByFilter(filter nodeModel.Filter) *[]nodeModel.Data {
 	defer poolMutex.RUnlock()
 	var result []nodeModel.Data
 	for _, node := range pool {
-		if len(filter.SubId) > 0 && !slices.Contains(filter.SubId, node.Base.SubId) {
-			continue
+		if len(filter.SubId) > 0 {
+			if filter.SubIdExclude && slices.Contains(filter.SubId, node.Base.SubId) {
+				continue
+			}
+			if !filter.SubIdExclude && !slices.Contains(filter.SubId, node.Base.SubId) {
+				continue
+			}
 		}
 		if filter.AliveStatus != 0 && node.Info.AliveStatus&filter.AliveStatus != filter.AliveStatus {
 			continue
 		}
-		if len(filter.Country) > 0 && !slices.Contains(filter.Country, node.Info.Country) {
-			continue
+		if len(filter.Country) > 0 {
+			if filter.CountryExclude && slices.Contains(filter.Country, node.Info.Country) {
+				continue
+			}
+			if !filter.CountryExclude && !slices.Contains(filter.Country, node.Info.Country) {
+				continue
+			}
 		}
 		if filter.SpeedUpMore != 0 && node.Info.SpeedUp.Average() < filter.SpeedUpMore {
 			continue

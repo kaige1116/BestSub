@@ -55,9 +55,11 @@ type SimpleInfo struct {
 
 type Filter struct {
 	SubId         []uint16 `json:"sub_id"`
+	SubIdExclude  bool     `json:"sub_id_exclude"`
 	SpeedUpMore   uint32   `json:"speed_up_more"`
 	SpeedDownMore uint32   `json:"speed_down_more"`
 	Country       []string `json:"country"`
+	CountryExclude bool    `json:"country_exclude"`
 	DelayLessThan uint16   `json:"delay_less_than"`
 	AliveStatus   uint64   `json:"alive_status"`
 	RiskLessThan  uint8    `json:"risk_less_than"`
