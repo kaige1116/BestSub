@@ -15,13 +15,12 @@ readonly APP_NAME="bestsub"
 readonly MAIN_DIR="./cmd/bestsub"
 readonly OUTPUT_DIR="build"
 readonly TOOLCHAIN_DIR="$HOME/.bestsub/toolchains"
-readonly WEB_DIR="static"
-readonly WEB_URL="https://github.com/BestSubOrg/Front/releases/latest/download/out.tar.gz"
 
 # Build metadata
 readonly BUILD_TIME="$(TZ='Asia/Shanghai' date +'%F %T %z')"
 readonly GIT_AUTHOR="bestrui"
-readonly GIT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'dev')"
+readonly GIT_VERSION="v0.111.0"
+# readonly GIT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'dev')"
 readonly COMMIT_ID="$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 
 # Build flags
@@ -231,7 +230,6 @@ prepare_environment() {
         return 1
     fi
 
-
     log_success "Build environment ready"
 }
 
@@ -277,14 +275,14 @@ setup_android_ndk() {
 
 get_go_arch() {
     case "$1" in
-        "x86_64") echo "amd64" ;;
-        "arm64") echo "arm64" ;;
-        "x86") echo "386" ;;
-        "armv7") echo "arm" ;;
-        *)
-            log_error "Unsupported architecture: $1"
-            return 1
-            ;;
+    "x86_64") echo "amd64" ;;
+    "arm64") echo "arm64" ;;
+    "x86") echo "386" ;;
+    "armv7") echo "arm" ;;
+    *)
+        log_error "Unsupported architecture: $1"
+        return 1
+        ;;
     esac
 }
 
@@ -298,7 +296,6 @@ build_standard() {
         log_error "Failed to get Go architecture: ${arch}"
         return 1
     fi
-
 
     local output_file="${OUTPUT_DIR}/bin/${APP_NAME}-${os}-${arch}"
 
@@ -319,17 +316,16 @@ build_standard() {
     log_success "Built ${os}/${arch} → bin/$(basename "${output_file}")"
 }
 
-
 get_android_compiler() {
     case "$1" in
-        "x86_64") echo "x86_64-linux-android24-clang" ;;
-        "arm64") echo "aarch64-linux-android24-clang" ;;
-        "armv7") echo "armv7a-linux-androideabi24-clang" ;;
-        "x86") echo "i686-linux-android24-clang" ;;
-        *)
-            log_error "Unsupported Android architecture: $1"
-            return 1
-            ;;
+    "x86_64") echo "x86_64-linux-android24-clang" ;;
+    "arm64") echo "aarch64-linux-android24-clang" ;;
+    "armv7") echo "armv7a-linux-androideabi24-clang" ;;
+    "x86") echo "i686-linux-android24-clang" ;;
+    *)
+        log_error "Unsupported Android architecture: $1"
+        return 1
+        ;;
     esac
 }
 
@@ -384,7 +380,6 @@ build_android() {
     log_success "Built android/${arch} → bin/$(basename "${output_file}")"
 }
 
-
 # =============================================================================
 # Post-build Functions
 # =============================================================================
@@ -397,42 +392,30 @@ create_archives() {
     # Copy documentation files to archives directory
     cp README.md LICENSE "${archives_dir}/" 2>/dev/null || log_info "Documentation files not found, skipping"
 
-
-    # Archive Unix-like binaries (tar.gz)
-    # Use find to get actual files that exist
-    # Get all non-Windows binaries (Linux and Android)
+    # Archive all binaries (zip format for all platforms)
     while IFS= read -r -d '' file; do
-            local basename_file=$(basename "$file")
-            if ! cp "$file" "${archives_dir}/${APP_NAME}" 2>/dev/null; then
-                log_error "Failed to copy $file to ${archives_dir}/${APP_NAME}"
-                continue
-            fi
+        local basename_file
+        basename_file=$(basename "$file")
+        local extension=""
 
-            if (cd "${archives_dir}" && tar -czf "${basename_file}.tar.gz" "${APP_NAME}" README.md LICENSE 2>/dev/null); then
-                rm -f "${archives_dir}/${APP_NAME}"
-                log_success "Archived: archives/${basename_file}.tar.gz"
-            else
-                log_error "Failed to create archive: ${basename_file}.tar.gz"
-                rm -f "${archives_dir}/${APP_NAME}"
-            fi
-    done < <(find ${OUTPUT_DIR}/bin/ -name "${APP_NAME}-"* ! -name "*-windows-*" -type f -print0 2>/dev/null)
+        # Add .exe extension for Windows binaries
+        if [[ "$basename_file" == *"-windows-"* ]]; then
+            extension=".exe"
+        fi
 
-    # Archive Windows binaries (zip)
-    while IFS= read -r -d '' file; do
-            local basename_file=$(basename "$file")
-            if ! cp "$file" "${archives_dir}/${APP_NAME}.exe" 2>/dev/null; then
-                log_error "Failed to copy $file to ${archives_dir}/${APP_NAME}.exe"
-                continue
-            fi
+        if ! cp "$file" "${archives_dir}/${APP_NAME}${extension}" 2>/dev/null; then
+            log_error "Failed to copy $file to ${archives_dir}/${APP_NAME}${extension}"
+            continue
+        fi
 
-            if (cd "${archives_dir}" && zip -q "${basename_file%.*}.zip" "${APP_NAME}.exe" README.md LICENSE 2>/dev/null); then
-                rm -f "${archives_dir}/${APP_NAME}.exe"
-                log_success "Archived: archives/${basename_file%.*}.zip"
-            else
-                log_error "Failed to create archive: ${basename_file%.*}.zip"
-                rm -f "${archives_dir}/${APP_NAME}.exe"
-            fi
-    done < <(find ${OUTPUT_DIR}/bin/ -name "${APP_NAME}-windows-*" -type f -print0 2>/dev/null)
+        if (cd "${archives_dir}" && zip -q "${basename_file}.zip" "${APP_NAME}${extension}" README.md LICENSE 2>/dev/null); then
+            rm -f "${archives_dir}/${APP_NAME}${extension}"
+            log_success "Archived: archives/${basename_file}.zip"
+        else
+            log_error "Failed to create archive: ${basename_file}.zip"
+            rm -f "${archives_dir}/${APP_NAME}${extension}"
+        fi
+    done < <(find "${OUTPUT_DIR}/bin/" -name "${APP_NAME}-*" -type f -print0 2>/dev/null)
 
     # Cleanup documentation files from archives directory
     rm -f "${archives_dir}/README.md" "${archives_dir}/LICENSE"
@@ -466,15 +449,15 @@ generate_checksums() {
     if command_exists md5sum; then
         checksum_cmd="md5sum"
     elif command_exists md5; then
-        checksum_cmd="md5 -r"  # -r for BSD md5 to match md5sum format
+        checksum_cmd="md5 -r" # -r for BSD md5 to match md5sum format
     else
         log_error "No checksum command available (md5sum or md5)"
         cd ../.. 2>/dev/null || true
         return 1
     fi
 
-    if find . -maxdepth 1 -name "${APP_NAME}-*" -type f -print0 | xargs -0 $checksum_cmd > md5.txt 2>/dev/null; then
-        local checksum_count=$(wc -l < md5.txt 2>/dev/null || echo "0")
+    if find . -maxdepth 1 -name "${APP_NAME}-*" -type f -print0 | xargs -0 $checksum_cmd >md5.txt 2>/dev/null; then
+        local checksum_count=$(wc -l <md5.txt 2>/dev/null || echo "0")
         log_success "Generated checksums for ${checksum_count} files in bin/"
     else
         log_error "Failed to generate checksums"
@@ -573,24 +556,22 @@ validate_os_arch() {
 
     # Validate OS
     case "$os" in
-        "linux"|"windows"|"darwin"|"android")
-            ;;
-        *)
-            log_error "Unsupported OS: $os"
-            log_error "Supported OS: linux, windows, darwin, android"
-            return 1
-            ;;
+    "linux" | "windows" | "darwin" | "android") ;;
+    *)
+        log_error "Unsupported OS: $os"
+        log_error "Supported OS: linux, windows, darwin, android"
+        return 1
+        ;;
     esac
 
     # Validate architecture
     case "$arch" in
-        "x86_64"|"arm64"|"armv7"|"x86")
-            ;;
-        *)
-            log_error "Unsupported architecture: $arch"
-            log_error "Supported architectures: x86_64, arm64, armv7, x86"
-            return 1
-            ;;
+    "x86_64" | "arm64" | "armv7" | "x86") ;;
+    *)
+        log_error "Unsupported architecture: $arch"
+        log_error "Supported architectures: x86_64, arm64, armv7, x86"
+        return 1
+        ;;
     esac
 
     return 0
@@ -598,141 +579,139 @@ validate_os_arch() {
 
 main() {
     case "${1:-}" in
-        "build")
-            if [ $# -ne 3 ]; then
-                log_error "Build command requires OS and architecture"
-                log_error "Usage: $0 build <os> <arch>"
-                show_usage
-                exit 1
-            fi
-
-            local os="$2"
-            local arch="$3"
-
-            if ! validate_os_arch "$os" "$arch"; then
-                exit 1
-            fi
-
-            log_step "Starting single platform build"
-            echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID}) for ${os}/${arch}"
-            echo ""
-
-            # Setup
-            if ! prepare_environment; then
-                log_error "Failed to prepare build environment"
-                exit 1
-            fi
-
-            # Setup Android NDK if building for Android
-            if [ "$os" = "android" ]; then
-                if ! setup_android_ndk; then
-                    log_error "Failed to setup Android NDK"
-                    exit 1
-                fi
-            fi
-
-            # Build for specified platform
-            log_step "Building binary"
-
-            if [ "$os" = "android" ]; then
-                if ! build_android "$arch"; then
-                    log_error "Failed to build ${os}/${arch}"
-                    exit 1
-                fi
-            else
-                if ! build_standard "$os" "$arch"; then
-                    log_error "Failed to build ${os}/${arch}"
-                    exit 1
-                fi
-            fi
-
-            log_step "Build completed"
-            log_success "Binary ready: ${OUTPUT_DIR}/bin/${APP_NAME}-${os}-${arch}"
-            ;;
-        "release")
-            log_step "Starting release build"
-            echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID})"
-            echo ""
-
-            # Setup
-            if ! prepare_environment; then
-                log_error "Failed to prepare build environment"
-                exit 1
-            fi
-
-            # if ! setup_android_ndk; then
-            #     log_error "Failed to setup Android NDK"
-            #     exit 1
-            # fi
-
-            # Build for different platforms
-            log_step "Building binaries"
-
-            # Android builds (requires CGO and NDK)
-            # if ! build_android arm64; then
-            #     log_error "Failed to build Android arm64"
-            # fi
-
-            # Standard builds (pure Go, static binaries)
-            if ! build_standard linux x86_64; then
-                log_error "Failed to build Linux x86_64"
-            fi
-            if ! build_standard linux arm64; then
-                log_error "Failed to build Linux arm64"
-            fi
-            if ! build_standard linux armv7; then
-                log_error "Failed to build Linux armv7"
-            fi
-            if ! build_standard linux x86; then
-                log_error "Failed to build Linux x86"
-            fi
-            if ! build_standard windows x86_64; then
-                log_error "Failed to build Windows x86_64"
-            fi
-            if ! build_standard windows arm64; then
-                log_error "Failed to build Windows x86_64"
-            fi
-            if ! build_standard darwin arm64; then
-                log_error "Failed to build Darwin arm64"
-            fi
-            if ! build_standard darwin x86_64; then
-                log_error "Failed to build Darwin arm64"
-            fi
-
-
-
-            # Post-processing
-            if ! prepare_docker_binaries; then
-                log_warning "Failed to prepare Docker binaries, but continuing..."
-            fi
-
-            if ! generate_checksums; then
-                log_warning "Failed to generate checksums, but continuing..."
-            fi
-
-            if ! create_archives; then
-                log_warning "Failed to create archives, but continuing..."
-            fi
-
-            log_step "Build completed"
-            log_success "All artifacts ready in ${OUTPUT_DIR}/"
-            log_info "  • Binaries: ${OUTPUT_DIR}/bin/"
-            log_info "  • Docker binaries: ${OUTPUT_DIR}/docker/"
-            log_info "  • Archives: ${OUTPUT_DIR}/archives/"
-            ;;
-        "help"|"-h"|"--help")
-            show_usage
-            ;;
-        "")
-            log_error "No command specified"
+    "build")
+        if [ $# -ne 3 ]; then
+            log_error "Build command requires OS and architecture"
+            log_error "Usage: $0 build <os> <arch>"
             show_usage
             exit 1
-            ;;
-        *)
-            log_error "Unknown command: $1"
-            show_usage
+        fi
+
+        local os="$2"
+        local arch="$3"
+
+        if ! validate_os_arch "$os" "$arch"; then
             exit 1
-            ;;
+        fi
+
+        log_step "Starting single platform build"
+        echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID}) for ${os}/${arch}"
+        echo ""
+
+        # Setup
+        if ! prepare_environment; then
+            log_error "Failed to prepare build environment"
+            exit 1
+        fi
+
+        # Setup Android NDK if building for Android
+        if [ "$os" = "android" ]; then
+            if ! setup_android_ndk; then
+                log_error "Failed to setup Android NDK"
+                exit 1
+            fi
+        fi
+
+        # Build for specified platform
+        log_step "Building binary"
+
+        if [ "$os" = "android" ]; then
+            if ! build_android "$arch"; then
+                log_error "Failed to build ${os}/${arch}"
+                exit 1
+            fi
+        else
+            if ! build_standard "$os" "$arch"; then
+                log_error "Failed to build ${os}/${arch}"
+                exit 1
+            fi
+        fi
+
+        log_step "Build completed"
+        log_success "Binary ready: ${OUTPUT_DIR}/bin/${APP_NAME}-${os}-${arch}"
+        ;;
+    "release")
+        log_step "Starting release build"
+        echo "📦 Building ${APP_NAME} ${GIT_VERSION} (${COMMIT_ID})"
+        echo ""
+
+        # Setup
+        if ! prepare_environment; then
+            log_error "Failed to prepare build environment"
+            exit 1
+        fi
+
+        # if ! setup_android_ndk; then
+        #     log_error "Failed to setup Android NDK"
+        #     exit 1
+        # fi
+
+        # Build for different platforms
+        log_step "Building binaries"
+
+        # Android builds (requires CGO and NDK)
+        # if ! build_android arm64; then
+        #     log_error "Failed to build Android arm64"
+        # fi
+
+        # Standard builds (pure Go, static binaries)
+        if ! build_standard linux x86_64; then
+            log_error "Failed to build Linux x86_64"
+        fi
+        if ! build_standard linux arm64; then
+            log_error "Failed to build Linux arm64"
+        fi
+        if ! build_standard linux armv7; then
+            log_error "Failed to build Linux armv7"
+        fi
+        if ! build_standard linux x86; then
+            log_error "Failed to build Linux x86"
+        fi
+        if ! build_standard windows x86_64; then
+            log_error "Failed to build Windows x86_64"
+        fi
+        if ! build_standard windows x86; then
+            log_error "Failed to build Windows x86"
+        fi
+        if ! build_standard darwin arm64; then
+            log_error "Failed to build Darwin arm64"
+        fi
+        if ! build_standard darwin x86_64; then
+            log_error "Failed to build Darwin arm64"
+        fi
+
+        # Post-processing
+        if ! prepare_docker_binaries; then
+            log_warning "Failed to prepare Docker binaries, but continuing..."
+        fi
+
+        if ! generate_checksums; then
+            log_warning "Failed to generate checksums, but continuing..."
+        fi
+
+        if ! create_archives; then
+            log_warning "Failed to create archives, but continuing..."
+        fi
+
+        log_step "Build completed"
+        log_success "All artifacts ready in ${OUTPUT_DIR}/"
+        log_info "  • Binaries: ${OUTPUT_DIR}/bin/"
+        log_info "  • Docker binaries: ${OUTPUT_DIR}/docker/"
+        log_info "  • Archives: ${OUTPUT_DIR}/archives/"
+        ;;
+    "help" | "-h" | "--help")
+        show_usage
+        ;;
+    "")
+        log_error "No command specified"
+        show_usage
+        exit 1
+        ;;
+    *)
+        log_error "Unknown command: $1"
+        show_usage
+        exit 1
+        ;;
     esac
 }
 
