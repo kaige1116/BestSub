@@ -19,8 +19,7 @@ readonly TOOLCHAIN_DIR="$HOME/.bestsub/toolchains"
 # Build metadata
 readonly BUILD_TIME="$(TZ='Asia/Shanghai' date +'%F %T %z')"
 readonly GIT_AUTHOR="bestrui"
-readonly GIT_VERSION="v0.111.0"
-# readonly GIT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'dev')"
+readonly GIT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'dev')"
 readonly COMMIT_ID="$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
 
 # Build flags
@@ -290,7 +289,6 @@ build_standard() {
     local os="$1"
     local arch="$2"
     local go_arch
-    local normalized_arch
 
     if ! go_arch="$(get_go_arch "${arch}")"; then
         log_error "Failed to get Go architecture: ${arch}"
