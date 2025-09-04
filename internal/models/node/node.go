@@ -8,14 +8,10 @@ import (
 )
 
 const (
-	Alive        uint16 = 1 << 0
-	Country      uint16 = 1 << 1
-	AliveCustom2 uint16 = 1 << 2
-	AliveCustom3 uint16 = 1 << 3
-	AliveCustom4 uint16 = 1 << 4
-	AliveCustom5 uint16 = 1 << 5
-	AliveCustom6 uint16 = 1 << 6
-	AliveCustom7 uint16 = 1 << 7
+	Alive     uint64 = 1 << 0
+	Country   uint64 = 1 << 1
+	TikTok    uint64 = 1 << 2
+	TikTokIDC uint64 = 1 << 3
 )
 
 type Data struct {
@@ -44,7 +40,7 @@ type Info struct {
 	SpeedDown   generic.Queue[uint32]
 	Delay       generic.Queue[uint16]
 	Risk        uint8
-	AliveStatus uint16
+	AliveStatus uint64
 	IP          uint32
 	Country     string
 }
@@ -63,11 +59,11 @@ type Filter struct {
 	SpeedDownMore uint32   `json:"speed_down_more"`
 	Country       []string `json:"country"`
 	DelayLessThan uint16   `json:"delay_less_than"`
-	AliveStatus   uint16   `json:"alive_status"`
+	AliveStatus   uint64   `json:"alive_status"`
 	RiskLessThan  uint8    `json:"risk_less_than"`
 }
 
-func (i *Info) SetAliveStatus(AliveStatus uint16, status bool) {
+func (i *Info) SetAliveStatus(AliveStatus uint64, status bool) {
 	if status {
 		i.AliveStatus |= AliveStatus
 	} else {
