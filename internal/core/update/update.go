@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	BESTSUB_API_URL      = "https://api.github.com/repos/bestruirui/BestSub/releases/latest"
-	FRONTEND_API_URL     = "https://api.github.com/repos/bestruirui/BestSubFront/releases/latest"
-	SUBCONVERTER_API_URL = "https://api.github.com/repos/bestruirui/subconverter/releases/latest"
+	bestsubUpdateUrl    = "https://github.com/bestruirui/bestsub/releases/latest/download"
+	bestsubUpdateApiUrl = "https://api.github.com/repos/bestruirui/BestSub/releases/latest"
+	frontUpdateApiUrl   = "https://api.github.com/repos/bestruirui/BestSubFront/releases/latest"
+	subcerUpdateApiUrl  = "https://api.github.com/repos/bestruirui/subconverter/releases/latest"
 )
 
 type LatestInfo struct {
@@ -32,15 +33,15 @@ type LatestInfo struct {
 }
 
 func GetLatestUIInfo() (*LatestInfo, error) {
-	return getLatestInfo(FRONTEND_API_URL, op.GetSettingBool(setting.FRONTEND_URL_PROXY))
+	return getLatestInfo(frontUpdateApiUrl, op.GetSettingBool(setting.FRONTEND_URL_PROXY))
 }
 
 func GetLatestSubconverterInfo() (*LatestInfo, error) {
-	return getLatestInfo(SUBCONVERTER_API_URL, op.GetSettingBool(setting.SUBCONVERTER_URL_PROXY))
+	return getLatestInfo(subcerUpdateApiUrl, op.GetSettingBool(setting.SUBCONVERTER_URL_PROXY))
 }
 
 func GetLatestBestsubInfo() (*LatestInfo, error) {
-	return getLatestInfo(BESTSUB_API_URL, op.GetSettingBool(setting.PROXY_ENABLE))
+	return getLatestInfo(bestsubUpdateApiUrl, op.GetSettingBool(setting.PROXY_ENABLE))
 }
 
 func getLatestInfo(url string, proxy bool) (*LatestInfo, error) {
@@ -136,16 +137,24 @@ func unzip(data []byte, dest string) error {
 		}
 		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode().Perm())
 		if err != nil {
-			log.Debugf("open file failed: %v", err)
-			return err
+			err = os.Remove(fpath)
+			if err != nil {
+				log.Debugf("remove file failed: %v", err)
+				return err
+			}
+			outFile, err = os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				log.Debugf("open file failed: %v", err)
+				return err
+			}
 		}
+		defer outFile.Close()
 		rc, err := f.Open()
 		if err != nil {
 			log.Debugf("open file failed: %v", err)
 			return err
 		}
 		_, err = io.Copy(outFile, rc)
-		outFile.Close()
 		rc.Close()
 		if err != nil {
 			log.Debugf("copy failed: %v", err)

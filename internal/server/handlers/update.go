@@ -84,6 +84,12 @@ func updateFunc(c *gin.Context) {
 			resp.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
+	case "bestsub":
+		err := update.UpdateCore()
+		if err != nil {
+			resp.Error(c, http.StatusInternalServerError, err.Error())
+			return
+		}
 	default:
 		resp.ErrorBadRequest(c)
 	}

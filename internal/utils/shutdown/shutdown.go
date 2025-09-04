@@ -31,3 +31,14 @@ func Listen() {
 	log.Info("=== Shutdown completed successfully ===")
 	os.Exit(0)
 }
+func All() {
+	if len(funcs) == 0 {
+		return
+	}
+	for _, fn := range funcs {
+		if err := fn(); err != nil {
+			log.Errorf("Closing functions execution failed: %v", err)
+		}
+	}
+	log.Info("Shutdown completed successfully")
+}
