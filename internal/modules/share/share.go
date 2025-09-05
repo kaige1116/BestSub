@@ -62,7 +62,7 @@ func GenNodeData(config string) []byte {
 	nodes := node.GetByFilter(genConfig.Filter)
 	var result bytes.Buffer
 	result.Write(nodeData)
-	tmpl, err := template.New("node").Parse(genConfig.Rename)
+	tmpl, err := renameTemplate.Parse(genConfig.Rename)
 	if err != nil {
 		return nil
 	}
@@ -73,8 +73,8 @@ func GenNodeData(config string) []byte {
 		simpleInfo := renameTmpl{
 			SpeedUp:   node.Info.SpeedUp.Average(),
 			SpeedDown: node.Info.SpeedDown.Average(),
-			Delay:     node.Info.Delay.Average(),
-			Risk:      node.Info.Risk,
+			Delay:     uint32(node.Info.Delay.Average()),
+			Risk:      uint32(node.Info.Risk),
 			Count:     uint32(i + 1),
 			Country:   country.GetCountry(node.Info.Country),
 		}
@@ -109,8 +109,29 @@ var (
 type renameTmpl struct {
 	SpeedUp   uint32
 	SpeedDown uint32
-	Delay     uint16
-	Risk      uint8
+	Delay     uint32
+	Risk      uint32
 	Country   country.Country
 	Count     uint32
 }
+
+var renameTemplate = template.New("node").Funcs(template.FuncMap{
+	"add": func(x, y uint32) uint32 {
+		return x + y
+	},
+	"sub": func(x, y uint32) uint32 {
+		return x - y
+	},
+	"div": func(x, y uint32) uint32 {
+		if y == 0 {
+			return 0
+		}
+		return x / y
+	},
+	"mod": func(x, y uint32) uint32 {
+		if y == 0 {
+			return 0
+		}
+		return x % y
+	},
+})

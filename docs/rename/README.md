@@ -193,6 +193,7 @@ BestSub 节点重命名功能允许用户自定义节点名称的显示格式，
 ### 单位转换
 - KB/s 转 MB/s：`{{div .SpeedDown 1024}}MB/s`
 - ms 转 s：`{{div .Delay 1000}}.{{mod .Delay 1000}}s`
+- 智能速度单位：`{{if ge .SpeedDown 1024}}{{div .SpeedDown 1024}}MB/s{{else}}{{.SpeedDown}}KB/s{{end}}`
 
 ### 条件组合
 ```go
