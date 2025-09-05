@@ -240,7 +240,7 @@ func batchCreateSub(c *gin.Context) {
 		return
 	}
 
-	subs := make([]*sub.Data, 0, len(reqs))
+	subs := make([]*sub.Data, len(reqs))
 	for i, req := range reqs {
 		subData := req.GenData(0)
 		subs[i] = &subData
