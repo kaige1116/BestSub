@@ -24,18 +24,20 @@ const mbToBytes = 1024 * 1024
 
 type Speed struct {
 	Thread  int `json:"thread" name:"线程数" value:"5"`
-	Timeout int `json:"timeout" name:"超时时间" value:"60"`
+	Timeout int `json:"timeout" name:"超时时间" value:"60" desc:"单个节点检测的超时时间(s)"`
 
 	Download      bool   `json:"download" name:"下载测试" value:"true"`
-	DownloadUrl   string `json:"download_url" name:"测试链接" value:"https://speed.cloudflare.com/__down?bytes=104857600" desc:"测速链接"`
-	DownloadSize  int64  `json:"download_size" name:"下载大小(MB)" value:"100" desc:"下载大小"`
-	DownloadSpeed int64  `json:"download_speed" name:"下载速度(MB/s)" value:"1" desc:"下载速度"`
+	DownloadSkip  bool   `json:"download_skip" name:"是否跳过已经有下载速度的节点" value:"false"`
+	DownloadUrl   string `json:"download_url" name:"测试链接" value:"https://speed.cloudflare.com/__down?bytes=104857600" desc:"最好自定义一个测试链接,部分节点可能屏蔽此默认链接"`
+	DownloadSize  int64  `json:"download_size" name:"下载大小" value:"100" desc:"到达指定大小后停止测速(MB)"`
+	DownloadSpeed int64  `json:"download_speed" name:"下载速度" value:"1" desc:"下载速度达到指定值并且达到指定个数后停止测速(KB/s)"`
 	DownloadCount int    `json:"download_count" name:"节点个数" value:"5" desc:"符合下载速度的节点个数,满足后停止测试"`
 
 	Upload      bool   `json:"upload" name:"上传测试" value:"false"`
-	UploadUrl   string `json:"upload_url" name:"上传链接" value:"https://speed.cloudflare.com/__up" desc:"上传链接"`
-	UploadSize  int64  `json:"upload_size" name:"上传大小(MB)" value:"100" desc:"上传大小"`
-	UploadSpeed int64  `json:"upload_speed" name:"上传速度(MB/s)" value:"1" desc:"上传速度"`
+	UploadSkip  bool   `json:"upload_skip" name:"是否跳过已经有上传速度的节点" value:"false"`
+	UploadUrl   string `json:"upload_url" name:"上传链接" value:"https://speed.cloudflare.com/__up" desc:"最好自定义一个测试链接,部分节点可能屏蔽此默认链接"`
+	UploadSize  int64  `json:"upload_size" name:"上传大小" value:"100" desc:"到达指定大小后停止测速(MB)"`
+	UploadSpeed int64  `json:"upload_speed" name:"上传速度" value:"1" desc:"上传速度达到指定值并且达到指定个数后停止测速(KB/s)"`
 	UploadCount int    `json:"upload_count" name:"节点个数" value:"5" desc:"符合上传速度的节点个数,满足后停止测试"`
 }
 
@@ -91,24 +93,24 @@ func (e *Speed) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 			}
 			defer client.Release()
 			client.Timeout = time.Duration(e.Timeout) * time.Second
-			if e.Download && downloadCount < e.DownloadCount {
+			if e.Download && downloadCount < e.DownloadCount && (!e.DownloadSkip || n.Info.SpeedDown.Average() == 0) {
 				speed := e.download(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedDown.Update(uint32(speed))
 					log.Debugf("node %s download speed: %d", raw["name"], speed)
 				}
-				if speed > e.DownloadSpeed*1024 {
+				if speed > e.DownloadSpeed {
 					downloadCount++
 				}
 			}
 			client.Timeout = time.Duration(e.Timeout) * time.Second
-			if e.Upload && uploadCount < e.UploadCount {
+			if e.Upload && uploadCount < e.UploadCount && (!e.UploadSkip || n.Info.SpeedUp.Average() == 0) {
 				speed := e.upload(ctx, client.Client)
 				if speed > 0 {
 					n.Info.SpeedUp.Update(uint32(speed))
 					log.Debugf("node %s upload speed: %d", raw["name"], speed)
 				}
-				if speed > e.UploadSpeed*1024 {
+				if speed > e.UploadSpeed {
 					uploadCount++
 				}
 			}

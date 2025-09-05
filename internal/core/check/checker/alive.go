@@ -20,10 +20,10 @@ import (
 )
 
 type Alive struct {
-	URL         string `json:"url" name:"测试链接" value:"https://www.gstatic.com/generate_204" desc:"测试链接"`
-	ExptectCode int    `json:"exptect_code" name:"期望状态码" value:"204" desc:"期望状态码"`
+	URL         string `json:"url" name:"测试链接" value:"https://www.gstatic.com/generate_204"`
+	ExptectCode int    `json:"exptect_code" name:"期望状态码" value:"204"`
 	Thread      int    `json:"thread" name:"线程数" value:"100"`
-	Timeout     int    `json:"timeout" name:"超时时间" value:"10"`
+	Timeout     int    `json:"timeout" name:"超时时间" value:"10" desc:"单个节点检测的超时时间(s)"`
 }
 type Result struct {
 	AliveCount uint16 `json:"alive_count" desc:"存活节点数量"`

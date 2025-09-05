@@ -46,7 +46,7 @@ func gen(t reflect.Type) []Data {
 			Value:   tag.Get("value"),
 			Options: tag.Get("options"),
 			Require: tag.Get("require") == "true",
-			Desc:    tag.Get("description"),
+			Desc:    tag.Get("desc"),
 		}
 		items = append(items, item)
 	}
