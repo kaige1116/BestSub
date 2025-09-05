@@ -74,7 +74,7 @@ func updateCore() error {
 
 	downloadUrl = bestsubUpdateUrl + "/" + filename
 
-	bytes, err := download(downloadUrl, op.GetSettingBool(setting.PROXY_URL))
+	bytes, err := download(downloadUrl, op.GetSettingBool(setting.PROXY_ENABLE))
 	if err != nil {
 		return err
 	}
