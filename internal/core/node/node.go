@@ -69,15 +69,29 @@ func CloseNodePool() error {
 	return nil
 }
 
+type nameNode struct {
+	Name string
+}
+
 func Add(node *[]nodeModel.Base) int {
 	var nodesToProcess []nodeModel.Base
 
 	for _, n := range *node {
+		var nameNode nameNode
+		if err := yaml.Unmarshal(n.Raw, &nameNode); err != nil {
+			log.Warnf("yaml.Unmarshal failed: %v", err)
+			continue
+		}
 		if !nodeExist.Exist(n.UniqueKey) && !nodeProcess.Exist(n.UniqueKey) {
 			nodeProcess.Add(n.UniqueKey)
 			nodesToProcess = append(nodesToProcess, n)
+			log.Debugf("add process node: %s", nameNode.Name)
+		} else {
+			log.Debugf("node already exist: %s", nameNode.Name)
 		}
 	}
+
+	log.Debugf("add %d nodes to process", len(nodesToProcess))
 
 	if len(nodesToProcess) > 0 {
 		go func() {
@@ -116,7 +130,6 @@ func Add(node *[]nodeModel.Base) int {
 					var info nodeModel.Info
 					info.Delay.Update(uint16(time.Since(start).Milliseconds()))
 					info.SetAliveStatus(nodeModel.Alive, true)
-					// Copy raw to avoid pinning the whole subscription buffer
 					rawCopy := append([]byte(nil), n.Raw...)
 					n.Raw = rawCopy
 					validMutex.Lock()
@@ -124,6 +137,7 @@ func Add(node *[]nodeModel.Base) int {
 						Base: n,
 						Info: &info,
 					})
+					log.Debugf("node: %s test end, Delay: %d", raw["name"].(string), info.Delay.Average())
 					validMutex.Unlock()
 				})
 
@@ -134,11 +148,12 @@ func Add(node *[]nodeModel.Base) int {
 			go func() {
 				time.Sleep(time.Second * 5)
 				wgSync.Wait()
+				mergedNodes := 0
 				if len(validNodes) > 0 {
-					mergeNodesToPool(validNodes)
+					mergedNodes = mergeNodesToPool(validNodes)
 					RefreshInfo()
 				}
-				log.Infof("Receipt successful, %d new nodes added", len(validNodes))
+				log.Infof("Receipt successful, %d new nodes added", mergedNodes)
 				validNodes = validNodes[:0]
 				wgStatus = false
 			}()
@@ -226,7 +241,7 @@ func GetByFilter(filter nodeModel.Filter) *[]nodeModel.Data {
 	return &result
 }
 
-func mergeNodesToPool(newNodes []nodeModel.Data) {
+func mergeNodesToPool(newNodes []nodeModel.Data) int {
 	sort.Slice(newNodes, func(i, j int) bool {
 		return newNodes[i].Info.Delay.Average() < newNodes[j].Info.Delay.Average()
 	})
@@ -244,7 +259,7 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 			for _, node := range newNodes {
 				nodeExist.Add(node.Base.UniqueKey)
 			}
-			return
+			return len(newNodes)
 		} else {
 			pool = append(pool, newNodes[:remainingCap]...)
 			for _, node := range newNodes[:remainingCap] {
@@ -261,14 +276,17 @@ func mergeNodesToPool(newNodes []nodeModel.Data) {
 	newNodeIndex := 0
 	for i := len(pool) - 1; i >= 0 && newNodeIndex < len(newNodes); i-- {
 		if newNodes[newNodeIndex].Info.Delay.Average() < pool[i].Info.Delay.Average() {
+			log.Debugf("new node delay %dms < old delay %dms,merge", newNodes[newNodeIndex].Info.Delay.Average(), pool[i].Info.Delay.Average())
 			nodeExist.Remove(pool[i].Base.UniqueKey)
 			pool[i] = newNodes[newNodeIndex]
 			nodeExist.Add(newNodes[newNodeIndex].Base.UniqueKey)
 			newNodeIndex++
 		} else {
-			return
+			log.Debugf("new node delay %dms > old delay %dms,not merge", newNodes[newNodeIndex].Info.Delay.Average(), pool[i].Info.Delay.Average())
+			return newNodeIndex
 		}
 	}
+	return 0
 }
 
 func GetSubInfo(subID uint16) nodeModel.SimpleInfo {
