@@ -25,12 +25,13 @@ type Config struct {
 }
 
 type Result struct {
-	Success  uint16    `json:"success,omitempty" description:"成功次数"`
-	Fail     uint16    `json:"fail,omitempty" description:"失败次数"`
-	Msg      string    `json:"msg,omitempty" description:"消息"`
-	RawCount uint32    `json:"raw_count,omitempty" description:"节点数量"`
-	LastRun  time.Time `json:"last_run,omitempty" description:"上次运行时间"`
-	Duration uint16    `json:"duration,omitempty" description:"运行时长(单位:毫秒)"`
+	Success       uint16    `json:"success,omitempty" description:"成功次数"`
+	Fail          uint16    `json:"fail,omitempty" description:"失败次数"`
+	NodeNullCount uint16    `json:"node_null_count,omitempty" description:"节点为空次数"`
+	Msg           string    `json:"msg,omitempty" description:"消息"`
+	RawCount      uint32    `json:"raw_count,omitempty" description:"节点数量"`
+	LastRun       time.Time `json:"last_run,omitempty" description:"上次运行时间"`
+	Duration      uint16    `json:"duration,omitempty" description:"运行时长(单位:毫秒)"`
 }
 
 type Request struct {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bestruirui/bestsub/internal/database/interfaces"
+	"github.com/bestruirui/bestsub/internal/models/setting"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
 	"github.com/bestruirui/bestsub/internal/utils/cache"
 )
@@ -106,7 +107,12 @@ func UpdateSubResult(ctx context.Context, id uint16, result subModel.Result) err
 
 	result.Success += oldStatus.Success
 	result.Fail += oldStatus.Fail
-
+	if result.NodeNullCount != 0 {
+		result.NodeNullCount += oldStatus.NodeNullCount
+	}
+	if (result.NodeNullCount > uint16(GetSettingInt(setting.SUB_DISABLE_AUTO))) && GetSettingInt(setting.SUB_DISABLE_AUTO) != 0 {
+		sub.Enable = false
+	}
 	bytes, err := json.Marshal(result)
 	if err != nil {
 		return err

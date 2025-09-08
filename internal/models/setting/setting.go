@@ -26,6 +26,8 @@ const (
 	SUBCONVERTER_URL       = "subconverter_url"
 	SUBCONVERTER_URL_PROXY = "subconverter_url_proxy"
 
+	SUB_DISABLE_AUTO = "sub_disable_auto"
+
 	NODE_POOL_SIZE    = "node_pool_size"
 	NODE_TEST_URL     = "node_test_url"
 	NODE_TEST_TIMEOUT = "node_test_timeout"

@@ -40,6 +40,15 @@ func FetchAdd(data *subModel.Data) error {
 			}()
 			result := fetch.Do(ctx, data.ID, data.Config)
 			op.UpdateSubResult(ctx, data.ID, result)
+			sub, err := op.GetSubByID(ctx, data.ID)
+			if err != nil {
+				log.Warnf("failed to get sub by id: %v", err)
+				return
+			}
+			if !sub.Enable {
+				FetchDisable(data.ID)
+				log.Infof("fetch task %d auto disable", data.ID)
+			}
 		},
 		cronExpr: data.CronExpr,
 	})

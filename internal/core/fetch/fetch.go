@@ -29,14 +29,19 @@ func createFailureResult(msg string, startTime time.Time) subModel.Result {
 	}
 }
 
-func createSuccessResult(count uint32, startTime time.Time) subModel.Result {
+func createSuccessResult(count uint32, startTime time.Time, nodeNull bool) subModel.Result {
+	nodeNullCount := uint16(0)
+	if nodeNull {
+		nodeNullCount = 1
+	}
 	return subModel.Result{
-		Success:  1,
-		Fail:     0,
-		Msg:      "sub updated successfully",
-		RawCount: count,
-		LastRun:  time.Now(),
-		Duration: uint16(time.Since(startTime).Milliseconds()),
+		Success:       1,
+		Fail:          0,
+		NodeNullCount: nodeNullCount,
+		Msg:           "sub updated successfully",
+		RawCount:      count,
+		LastRun:       time.Now(),
+		Duration:      uint16(time.Since(startTime).Milliseconds()),
 	}
 }
 
@@ -95,7 +100,7 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 		log.Debugf("fetch task %d completed, node count: %d,  duration: %dms",
 			subID, count, uint16(time.Since(startTime).Milliseconds()))
 
-		return createSuccessResult(uint32(count), startTime)
+		return createSuccessResult(uint32(count), startTime, count == 0)
 	}
 	return createFailureResult("fetch task failed", startTime)
 }

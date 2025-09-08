@@ -50,6 +50,13 @@ func DefaultSetting() []GroupSettingAdvance {
 					Key:   SUBCONVERTER_URL_PROXY,
 					Value: "false",
 				},
+				{
+					Name:  "自动禁用订阅",
+					Type:  "number",
+					Key:   SUB_DISABLE_AUTO,
+					Value: "0",
+					Desc:  "当订阅获取节点数量为0的次数大于该值时,自动禁用订阅,0为不自动禁用",
+				},
 			},
 		},
 		{
