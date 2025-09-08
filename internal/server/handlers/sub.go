@@ -187,7 +187,7 @@ func deleteSub(c *gin.Context) {
 		resp.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	// TODO: 删除节点池
+	node.DeleteBySubId(uint16(id))
 	resp.Success(c, nil)
 }
 

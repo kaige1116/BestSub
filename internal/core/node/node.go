@@ -300,3 +300,20 @@ func GetCountryInfo(country string) nodeModel.SimpleInfo {
 	defer refreshMutex.Unlock()
 	return countryInfoMap[country]
 }
+func DeleteBySubId(subID uint16) {
+	poolMutex.Lock()
+	defer poolMutex.Unlock()
+	
+	end := len(pool) - 1
+	for i := 0; i <= end; {
+		if pool[i].Base.SubId == subID {
+			nodeExist.Remove(pool[i].Base.UniqueKey)
+			pool[i] = pool[end]
+			end--
+		} else {
+			i++
+		}
+	}
+	
+	pool = pool[:end+1]
+}
