@@ -15,6 +15,7 @@ import (
 	"github.com/bestruirui/bestsub/internal/models/setting"
 	"github.com/bestruirui/bestsub/internal/models/share"
 	"github.com/bestruirui/bestsub/internal/modules/subcer"
+	"github.com/bestruirui/bestsub/internal/utils"
 	"github.com/bestruirui/bestsub/internal/utils/country"
 	"github.com/google/go-querystring/query"
 )
@@ -77,6 +78,7 @@ func GenNodeData(config string) []byte {
 			Risk:      uint32(node.Info.Risk),
 			Count:     uint32(i + 1),
 			Country:   country.GetCountry(node.Info.Country),
+			IP:        utils.Uint32ToIP(node.Info.IP),
 		}
 		tmpl.Execute(&newName, simpleInfo)
 		result.Write(rename(node.Base.Raw, newName.Bytes()))
@@ -113,6 +115,7 @@ type renameTmpl struct {
 	Risk      uint32
 	Country   country.Country
 	Count     uint32
+	IP        string
 }
 
 var renameTemplate = template.New("node").Funcs(template.FuncMap{
