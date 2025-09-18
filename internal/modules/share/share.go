@@ -2,6 +2,7 @@ package share
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -79,6 +80,7 @@ func GenNodeData(config string) []byte {
 			Count:     uint32(i + 1),
 			Country:   country.GetCountry(node.Info.Country),
 			IP:        utils.Uint32ToIP(node.Info.IP),
+			SubName:   op.GetSubNameByID(context.Background(), node.Base.SubId),
 		}
 		tmpl.Execute(&newName, simpleInfo)
 		result.Write(rename(node.Base.Raw, newName.Bytes()))
@@ -116,6 +118,7 @@ type renameTmpl struct {
 	Country   country.Country
 	Count     uint32
 	IP        string
+	SubName   string
 }
 
 var renameTemplate = template.New("node").Funcs(template.FuncMap{

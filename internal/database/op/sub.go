@@ -47,6 +47,13 @@ func GetSubByID(ctx context.Context, id uint16) (*subModel.Data, error) {
 	}
 	return nil, fmt.Errorf("sub not found")
 }
+func GetSubNameByID(ctx context.Context, id uint16) string {
+	sub, err := GetSubByID(ctx, id)
+	if err != nil {
+		return ""
+	}
+	return sub.Name
+}
 func CreateSub(ctx context.Context, sub *subModel.Data) error {
 	if subCache.Len() == 0 {
 		if err := refreshSubCache(ctx); err != nil {
