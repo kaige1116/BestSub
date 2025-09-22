@@ -1,49 +1,27 @@
 package fetch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/bestruirui/bestsub/internal/config"
 	"github.com/bestruirui/bestsub/internal/core/mihomo"
 	"github.com/bestruirui/bestsub/internal/core/node"
 	"github.com/bestruirui/bestsub/internal/database/op"
+	nodeModel "github.com/bestruirui/bestsub/internal/models/node"
 	"github.com/bestruirui/bestsub/internal/models/setting"
 	subModel "github.com/bestruirui/bestsub/internal/models/sub"
-	"github.com/bestruirui/bestsub/internal/modules/parser"
 	"github.com/bestruirui/bestsub/internal/utils/log"
+	"gopkg.in/yaml.v3"
 )
-
-func createFailureResult(msg string, startTime time.Time) subModel.Result {
-	return subModel.Result{
-		Success:  0,
-		Fail:     1,
-		Msg:      msg,
-		LastRun:  time.Now(),
-		Duration: uint16(time.Since(startTime).Milliseconds()),
-	}
-}
-
-func createSuccessResult(count uint32, startTime time.Time, nodeNull bool) subModel.Result {
-	nodeNullCount := uint16(0)
-	if nodeNull {
-		nodeNullCount = 1
-	}
-	return subModel.Result{
-		Success:       1,
-		Fail:          0,
-		NodeNullCount: nodeNullCount,
-		Msg:           "sub updated successfully",
-		RawCount:      count,
-		LastRun:       time.Now(),
-		Duration:      uint16(time.Since(startTime).Milliseconds()),
-	}
-}
 
 func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 	startTime := time.Now()
@@ -88,14 +66,57 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 			continue
 		}
 
-		nodes, err := parser.Parse(&content, subID)
-		if err != nil {
-			log.Warnf("fetch task %d failed: %v", subID, err)
-			continue
-		}
-		count := len(*nodes)
+		globalProtocolFilterEnable := op.GetSettingBool(setting.NODE_PROTOCOL_FILTER_ENABLE)
+		globalProtocolFilterMode := op.GetSettingBool(setting.NODE_PROTOCOL_FILTER_MODE)
+		globalProtocolFilter := strings.Split(op.GetSettingStr(setting.NODE_PROTOCOL_FILTER), ",")
 
-		node.Add(nodes)
+		var nodes []nodeModel.Base
+		var unique nodeModel.UniqueKey
+		lines := bytes.Split(content, []byte("\n"))
+		lines = lines[1:]
+		for _, line := range lines {
+			if len(line) == 0 {
+				continue
+			}
+			line = line[4:]
+			if err := yaml.Unmarshal(line, &unique); err != nil {
+				continue
+			}
+			if subConfig.ProtocolFilterEnable {
+				if subConfig.ProtocolFilterMode {
+					if !slices.Contains(subConfig.ProtocolFilter, unique.Type) {
+						continue
+					}
+				} else {
+					if slices.Contains(subConfig.ProtocolFilter, unique.Type) {
+						continue
+					}
+				}
+			} else {
+				if globalProtocolFilterEnable {
+					if globalProtocolFilterMode {
+						if !slices.Contains(globalProtocolFilter, unique.Type) {
+							log.Debugf("全局协议过滤启用,协议包含模式 丢弃协议: %v", unique.Type)
+							continue
+						}
+					} else {
+						if slices.Contains(globalProtocolFilter, unique.Type) {
+							log.Debugf("全局协议过滤启用,协议排除模式 丢弃协议: %v", unique.Type)
+							continue
+						}
+					}
+				}
+			}
+			nodes = append(nodes, nodeModel.Base{
+				Raw:       line,
+				SubId:     subID,
+				UniqueKey: unique.Gen(),
+			})
+		}
+
+		count := len(nodes)
+
+		node.Add(&nodes)
 
 		log.Debugf("fetch task %d completed, node count: %d,  duration: %dms",
 			subID, count, uint16(time.Since(startTime).Milliseconds()))
@@ -104,7 +125,31 @@ func Do(ctx context.Context, subID uint16, config string) subModel.Result {
 	}
 	return createFailureResult("fetch task failed", startTime)
 }
+func createFailureResult(msg string, startTime time.Time) subModel.Result {
+	return subModel.Result{
+		Success:  0,
+		Fail:     1,
+		Msg:      msg,
+		LastRun:  time.Now(),
+		Duration: uint16(time.Since(startTime).Milliseconds()),
+	}
+}
 
+func createSuccessResult(count uint32, startTime time.Time, nodeNull bool) subModel.Result {
+	nodeNullCount := uint16(0)
+	if nodeNull {
+		nodeNullCount = 1
+	}
+	return subModel.Result{
+		Success:       1,
+		Fail:          0,
+		NodeNullCount: nodeNullCount,
+		Msg:           "sub updated successfully",
+		RawCount:      count,
+		LastRun:       time.Now(),
+		Duration:      uint16(time.Since(startTime).Milliseconds()),
+	}
+}
 func genSubConverterUrl(subUrl string, enableProxy bool) string {
 	subUrl = url.QueryEscape(subUrl)
 	cfg := config.Base()

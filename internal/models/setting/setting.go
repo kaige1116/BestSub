@@ -32,6 +32,10 @@ const (
 	NODE_TEST_URL     = "node_test_url"
 	NODE_TEST_TIMEOUT = "node_test_timeout"
 
+	NODE_PROTOCOL_FILTER_ENABLE = "node_protocol_filter_enable"
+	NODE_PROTOCOL_FILTER_MODE   = "node_protocol_filter_mode"
+	NODE_PROTOCOL_FILTER        = "node_protocol_filter"
+
 	TASK_MAX_THREAD  = "task_max_thread"
 	TASK_MAX_TIMEOUT = "task_max_timeout"
 	TASK_MAX_RETRY   = "task_max_retry"

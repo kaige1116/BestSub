@@ -4,6 +4,14 @@ import (
 	"reflect"
 )
 
+const (
+	TypeBoolean     = "boolean"
+	TypeNumber      = "number"
+	TypeString      = "string"
+	TypeSelect      = "select"
+	TypeMultiSelect = "multi_select"
+)
+
 type Data struct {
 	Name    string `json:"name,omitempty"`
 	Key     string `json:"key,omitempty"`

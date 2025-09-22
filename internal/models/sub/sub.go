@@ -19,9 +19,12 @@ type Data struct {
 }
 
 type Config struct {
-	Url     string `json:"url" required:"true" description:"订阅地址"`
-	Proxy   bool   `json:"proxy" required:"false" description:"是否启用代理" example:"false"`
-	Timeout int    `json:"timeout" required:"false" description:"超时时间单位:秒" example:"10"`
+	Url                  string   `json:"url"`
+	Proxy                bool     `json:"proxy"`
+	Timeout              int      `json:"timeout"`
+	ProtocolFilterEnable bool     `json:"protocol_filter_enable"`
+	ProtocolFilterMode   bool     `json:"protocol_filter_mode"`
+	ProtocolFilter       []string `json:"protocol_filter"`
 }
 
 type Result struct {
