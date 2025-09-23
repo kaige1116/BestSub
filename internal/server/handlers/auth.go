@@ -67,10 +67,10 @@ func init() {
 // @Accept json
 // @Produce json
 // @Param request body authModel.LoginRequest true "登录请求"
-// @Success 200 {object} resp.SuccessStruct{data=authModel.LoginResponse} "登录成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "用户名或密码错误"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=authModel.LoginResponse} "登录成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "用户名或密码错误"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func login(c *gin.Context) {
 	var req authModel.LoginRequest
@@ -151,10 +151,10 @@ func login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body authModel.RefreshTokenRequest true "刷新令牌请求"
-// @Success 200 {object} resp.SuccessStruct{data=authModel.LoginResponse} "刷新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "刷新令牌无效"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=authModel.LoginResponse} "刷新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "刷新令牌无效"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/refresh [post]
 func refreshToken(c *gin.Context) {
 	var req authModel.RefreshTokenRequest
@@ -228,9 +228,9 @@ func refreshToken(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct "登出成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "登出成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/logout [post]
 func logout(c *gin.Context) {
 	sessionID, exists := c.Get("session_id")
@@ -259,10 +259,10 @@ func logout(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body authModel.ChangePasswordRequest true "修改密码请求"
-// @Success 200 {object} resp.SuccessStruct "密码修改成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权或旧密码错误"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "密码修改成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权或旧密码错误"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/user/password [post]
 func changePassword(c *gin.Context) {
 	var req authModel.ChangePasswordRequest
@@ -299,9 +299,9 @@ func changePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=authModel.Data} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=authModel.Data} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/user [get]
 func getUserInfo(c *gin.Context) {
 	authInfo, err := op.AuthGet()
@@ -320,9 +320,9 @@ func getUserInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=authModel.SessionListResponse} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=authModel.SessionListResponse} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions [get]
 func getSessions(c *gin.Context) {
 	sessions := auth.GetAllSession()
@@ -341,11 +341,11 @@ func getSessions(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "会话ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "会话不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "会话不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/sessions/{id} [delete]
 func deleteSession(c *gin.Context) {
 	sessionIDStr := c.Param("id")
@@ -391,11 +391,11 @@ func deleteSession(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body authModel.UpdateUserInfoRequest true "修改用户名请求"
-// @Success 200 {object} resp.SuccessStruct "用户名修改成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 409 {object} resp.ErrorStruct "用户名已存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "用户名修改成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 409 {object} resp.ResponseStruct "用户名已存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/auth/user/name [post]
 func updateUsername(c *gin.Context) {
 	var req authModel.UpdateUserInfoRequest

@@ -30,9 +30,9 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=map[string]update.LatestInfo} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=map[string]update.LatestInfo} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/update [get]
 func latest(c *gin.Context) {
 	latestInfo := make(map[string]update.LatestInfo, 3)
@@ -65,9 +65,9 @@ func latest(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=string} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=string} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/update/:name [post]
 func updateFunc(c *gin.Context) {
 	name := c.Param("name")

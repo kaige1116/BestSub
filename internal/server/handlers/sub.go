@@ -52,10 +52,10 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param request body sub.Request true "创建订阅链接请求"
-// @Success 200 {object} resp.SuccessStruct{data=sub.Response} "创建成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=sub.Response} "创建成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub [post]
 func createSub(c *gin.Context) {
 	var req sub.Request
@@ -81,10 +81,10 @@ func createSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id query int true "链接ID"
-// @Success 200 {object} resp.SuccessStruct{data=[]sub.Response} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]sub.Response} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub [get]
 func getSubs(c *gin.Context) {
 	idStr := c.Query("id")
@@ -125,11 +125,11 @@ func getSubs(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "订阅链接ID"
 // @Param request body sub.Request true "更新订阅链接请求"
-// @Success 200 {object} resp.SuccessStruct{data=sub.Response} "更新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=sub.Response} "更新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "订阅链接不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub/{id} [put]
 func updateSub(c *gin.Context) {
 	idStr := c.Param("id")
@@ -166,11 +166,11 @@ func updateSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "订阅链接ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "订阅链接不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub/{id} [delete]
 func deleteSub(c *gin.Context) {
 	idStr := c.Param("id")
@@ -199,11 +199,11 @@ func deleteSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "订阅链接ID"
-// @Success 200 {object} resp.SuccessStruct{data=sub.Result} "刷新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "订阅链接不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=sub.Result} "刷新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "订阅链接不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub/refresh/{id} [post]
 func refreshSub(c *gin.Context) {
 	idStr := c.Param("id")
@@ -224,10 +224,10 @@ func refreshSub(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body []sub.Request true "批量创建订阅链接请求"
-// @Success 200 {object} resp.SuccessStruct{data=[]sub.Response} "创建成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]sub.Response} "创建成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/sub/batch [post]
 func batchCreateSub(c *gin.Context) {
 	var reqs []sub.Request

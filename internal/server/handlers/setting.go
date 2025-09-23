@@ -35,9 +35,9 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param group query string false "分组名称"
-// @Success 200 {object} resp.SuccessStruct{data=[]setting.Setting} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]setting.Setting} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/setting [get]
 func getSetting(c *gin.Context) {
 	result, err := op.GetAllSetting(context.Background())
@@ -57,10 +57,10 @@ func getSetting(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body []setting.Setting  true "更新配置项请求"
-// @Success 200 {object} resp.SuccessStruct "更新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "更新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/setting [put]
 func updateSetting(c *gin.Context) {
 	var req []setting.Setting

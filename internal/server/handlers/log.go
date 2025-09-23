@@ -32,9 +32,9 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param path query string true "日志文件路径"
-// @Success 200 {object} resp.SuccessStruct{data=[]uint64} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]uint64} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/log/list [get]
 func getLogFileList(c *gin.Context) {
 	path := c.Query("path")
@@ -58,11 +58,11 @@ func getLogFileList(c *gin.Context) {
 // @Security BearerAuth
 // @Param path query string true "日志文件路径"
 // @Param timestamp query uint64 true "日志文件时间戳"
-// @Success 200 {object} resp.SuccessStruct{data=[]object{level=string,time=string,msg=string}} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "文件不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]object{level=string,time=string,msg=string}} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "文件不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/log/content [get]
 func getLogContent(c *gin.Context) {
 	path := c.Query("path")

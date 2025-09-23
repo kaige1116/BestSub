@@ -52,9 +52,9 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param data body shareModel.Request true "分享数据"
-// @Success 200 {object} resp.SuccessStruct{data=shareModel.Response} "创建成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=shareModel.Response} "创建成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share [post]
 func createShare(c *gin.Context) {
 	var req shareModel.Request
@@ -77,9 +77,9 @@ func createShare(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]shareModel.Response} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]shareModel.Response} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share [get]
 func getShare(c *gin.Context) {
 	shares, err := op.GetShareList(c.Request.Context())
@@ -102,9 +102,9 @@ func getShare(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "分享ID"
 // @Param data body shareModel.Request true "分享数据"
-// @Success 200 {object} resp.SuccessStruct{data=shareModel.Response} "更新成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=shareModel.Response} "更新成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share/{id} [put]
 func updateShare(c *gin.Context) {
 	var req shareModel.Request
@@ -134,9 +134,9 @@ func updateShare(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "分享ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share/{id} [delete]
 func deleteShare(c *gin.Context) {
 	id := c.Param("id")
@@ -159,7 +159,7 @@ func deleteShare(c *gin.Context) {
 // @Produce plain
 // @Param token path string true "分享token"
 // @Success 200 {string} string "获取成功，内容为yaml/plain格式"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share/node/{token} [get]
 func getShareNodeContent(c *gin.Context) {
 	token := c.Param("token")
@@ -198,7 +198,7 @@ func getShareNodeContent(c *gin.Context) {
 // @Produce plain
 // @Param token path string true "分享token"
 // @Success 200 {string} string "获取成功，内容为yaml/plain格式"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/share/sub/{token} [get]
 func getShareSubContent(c *gin.Context) {
 	token := c.Param("token")

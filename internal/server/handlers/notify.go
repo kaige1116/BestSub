@@ -68,10 +68,10 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]string} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]string} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/channel [get]
 func getNotifyChannel(c *gin.Context) {
 	resp.Success(c, notify.GetChannels())
@@ -84,10 +84,10 @@ func getNotifyChannel(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param channel query string false "渠道"
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]notify.Desc} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=map[string][]notify.Desc} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/channel/config [get]
 func getNotifyChannelConfig(c *gin.Context) {
 	channel := c.Query("channel")
@@ -104,10 +104,10 @@ func getNotifyChannelConfig(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.Response} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]notifyModel.Response} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify [get]
 func getNotifyList(c *gin.Context) {
 	notifyList, err := op.GetNotifyList()
@@ -124,10 +124,10 @@ func getNotifyList(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.NameAndID} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]notifyModel.NameAndID} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/name [get]
 func getNotifyNameAndID(c *gin.Context) {
 	notifyList, err := op.GetNotifyList()
@@ -153,10 +153,10 @@ func getNotifyNameAndID(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body notifyModel.Request true "创建通知请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Response} "创建成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=notifyModel.Response} "创建成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify [post]
 func createNotify(c *gin.Context) {
 	var req notifyModel.Request
@@ -186,10 +186,10 @@ func createNotify(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body notifyModel.Request true "测试通知请求"
-// @Success 200 {object} resp.SuccessStruct "测试成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "测试成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/test [post]
 func testNotify(c *gin.Context) {
 	var req notifyModel.Request
@@ -233,11 +233,11 @@ func testNotify(c *gin.Context) {
 // @Security BearerAuth
 // @Param id query int true "通知ID"
 // @Param request body notifyModel.Request true "更新通知请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Response} "更新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "通知配置不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=notifyModel.Response} "更新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "通知配置不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify [put]
 func updateNotify(c *gin.Context) {
 	var req notifyModel.Request
@@ -273,11 +273,11 @@ func updateNotify(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id query int true "通知ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "通知不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "通知不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify [delete]
 func deleteNotify(c *gin.Context) {
 	idParam := c.Query("id")
@@ -307,10 +307,10 @@ func deleteNotify(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]notifyModel.Template} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]notifyModel.Template} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/template [get]
 func getTemplates(c *gin.Context) {
 	notifyTemplateList, err := op.GetNotifyTemplateList()
@@ -329,11 +329,11 @@ func getTemplates(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body notifyModel.Template true "更新通知模板请求"
-// @Success 200 {object} resp.SuccessStruct{data=notifyModel.Template} "更新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "通知模板不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=notifyModel.Template} "更新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "通知模板不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/notify/template [put]
 func updateTemplate(c *gin.Context) {
 	var req notifyModel.Template

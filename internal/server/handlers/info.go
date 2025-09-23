@@ -50,8 +50,8 @@ func init() {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} resp.SuccessStruct{data=system.HealthResponse} "服务正常"
-// @Failure 503 {object} resp.ErrorStruct "服务不可用"
+// @Success 200 {object} resp.ResponseStruct{data=system.HealthResponse} "服务正常"
+// @Failure 503 {object} resp.ResponseStruct "服务不可用"
 // @Router /api/v1/system/health [get]
 func healthCheck(c *gin.Context) {
 	// 检查数据库连接状态
@@ -91,8 +91,8 @@ func healthCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} resp.SuccessStruct{data=system.HealthResponse} "服务就绪"
-// @Failure 503 {object} resp.ErrorStruct "服务未就绪"
+// @Success 200 {object} resp.ResponseStruct{data=system.HealthResponse} "服务就绪"
+// @Failure 503 {object} resp.ResponseStruct "服务未就绪"
 // @Router /api/v1/system/ready [get]
 func readinessCheck(c *gin.Context) {
 	// 检查关键组件是否就绪
@@ -133,7 +133,7 @@ func readinessCheck(c *gin.Context) {
 // @Tags 系统
 // @Accept json
 // @Produce json
-// @Success 200 {object} resp.SuccessStruct "服务存活"
+// @Success 200 {object} resp.ResponseStruct "服务存活"
 // @Router /api/v1/system/live [get]
 func livenessCheck(c *gin.Context) {
 	resp.Success(c, map[string]interface{}{
@@ -149,9 +149,9 @@ func livenessCheck(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=system.Info} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=system.Info} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/system/info [get]
 func systemInfo(c *gin.Context) {
 	resp.Success(c, sys.GetSystemInfo())
@@ -164,9 +164,9 @@ func systemInfo(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=system.Version} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=system.Version} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/system/version [get]
 func version(c *gin.Context) {
 	resp.Success(c, system.Version{

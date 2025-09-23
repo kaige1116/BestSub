@@ -50,9 +50,9 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param data body storageModel.Request true "存储配置数据"
-// @Success 200 {object} resp.SuccessStruct{data=storageModel.Response} "创建成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=storageModel.Response} "创建成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage [post]
 func createStorage(c *gin.Context) {
 	var req storageModel.Request
@@ -75,9 +75,9 @@ func createStorage(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]storageModel.Response} "获取成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]storageModel.Response} "获取成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage [get]
 func getStorage(c *gin.Context) {
 	storages, err := op.GetStorageList(c.Request.Context())
@@ -98,10 +98,10 @@ func getStorage(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=[]string} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]string} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage/channel [get]
 func getStorageChannel(c *gin.Context) {
 	channels := make([]string, 0, len(storage.GetInfoMap()))
@@ -118,10 +118,10 @@ func getStorageChannel(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param channel query string false "渠道"
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]storage.Desc} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=map[string][]storage.Desc} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage/channel/config [get]
 func getStorageChannelConfig(c *gin.Context) {
 	channel := c.Query("channel")
@@ -140,9 +140,9 @@ func getStorageChannelConfig(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "存储ID"
 // @Param data body storageModel.Request true "存储配置数据"
-// @Success 200 {object} resp.SuccessStruct{data=storageModel.Response} "更新成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=storageModel.Response} "更新成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage/{id} [put]
 func updateStorage(c *gin.Context) {
 	idStr := c.Param("id")
@@ -171,9 +171,9 @@ func updateStorage(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "存储ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/storage/{id} [delete]
 func deleteStorage(c *gin.Context) {
 	id := c.Param("id")

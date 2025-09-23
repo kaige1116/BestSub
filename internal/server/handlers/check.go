@@ -57,10 +57,10 @@ func init() {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} resp.SuccessStruct{data=map[string][]check.Desc} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=map[string][]check.Desc} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check/type [get]
 func getCheckTypes(c *gin.Context) {
 	resp.Success(c, check.GetInfoMap())
@@ -74,10 +74,10 @@ func getCheckTypes(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body checkModel.Request true "创建检测请求"
-// @Success 200 {object} resp.SuccessStruct{data=checkModel.Response} "创建成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=checkModel.Response} "创建成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check [post]
 func createCheck(c *gin.Context) {
 	var req checkModel.Request
@@ -102,10 +102,10 @@ func createCheck(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id query int true "检测ID"
-// @Success 200 {object} resp.SuccessStruct{data=[]checkModel.Response} "获取成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=[]checkModel.Response} "获取成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check [get]
 func getCheck(c *gin.Context) {
 	idStr := c.Query("id")
@@ -146,11 +146,11 @@ func getCheck(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "检测ID"
 // @Param request body checkModel.Request true "更新检测请求"
-// @Success 200 {object} resp.SuccessStruct{data=checkModel.Response} "更新成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "检测不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct{data=checkModel.Response} "更新成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "检测不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check/{id} [put]
 func updateCheck(c *gin.Context) {
 	var req checkModel.Request
@@ -191,11 +191,11 @@ func updateCheck(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "检测ID"
-// @Success 200 {object} resp.SuccessStruct "删除成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "检测不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "删除成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "检测不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check/{id} [delete]
 func deleteCheck(c *gin.Context) {
 	idParam := c.Param("id")
@@ -233,11 +233,11 @@ func deleteCheck(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "检测ID"
-// @Success 200 {object} resp.SuccessStruct "运行成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "检测不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "运行成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "检测不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check/{id}/run [post]
 func runCheck(c *gin.Context) {
 	idParam := c.Param("id")
@@ -270,11 +270,11 @@ func runCheck(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "检测ID"
-// @Success 200 {object} resp.SuccessStruct "停止成功"
-// @Failure 400 {object} resp.ErrorStruct "请求参数错误"
-// @Failure 401 {object} resp.ErrorStruct "未授权"
-// @Failure 404 {object} resp.ErrorStruct "检测不存在"
-// @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
+// @Success 200 {object} resp.ResponseStruct "停止成功"
+// @Failure 400 {object} resp.ResponseStruct "请求参数错误"
+// @Failure 401 {object} resp.ResponseStruct "未授权"
+// @Failure 404 {object} resp.ResponseStruct "检测不存在"
+// @Failure 500 {object} resp.ResponseStruct "服务器内部错误"
 // @Router /api/v1/check/{id}/stop [post]
 func stopCheck(c *gin.Context) {
 	idParam := c.Param("id")
