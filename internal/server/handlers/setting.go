@@ -35,37 +35,17 @@ func init() {
 // @Produce json
 // @Security BearerAuth
 // @Param group query string false "分组名称"
-// @Success 200 {object} resp.SuccessStruct{data=[]setting.GroupSettingAdvance} "获取成功"
+// @Success 200 {object} resp.SuccessStruct{data=[]setting.Setting} "获取成功"
 // @Failure 401 {object} resp.ErrorStruct "未授权"
 // @Failure 500 {object} resp.ErrorStruct "服务器内部错误"
 // @Router /api/v1/setting [get]
 func getSetting(c *gin.Context) {
-	settings, err := op.GetAllSettingMap(context.Background())
+	result, err := op.GetAllSetting(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get all setting: %v", err)
 		resp.Error(c, http.StatusInternalServerError, "failed to get all setting")
 		return
 	}
-	defaultSetting := setting.DefaultSetting()
-	result := make([]setting.GroupSettingAdvance, 0, len(defaultSetting))
-	for _, group := range defaultSetting {
-		advanceData := make([]setting.SettingAdvance, 0, len(group.Data))
-		for _, item := range group.Data {
-			advanceData = append(advanceData, setting.SettingAdvance{
-				Name:  item.Name,
-				Type:  item.Type,
-				Key:   item.Key,
-				Value: settings[item.Key],
-				Desc:  item.Desc,
-			})
-		}
-		result = append(result, setting.GroupSettingAdvance{
-			GroupName:   group.GroupName,
-			Description: group.Description,
-			Data:        advanceData,
-		})
-	}
-
 	resp.Success(c, result)
 }
 
