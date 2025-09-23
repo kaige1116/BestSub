@@ -30,6 +30,8 @@ BestSub 是一个高性能的节点检测，订阅转换服务，基于 Go 语�
 ```bash
 docker run -d \
     --name bestsub \
+    -e PUID=1000 \
+    -e PGID=1000 \
     --restart unless-stopped \
     -v /path/to/data:/app/data \
     -p 8080:8080 \
@@ -52,6 +54,9 @@ services:
     image: ghcr.io/bestruirui/bestsub:latest
     container_name: bestsub
     restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
     ports:
       - "8080:8080"
     volumes:
