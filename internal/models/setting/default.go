@@ -17,7 +17,7 @@ func DefaultSetting() []Setting {
 		},
 		{
 			Key:   FRONTEND_URL,
-			Value: "https://github.com/BestSubOrg/Front/releases/latest/download/out.zip",
+			Value: "https://github.com/bestruirui/BestSubFront/releases/latest/download/out.zip",
 		},
 		{
 			Key:   FRONTEND_URL_PROXY,
@@ -25,7 +25,7 @@ func DefaultSetting() []Setting {
 		},
 		{
 			Key:   SUBCONVERTER_URL,
-			Value: "https://github.com/BestSubOrg/subconverter/releases/latest/download/",
+			Value: "https://github.com/bestruirui/subconverter/releases/latest/download/",
 		},
 		{
 			Key:   SUBCONVERTER_URL_PROXY,
