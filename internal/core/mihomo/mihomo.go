@@ -137,8 +137,6 @@ func Proxy(raw map[string]any) *HC {
 			u16Port = 0
 		}
 
-		log.Debugf("u16Port: %d host: %s", u16Port, host)
-
 		return proxy.DialContext(ctx, &constant.Metadata{
 			Host:    host,
 			DstPort: u16Port,
