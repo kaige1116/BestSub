@@ -4,12 +4,15 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/bestruirui/bestsub/internal/modules/country/channel"
 )
 
 func GetCode(ctx context.Context, client *http.Client) string {
 	for _, channel := range channel.Channels {
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
 		request, err := http.NewRequestWithContext(ctx, "GET", channel.Url(), nil)
 		if err != nil {
 			continue
