@@ -83,13 +83,16 @@ func (e *Alive) Run(ctx context.Context, log *log.Logger, subID []uint16) checkM
 				log.Debugf("Node %s is alive ✔", raw["name"].(string))
 				atomic.AddInt64(&aliveCount, 1)
 				n.Info.SetAliveStatus(nodeModel.Alive, true)
+				n.Info.Delay.Update(uint16(time.Since(start).Milliseconds()))
+				log.Debugf("Node %s delay: %dms", raw["name"].(string), n.Info.Delay.Average())
+				atomic.AddInt64(&totalDelay, int64(n.Info.Delay.Average()))
 			} else {
 				log.Debugf("Node %s is dead ✘", raw["name"].(string))
 				atomic.AddInt64(&deadCount, 1)
 				n.Info.SetAliveStatus(nodeModel.Alive, false)
+				n.Info.Delay.Update(uint16(65535))
 			}
-			n.Info.Delay.Update(uint16(time.Since(start).Milliseconds()))
-			atomic.AddInt64(&totalDelay, int64(n.Info.Delay.Average()))
+
 		})
 	}
 	wg.Wait()
