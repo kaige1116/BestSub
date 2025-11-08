@@ -54,6 +54,18 @@ func GetSubNameByID(ctx context.Context, id uint16) string {
 	}
 	return sub.Name
 }
+func GetSubTagsByID(ctx context.Context, id uint16) []string {
+	sub, err := GetSubByID(ctx, id)
+	if err != nil {
+		return []string{}
+	}
+	tags := make([]string, 0)
+	err = json.Unmarshal([]byte(sub.Tags), &tags)
+	if err != nil {
+		return []string{}
+	}
+	return tags
+}
 func CreateSub(ctx context.Context, sub *subModel.Data) error {
 	if subCache.Len() == 0 {
 		if err := refreshSubCache(ctx); err != nil {
