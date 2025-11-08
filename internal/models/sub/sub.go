@@ -11,6 +11,7 @@ type Data struct {
 	ID        uint16    `db:"id" json:"id"`
 	Enable    bool      `db:"enable" json:"enable"`
 	Name      string    `db:"name" json:"name"`
+	Tags      string    `db:"tags" json:"tags"`
 	CronExpr  string    `db:"cron_expr" json:"cron_expr"`
 	Config    string    `db:"config" json:"config"`
 	Result    string    `db:"result" json:"result"`
@@ -38,15 +39,17 @@ type Result struct {
 }
 
 type Request struct {
-	Name     string `json:"name" description:"订阅任务名称"`
-	Enable   bool   `json:"enable" description:"是否启用"`
-	CronExpr string `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
-	Config   Config `json:"config"`
+	Name     string   `json:"name" description:"订阅任务名称"`
+	Tags     []string `json:"tags" description:"订阅标签"`
+	Enable   bool     `json:"enable" description:"是否启用"`
+	CronExpr string   `json:"cron_expr" example:"0 0 * * *" description:"cron表达式"`
+	Config   Config   `json:"config"`
 }
 
 type Response struct {
 	ID        uint16               `json:"id" description:"订阅任务ID"`
 	Name      string               `json:"name" description:"订阅任务名称"`
+	Tags      []string             `json:"tags" description:"订阅标签"`
 	Enable    bool                 `json:"enable" description:"是否启用"`
 	CronExpr  string               `json:"cron_expr" description:"cron表达式"`
 	Config    Config               `json:"config" description:"订阅器配置"`
@@ -62,9 +65,11 @@ func (c *Request) GenData(id uint16) Data {
 	if err != nil {
 		return Data{}
 	}
+	tags, _ := json.Marshal(c.Tags)
 	return Data{
 		ID:       id,
 		Name:     c.Name,
+		Tags:     string(tags),
 		Enable:   c.Enable,
 		CronExpr: c.CronExpr,
 		Config:   string(configBytes),
@@ -75,9 +80,12 @@ func (d *Data) GenResponse(status string, subInfo nodeModel.SimpleInfo) Response
 	json.Unmarshal([]byte(d.Config), &config)
 	var result Result
 	json.Unmarshal([]byte(d.Result), &result)
+	tags := make([]string, 0)
+	json.Unmarshal([]byte(d.Tags), &tags)
 	return Response{
 		ID:        d.ID,
 		Name:      d.Name,
+		Tags:      tags,
 		Enable:    d.Enable,
 		CronExpr:  d.CronExpr,
 		Config:    config,

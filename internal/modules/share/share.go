@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"text/template"
 
 	"github.com/bestruirui/bestsub/internal/config"
@@ -72,15 +73,18 @@ func GenNodeData(config string) []byte {
 	for i, node := range *nodes {
 		newName.Reset()
 		result.Write(dash)
+		subTags := op.GetSubTagsByID(context.Background(), node.Base.SubId)
 		simpleInfo := renameTmpl{
-			SpeedUp:   node.Info.SpeedUp.Average(),
-			SpeedDown: node.Info.SpeedDown.Average(),
-			Delay:     uint32(node.Info.Delay.Average()),
-			Risk:      uint32(node.Info.Risk),
-			Count:     uint32(i + 1),
-			Country:   country.GetCountry(node.Info.Country),
-			IP:        utils.Uint32ToIP(node.Info.IP),
-			SubName:   op.GetSubNameByID(context.Background(), node.Base.SubId),
+			SpeedUp:       node.Info.SpeedUp.Average(),
+			SpeedDown:     node.Info.SpeedDown.Average(),
+			Delay:         uint32(node.Info.Delay.Average()),
+			Risk:          uint32(node.Info.Risk),
+			Count:         uint32(i + 1),
+			Country:       country.GetCountry(node.Info.Country),
+			IP:            utils.Uint32ToIP(node.Info.IP),
+			SubName:       op.GetSubNameByID(context.Background(), node.Base.SubId),
+			SubTags:       fmt.Sprintf("<%s>", strings.Join(subTags, "|")),
+			SubTagsOrigin: subTags,
 		}
 		tmpl.Execute(&newName, simpleInfo)
 		result.Write(rename(node.Base.Raw, newName.Bytes()))
@@ -111,14 +115,16 @@ var (
 )
 
 type renameTmpl struct {
-	SpeedUp   uint32
-	SpeedDown uint32
-	Delay     uint32
-	Risk      uint32
-	Country   country.Country
-	Count     uint32
-	IP        string
-	SubName   string
+	SpeedUp       uint32
+	SpeedDown     uint32
+	Delay         uint32
+	Risk          uint32
+	Country       country.Country
+	Count         uint32
+	IP            string
+	SubName       string
+	SubTags       string
+	SubTagsOrigin []string
 }
 
 var renameTemplate = template.New("node").Funcs(template.FuncMap{
